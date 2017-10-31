@@ -1,0 +1,874 @@
+#!/bin/bash -
+
+# This script requires the included helper script
+# find-snapshots-by-userdata.awk
+# to be in the same directory at runtime.
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# shellcheck disable=SC1117,SC2064
+# SC1117 - allow \n in double quoted printf strings instead of \\n
+# SC2064 - allow double quoting trap argument
+
+set -euo pipefail
+shopt -s extglob
+
+readonly EXIT_INTERNAL_ERROR=64
+readonly EXIT_INVALID_ARGUMENT=65
+readonly EXIT_INVALID_CONFIG=66
+readonly EXIT_NO_PERMISSIONS=67
+readonly EXIT_SNAPSHOT_NOT_FOUND=68
+readonly EXIT_INTERACTIVE_NO=69
+
+# Apply the --pre-post and --no-pre-post command line options
+apply_pre_post_options() {
+    local i j
+    if [[ "${#pre_post[@]}" -gt 0 ]] ; then
+        for i in "${pre_post[@]}" ; do
+            config_must_exist "$i"
+        done
+        snapper_configs=( "${pre_post[@]}" )
+    fi
+    if [[ "${#no_pre_post[@]}" -gt 0 ]] ; then
+        local temp_array=()
+        for i in "${no_pre_post[@]}" ; do
+            config_must_exist "$i"
+            temp_array=()
+            for j in "${snapper_configs[@]}" ; do
+                [[ "$j" = "$i" ]] || temp_array+=( "$j" )
+            done
+            snapper_configs=( "${temp_array[@]}" )
+        done
+    fi
+}
+
+# Set use_snapshot from comma-separated key=value pairs specified in $1
+apply_use_snapshot_option() {
+    local args=()
+    local config config_using
+    IFS=',' read -r -a args <<< "$1"
+    local i
+    for i in "${args[@]}" ; do
+        config=""
+        config_using=""
+        IFS='=' read -r config config_using <<< "$i"
+        config_must_exist "$config"
+        use_snapshot[$config]="$config_using"
+    done
+}
+
+# Sanity check snapper configuration
+check_config() {
+    # Make sure we found some configs
+    if [[ "${#snapper_configs[@]}" -eq 0 ]] ; then
+        printf "%s: No snapper configs found for any data drives " "$0" >&2
+        printf "in snapraid config file\n" >&2
+        exit $EXIT_INVALID_CONFIG
+    fi
+    # Check to make sure the user has permission to access snapshots
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        if ! [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; then
+           printf "%s: Couldn't read %s - is SYNC_ACL set?\n" "$0" \
+                  "${snapper_subvols[$i]}/.snapshots" >&2
+           exit $EXIT_NO_PERMISSIONS
+        fi
+    done
+    # We don't want to snapshot the content files. So, check the directories of
+    # the content files, and compare their mount points with those of the
+    # subvolumes we are snapshotting, to see if any match
+    local f1 f2
+    local content_dir content_mount
+    while IFS=$' \t' read -r f1 f2 ; do
+        if [[ "$f1" = "content" ]] ; then
+            content_dir="$(dirname "$f2")"
+            content_mount="$(stat --format=%m "$content_dir")"
+            for i in "${snapper_configs[@]}" ; do
+                if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]] ; then
+                    printf "%s: Content file %s found in data subvolume %s - " \
+                           "$0" "$f2" "${snapper_subvols[$i]}" >&2
+                    printf "create a dedicated subvolume for the content " >&2
+                    printf "file and try again.\n" >&2
+                    exit $EXIT_INVALID_CONFIG
+                fi
+            done
+        fi
+    done < "$config_file"
+}
+
+check_dependencies() {
+    # Make sure all external binaries we need can be found in $PATH
+    local deps=( "$my_snapraid" "$my_snapper"
+                 awk cat dirname grep mktemp rm sed stat tail touch tr )
+    local i
+    for i in "${deps[@]}" ; do
+        if ! type "$i" &> /dev/null ; then
+            printf "%s: Couldn't find %s in \$PATH\n" "$0" "$i" >&2
+            exit $EXIT_INTERNAL_ERROR
+        fi
+    done
+    # check for helper awk script
+    unset CDPATH
+    my_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    if ! [[ -r "${my_dir}/find-snapshots-by-userdata.awk" ]] ; then
+        printf "%s: Missing find-snapshots-by-userdata.awk in %s\n" \
+               "$0" "$my_dir" >&2
+        exit $EXIT_INTERNAL_ERROR
+    fi
+}
+
+# called from trap, $1 should be $my_tmpdir and $2 should depend on
+# the signal being trapped
+cleanup_before_exiting() {
+    local ret=$?
+    rm -fr "$1"
+    local i
+    for i in $(jobs -p) ; do
+        kill -TERM "$i"
+    done
+    if [[ $# -ge 2 ]] ; then
+        trap - EXIT
+        exit "$2"
+    else
+        exit "$ret"
+    fi
+}
+
+# In each config, delete snapshots with userdata key snapraid-btrfs created
+# before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+cleanup_snapshots() {
+    local snaps_to_consider
+    local snapper_cmd=()
+    local i j
+    for i in "${snapper_configs[@]}" ; do
+        [[ -z "${use_snapshot[$i]}" ]] && break
+        snaps_to_consider="$("$my_snapper" -c "$i" ls |
+            parse_snapper_ls 'snapraid-btrfs' '')"
+        for j in $snaps_to_consider ; do
+            if [[ "${use_snapshot[$i]}" -eq 0 ]] ||
+                   [[ "${use_snapshot[$i]}" -gt "$j" ]]
+            then
+                snapper_cmd=( "$my_snapper" "-c" "$i" "rm" "$j" )
+                if [[ -n "$interactive" ]] ; then
+                    interactive_ask "${snapper_cmd[@]}" >&2
+                elif [[ $verbose -ge 1 ]] ; then
+                    printf "%s " "${snapper_cmd[@]}"
+                    printf "\n"
+                fi
+                "${snapper_cmd[@]}"
+            fi
+        done
+    done
+}
+
+# Check that the user didn't specify a nonexistent snapper config by ensuring
+# that a subvolume is set for the config name
+config_must_exist() {
+    if ! [[ "${snapper_subvols[$1]:-}" ]] ; then
+        printf "%s: Invalid snapper configuration %s!\n" "$0" "$1" >&2
+        exit $EXIT_INVALID_ARGUMENT
+    fi
+}
+
+# Calling once creates pre snapshots, calling again creates corresponding post
+create_pre_post_snapshots() {
+    local snapper_cmd=()
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        snapper_cmd=( "$my_snapper" "-c" "$i" "create" )
+        [[ -z "$snapper_cleanup" ]] ||
+            snapper_cmd+=( "-c" "$snapper_cleanup" )
+        snapper_cmd+=( "-u" "$snapper_userdata" )
+        # Check if we've already done a pre snapshot
+        if [[ "${pre_snapshots[$i]:-}" ]] ; then
+            # We've already done pre snapshots, so create corresponding post
+            if [[ -n "$snapper_description" ]] ; then
+                snapper_cmd+=( "-d" "$snapper_description" )
+            else
+                snapper_cmd+=( "-d" "snapraid-btrfs post-$1" )
+            fi
+            snapper_cmd+=( "-t" "post" "--pre-number" "${pre_snapshots[$i]}" )
+            "${snapper_cmd[@]}" || true
+        else
+            # We haven't created pre snapshots yet, so create them and store the
+            # snapshot numbers from snapper -p option in ${pre_snapshots[@]}
+            if [[ -n "$snapper_description" ]] ; then
+                snapper_cmd+=( "-d" "$snapper_description" )
+            else
+                snapper_cmd+=( "-d" "snapraid-btrfs pre-$1" )
+            fi
+            snapper_cmd+=( "-t" "pre" "-p" )
+            pre_snapshots[$i]="$("${snapper_cmd[@]}")"
+        fi
+    done
+}
+
+# Replace literal \t and \r characters in stdout and stderr with escapes
+# used when -x is specified to avoid clobbering output with \r
+escape_output() {
+    local sed_escape_pipe="${my_tmpdir}/sed-escape-pipe"
+    mkfifo "$sed_escape_pipe"
+    # Keep pipe open indefinitely
+    tail -f /dev/null > "$sed_escape_pipe" &
+    sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" &
+    exec &> "$sed_escape_pipe"
+    # works, since we won't need to open any new handles to the pipe
+    rm -f "$sed_escape_pipe"
+}
+
+# compare output of snapper list-configs with snapraid.conf
+find_configs() {
+    # Find snapraid config file
+    if ! [[ -r "$config_file" ]] ; then
+        printf "%s: Couldn't read snapraid config file at %s\n" "$0" \
+               "$config_file" >&2
+        printf "Please specify a valid snapraid config file with -c\n" >&2
+        exit $EXIT_INVALID_ARGUMENT
+    elif [[ $verbose -ge 1 ]] ; then
+        printf "Using snapraid config file %s\n" "$config_file"
+    fi
+    # Find snapper configs with paths in snapraid config file
+    local config subvol
+    local data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
+    while IFS='|' read -r config subvol ; do
+        # Remove leading and trailing spaces
+        config="${config##*( )}"
+        config="${config%%*( )}"
+        subvol="${subvol##*( )}"
+        subvol="${subvol%%*( )}"
+        if grep -Ex "${data_line}${subvol}"$'[/]?[\r]?' \
+                "$config_file" > /dev/null
+        then
+            snapper_configs+=( "$config" )
+            snapper_subvols[$config]="$subvol"
+        fi
+    done < <("$my_snapper" list-configs | tail -n +3)
+    if [[ $verbose -ge 0 ]] ; then
+        printf "Snapper configs found matching snapraid config file:\n"
+        for i in "${snapper_configs[@]}" ; do
+            printf "%s %s\n" "$i" "${snapper_subvols[$i]}"
+        done
+    fi
+}
+
+# replace keywords in use_snapshot with actual snapshot numbers, or with the
+# empty string if a snapshot matching the keyword cannot be found
+find_snapshots() {
+    local snapper_create_opts=( "-u" "$snapper_userdata" )
+    [[ -z "$snapper_cleanup" ]] ||
+        snapper_create_opts+=( "-c" "$snapper_cleanup" )
+    if [[ -n "$snapper_description" ]] ; then
+        snapper_create_opts+=( "-d" "$snapper_description" )
+    else
+        snapper_create_opts+=( "-d" "snapraid-btrfs" )
+    fi
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        case ${use_snapshot[$i]} in
+            'diff')
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                    parse_snapper_ls 'snapraid-btrfs' 'diff' |
+                    tail -n 1)" ;;
+            'last')
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                    parse_snapper_ls 'snapraid-btrfs' '' |
+                    tail -n 1)" ;;
+            'new')
+                use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
+                    "${snapper_create_opts[@]}")" ;;
+            'res')
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                    parse_snapper_ls 'snapraid-btrfs' 'syncing' |
+                    tail -n 1)" ;;
+            'sync')
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                    parse_snapper_ls 'snapraid-btrfs' 'synced' |
+                    tail -n 1)" ;;
+            *)
+                "$my_snapper" -c "$i" ls | parse_snapper_ls '' '' |
+                    grep -F "${use_snapshot[$i]}" > /dev/null ||
+                    use_snapshot[$i]="" ;;
+        esac
+    done
+}
+
+# generate sed script to replace subvolume paths with corresponding snapshots
+# (and pool directory, if --pool-dir is specified) and run it on snapraid.conf
+generate_temp_snapraid_conf() {
+    # regex matching data line up to the point where the path starts
+    local data_line=$'^[ \t]\{0,\}data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
+    # no-op to ensure at least one expression is passed to sed
+    local sed_exps=( 's/^//' )
+    local new_path sed_find sed_replace match_line
+    # shellcheck disable=SC2016
+    [[ -n "$pool_dir" ]] &&
+        sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
+                    '$apool '"$pool_dir" )
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        if [[ "${use_snapshot[$i]}" -ne 0 ]] ; then
+            new_path="${snapper_subvols[$i]}/.snapshots/"
+            new_path+="${use_snapshot[$i]}/snapshot"
+            if [[ -r "$new_path" ]] ; then
+                # use bash builtins to escape slashes in paths for sed
+                sed_find="${snapper_subvols[$i]//\//\\\/}"
+                sed_replace="${new_path//\//\\\/}"
+                match_line="$data_line""$sed_find"$'[\/]\{0,1\}[\r]\{0,1\}$'
+                sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
+                # also match the deprecated token 'disk' using separate sed
+                # expression to avoid depending on the GNU extension \|
+                match_line="${match_line/data/disk}"
+                sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
+            else
+                printf "%s: Couldn't read directory %s\n" "$0" "$new_path" >&2
+                exit $EXIT_NO_PERMISSIONS
+            fi
+        fi
+    done
+    # Use temporary file to avoid ARG_MAX issues, since -f - is a GNU extension
+    local sed_file="${my_tmpdir}/snapraid-btrfs.sed"
+    touch "$sed_file"
+    trap "rm -f \"$sed_file\" && trap - RETURN" RETURN
+    for i in "${sed_exps[@]}" ; do
+        printf "%s\n" "$i" >> "$sed_file"
+    done
+    sed -f "$sed_file" "$config_file"
+}
+
+interactive_ask() {
+    local choice
+    printf "About to run the command:\n"
+    printf "%s " "$@"
+    printf "\n"
+    while true ; do
+        printf "Do it (Y/N)? "
+        read -r choice
+        case $choice in
+            'y'|'Y')
+                break ;;
+            'n'|'N')
+                exit $EXIT_INTERACTIVE_NO ;;
+            *)
+                printf "Invalid choice! Please enter y or n.\n" ;;
+        esac
+    done
+}
+
+invalid_argument() {
+    printf "%s: Invalid argument '%s'!\n" "$0" "$1" >&2
+    printf "Use %s -h to see options.\n" "$0" >&2
+    exit $EXIT_INVALID_ARGUMENT
+}
+
+main() {
+    # bash version 4+ required for associative arrays and
+    # ;& and ;;& terminators in case statements
+    if ! [[ "${BASH_VERSINFO[0]}" -ge 4 ]] ; then
+        printf "%s: bash version 4 or greater is required to use this script\n"\
+               "$0" >&2
+        exit $EXIT_INTERNAL_ERROR
+    fi
+    local config_file="/etc/snapraid.conf"
+    local interactive=""
+    local my_dir
+    local my_snapper="snapper"
+    local my_snapraid="snapraid"
+    local my_tmpdir
+    local no_pre_post=()
+    local pool_dir=""
+    local pre_post=()
+    local -A pre_snapshots
+    local snapper_cleanup=""
+    local snapper_configs=()
+    local snapper_description=""
+    local -A snapper_subvols
+    local snapper_userdata="snapraid-btrfs=created"
+    local -A use_snapshot
+    local use_snapshot_all=""
+    local use_snapshot_option=""
+    local verbose=0
+    my_tmpdir="$(mktemp -d -t snapraid-btrfs.XXXXXXXXXXXX)"
+    trap "cleanup_before_exiting \"$my_tmpdir\"" EXIT
+    trap "cleanup_before_exiting \"$my_tmpdir\" $EXIT_INTERACTIVE_NO" INT TERM
+    parse_arguments "$@"
+}
+
+# set snapraid-btrfs userdata key to $1
+modify_userdata() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        "$my_snapper" -c "$i" modify -u "snapraid-btrfs=$1" \
+                      "${use_snapshot[$i]}"
+    done
+}
+
+# argument should be a directory, otherwise exit
+must_be_directory() {
+    if ! [[ -d "$1" ]] ; then
+        printf "%s: %s is not a valid directory\n" "$0" "$1" >&2
+        exit $EXIT_INVALID_ARGUMENT
+    fi
+}
+
+# argument should be an executable file, otherwise exit
+must_be_executable() {
+    if ! [[ -x "$1" ]] ; then
+        printf "%s: %s is not an executable file\n" "$0" "$1" >&2
+        exit $EXIT_INVALID_ARGUMENT
+    fi
+}
+# call this to make sure $2 is defined when user specifies option requring it
+option_requires_argument() {
+    if [[ -z "${2:-}" ]] ; then
+        printf "%s: Option %s requires an argument!\n" "$0" "$1" >&2
+        printf "Use %s -h for help.\n" "$0" >&2
+        exit $EXIT_INVALID_ARGUMENT
+    fi
+}
+
+parse_arguments() {
+    local opt_str length
+    local i
+    while true ; do
+        if [[ $# -ge 1 ]] ; then
+            case $1 in
+                # matching any command means option processing is complete
+                @(cleanup?(-all)|config|create|snapper-l@(s|ist))) ;&
+                @(check|dup|list|pool|scrub|status|fix|touch)) ;&
+                @(diff|?(diff-|d)sync))
+                    setup_config
+                    run_command "$@" ;;
+                # snapraid-btrfs options specified before command
+                # long form options that don't take arguments
+                --@(help|interactive|quiet|verbose|debug)?(=*))
+                    # ignore any argument passed with --opt=arg format
+                    set_option "${1%%=*}"
+                    shift ;;
+                # long form options that require arguments
+                --@(conf|cleanup-algorithm|description|pool-dir)?(=*)) ;&
+                --@(snap@(per-@(path|userdata)|raid-path))?(=*)) ;&
+                --@(use-snapshot?(-all)|?(no-)pre-post)?(=*))
+                    # allow POSIX --argument option or --argument=option formats
+                    opt_str="${1%%=*}"
+                    if [[ "$opt_str" = "$1" ]] ; then
+                        set_option "$opt_str" "${2:-}"
+                        shift 2 || shift
+                    else
+                        set_option "$opt_str" "${1#${opt_str}=}"
+                        shift
+                    fi ;;
+                # no need for -- to signal end of options since the
+                # only valid non-option arguments are commands, which
+                # never begin with a hyphen, but support it as a no-op
+                '--')
+                    shift ;;
+                --*)
+                    invalid_argument "$1" ;;
+                # allow POSIX-style combining of short options
+                -*)
+                    opt_str="${1#-}"
+                    length="${#opt_str}"
+                    for ((i=0;i<length;i++)) ; do
+                        case ${opt_str:$i:1} in
+                            # short options that don't take arguments
+                            [hiqvx])
+                                set_option "-${opt_str:$i:1}"
+                                [[ $((length-1-i)) -eq 0 ]] &&
+                                    shift ;;
+                            # short options that require arguments
+                            [cCduU])
+                                if [[ $((length-1-i)) -eq 0 ]] ; then
+                                    set_option "-${opt_str:$i:1}" "${2:-}"
+                                    shift 2 || shift
+                                else
+                                    set_option "-${opt_str:$i:1}" \
+                                               "${opt_str:$((i+1))}"
+                                    shift
+                                    break
+                                fi ;;
+                            *)
+                                invalid_argument "-${opt_str:$i:1}" ;;
+                        esac
+                    done ;;
+                *)
+                    invalid_argument "$1" ;;
+            esac
+        else
+            printf "%s: You must specify a command (or you did not\n" "$0" >&2
+            printf "specify an argument to an option that requires one)\n" >&2
+            printf "Use %s -h to see options.\n" "$0" >&2
+            exit $EXIT_INVALID_ARGUMENT
+        fi
+    done
+}
+
+# use awk to parse piped snapper ls output and find snapshot numbers
+# matching the specified userdata constraints:
+# if $1 and $2 are nonempty, match snapshots with userdata key $1=$2
+# else if $1 is nonempty, match snapshots with userdata key $1 defined
+# else match all snapshots
+parse_snapper_ls() {
+    # We don't care whether $1 or $2 are empty, since to awk an undefined
+    # variable is the same as one which is defined to equal the empty string
+    awk -v key="$1" -v value="$2" -f "${my_dir}/find-snapshots-by-userdata.awk"
+}
+
+# Implementation of all commands is in this function
+run_command() {
+    case $1 in
+        # commands that don't invoke snapraid
+        'cleanup')
+            use_snapshot_all 'sync'
+            find_snapshots
+            cleanup_snapshots
+            exit 0 ;;
+        'cleanup-all')
+            use_snapshot_all '0'
+            cleanup_snapshots
+            exit 0 ;;
+        'config')
+            use_snapshot_default 'last'
+            find_snapshots
+            use_snapshot_check
+            generate_temp_snapraid_conf
+            exit 0 ;;
+        'create')
+            use_snapshot_default 'new'
+            find_snapshots
+            use_snapshot_check
+            exit 0 ;;
+        'snapper-ls'|'snapper-list')
+            shift
+            snapper_ls_all "$@"
+            exit 0 ;;
+        # commands that invoke snapraid
+        'check'|'dup'|'list'|'pool'|'scrub'|'status')
+            use_snapshot_default 'sync'
+            find_snapshots
+            use_snapshot_check
+            run_snapraid "$@" && true
+            exit $? ;;
+        'diff'|'sync')
+            use_snapshot_default 'new'
+            find_snapshots
+            use_snapshot_check
+            run_snapraid "$@" && true
+            exit $? ;;
+        'diff-sync'|'dsync')
+            shift
+            use_snapshot_default 'new'
+            find_snapshots
+            use_snapshot_check
+            run_snapraid 'diff' "$@" && true
+            interactive=1
+            run_snapraid 'sync' "$@" && true
+            exit $? ;;
+        'fix'|'touch')
+            apply_pre_post_options
+            use_snapshot_all '0'
+            run_snapraid "$@" && true
+            exit $? ;;
+        *)
+            printf "%s: Invalid command!\n" "$0" >&2
+            printf "Use %s --help for help.\n" "$0" >&2
+            exit $EXIT_INVALID_ARGUMENT ;;
+    esac
+}
+
+# Returns exit status of snapraid, postfix calls with '&& true' to avoid
+# triggering errexit if snapraid's return status is nonzero
+run_snapraid() {
+    local cmd=()
+    local ret
+    # Set up snapraid configuration
+    local snapraid_temp_conf
+    case $1 in
+        'fix'|'touch')
+            snapraid_temp_conf="$config_file" ;;
+        *)
+            snapraid_temp_conf="${my_tmpdir}/snapraid.conf.tmp"
+            touch "$snapraid_temp_conf"
+            trap "rm -f \"$snapraid_temp_conf\" && trap - RETURN" RETURN
+            generate_temp_snapraid_conf > "$snapraid_temp_conf" ;;
+    esac
+    if [[ $verbose -ge 0 ]] ; then
+        printf "Using snapraid config file:\n"
+        cat "$snapraid_temp_conf"
+    fi
+    # specify -c both before and after $@, after to override any specification
+    # of -c in $@, and before in case -- is in $@, neither of which should occur
+    # However, in case of user error it's better to consistently use the wrong
+    # (default) config location, which should be easily noticed, than have
+    # snapraid reading a config file snapraid-btrfs doesn't know about
+    cmd=( "$my_snapraid" "-c" "$snapraid_temp_conf"
+          "$@" "-c" "$snapraid_temp_conf" )
+    if [[ -n "$interactive" ]] ; then
+        interactive_ask "${cmd[@]}" >&2
+    elif [[ $verbose -ge 0 ]] ; then
+        printf "%s " "${cmd[@]}"
+        printf "\n"
+    fi
+    # Create pre/post snapshots if applicable
+    case $1 in
+        'fix'|'touch')
+            create_pre_post_snapshots "$1"
+            trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
+    esac
+    # If starting sync, update snapper userdata key
+    [[ "$1" = "sync" ]] && modify_userdata 'syncing'
+    # Run snapraid
+    "${cmd[@]}" && true
+    ret=$?
+    # Update snapper userdata key to reflect completion
+    case $1 in
+        'diff')
+            modify_userdata "$1" ;;
+        'sync')
+            [[ $ret -eq 0 ]] && modify_userdata 'synced' ;;
+    esac
+    return $ret
+}
+
+# $1 is option being set, $2 is argument. If no argument,
+# $2 can be either undefined or empty
+set_option() {
+    case $1 in
+        --@(conf|cleanup-algorithm|description|pool-dir)) ;&
+        --@(snap@(per-@(path|userdata)|raid-path))) ;&
+        --@(use-snapshot?(-all)|?(no-)pre-post)) ;&
+        -[cCduU])
+            option_requires_argument "$@" ;;&
+        '-c'|'--conf')
+            config_file="$2" ;;
+        '-C'|'--cleanup-algorithm')
+            snapper_cleanup="$2" ;;
+        '-d'|'--description')
+            snapper_description="$2" ;;
+        '-h'|'--help')
+            usage
+            exit 0 ;;
+        '-i'|'--interactive')
+            interactive=1 ;;
+        '-q'|'--quiet')
+            ((--verbose)) ;;
+        '-u'|'--use-snapshot-all')
+            use_snapshot_all="$2" ;;
+        '-U'|'--use-snapshot')
+            use_snapshot_option="$2" ;;
+        '-v'|'--verbose')
+            ((++verbose)) ;;
+        '-x'|'--debug')
+            escape_output
+            set -x ;;
+        '--no-pre-post')
+            IFS=',' read -r -a no_pre_post <<< "$2" ;;
+        '--pool-dir')
+            must_be_directory "$2"
+            pool_dir="$2" ;;
+        '--pre-post')
+            IFS=',' read -r -a pre_post <<< "$2" ;;
+        '--snapper-path')
+            must_be_executable "$2"
+            my_snapper="$2" ;;
+        '--snapper-userdata')
+            use_snapper_userdata "$2" ;;
+        '--snapraid-path')
+            must_be_executable "$2"
+            my_snapraid="$2" ;;
+        *)
+            invalid_argument "$1" ;;
+    esac
+}
+
+# Call immediately after all command line options have been parsed to
+# initialize ${snapper_configs[@]} and related arrays
+setup_config() {
+    check_dependencies
+    find_configs
+    # Do some sanity checks of snapraid/snapper configuration
+    check_config
+    # Apply -U option
+    [[ -n "$use_snapshot_option" ]] &&
+        apply_use_snapshot_option "$use_snapshot_option"
+    local i
+    # Set -u argument for any configurations not specified by -U
+    if [[ -n "$use_snapshot_all" ]] ; then
+        for i in "${snapper_configs[@]}" ; do
+            [[ "${use_snapshot[$i]:-}" ]] ||
+                use_snapshot[$i]="$use_snapshot_all"
+        done
+    fi
+}
+
+# Do a snapper ls in all configs, and if argument is specified, additionally
+# identify which snapshots we found with userdata snapraid-btrfs=$*
+snapper_ls_all() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        printf "\n%s %s\n" "$i" "${snapper_subvols[$i]}"
+        "$my_snapper" -c "$i" ls
+        if [[ $# -ge 1 ]] ; then
+            printf "Snapshots with userdata key snapraid-btrfs=%s:\n" "$*"
+            "$my_snapper" -c "$i" ls |
+                parse_snapper_ls 'snapraid-btrfs' "$*" | tr '\n' ' '
+            printf "\n"
+        fi
+    done
+    printf "\n"
+}
+
+usage() {
+    printf "Usage: %s [options] <command> [arguments]\n" "$0"
+    cat <<'EOF'
+
+Arguments appearing after the command are passed through to snapraid, while
+the following options appearing before the command are interpreted by
+snapraid-btrfs:
+
+-h, --help                      Show this help
+-c, --conf FILE                 Specify location of snapraid config file
+                                (default /etc/snapraid.conf)
+-C, --cleanup-algorithm STR     Specify snapper cleanup algorithm to set for any
+                                snapshots created (default none)
+-d, --description STR           Specify snapper description to set for any
+                                snapshots created (default none)
+-i, --interactive               Ask before running snapraid or deleting
+                                any snapshots
+-q, --quiet                     Only show snapraid/snapper output and errors
+-u, --use-snapshot-all STR      Use one of the following arguments:
+                                    diff - Use last snapshot a diff was
+                                           completed with
+                                    last - Use last snapshots created
+                                    new  - Create new snapshots
+                                    res  - Resume using snapshots from an
+                                           interrupted sync
+                                    sync - Use last snapshots a successful sync
+                                           was completed with
+                                or specify the snapshot number (0 for the live
+                                filesystem, following snapper syntax)
+                                Default is:
+                                    'new' for diff|dsync|sync
+                                    'last' for config
+                                    'sync' for all other commands
+-U, --use-snapshot STR          Specify snapshots to use for specific snapper
+                                configurations, using the snapper config name
+                                followed by an equals sign. Multiple
+                                configurations should be separated by commas,
+                                e.g. 'config1=5,config2=last'. Overrides -u
+-v, --verbose                   Increase verbosity of output
+-x, --debug                     Enable set -x in bash and also replace literal
+                                \t and \r characters in output with escapes
+--no-pre-post STR               Don't create pre/post snapshots for the
+                                specified snapper configuration(s). Multiple
+                                configurations should be separated by commas.
+--pool-dir DIR                  Create pool symlinks in DIR (defaults to
+                                directory specified in snapraid config file)
+--pre-post STR                  Create pre/post snapshots only for the
+                                specified snapper configuration(s). Multiple
+                                configurations should be separated by commas.
+--snapper-path PATH             Path to the snapper executable (defaults to
+                                first found in $PATH)
+--snapper-userdata STR          Specify snapper userdata to set for any
+                                snapshots created in addition to the
+                                "snapraid-btrfs" attribute, which is set by
+                                default and cannot be changed. Argument should
+                                be in key=value format accepted by snapper,
+                                with multiple keys separated by commas (e.g.
+                                key1=value1,key2=value2)
+--snapraid-path PATH            Path to the snapraid executable (defaults to
+                                first found in $PATH)
+
+Commands are either one of the following snapraid commands:
+'check'|'diff'|'dup'|'list'|'pool'|'scrub'|'status'|'sync':
+        Run the snapraid command given, replacing data drives in snapraid config
+        file that have corresponding snapper configs with read-only snapshots.
+'fix'|'touch':
+        Run the snapraid command given, creating a set of pre/post snapshots
+        before and after.
+
+or one of the following snapraid-btrfs specific commands:
+'config':
+        Show the modified snapraid config file that would be used, but don't
+        actually run snapraid.
+'create':
+        Create a new snapshot for all snapper configs corresponding to data
+        drives found in snapraid config file.
+'cleanup':
+        Delete all snapshots created by snapraid-btrfs before the last one a
+        successful sync has been completed with.
+'cleanup-all':
+        Delete all snapshots created by snapraid-btrfs.
+'dsync'|'diff-sync':
+        Create a new snapshot for all snapper configs found in snapraid config
+        file, do a snapraid diff, then sync. Implies --interactive option for
+        the sync operation.
+'snapper-list'|'snapper-ls':
+        Run snapper ls for all snapper configs found in snapraid config file.
+        If an argument is given, also list which snapshots in each config were
+        identified as having snapper userdata key snapraid-btrfs equal to the
+        argument (useful for testing purposes).
+
+NOTE: The snapraid '-c' option will not work unless placed before the command,
+allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
+with a temporary configuration file, generated using whatever snapraid.conf file
+is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
+
+EOF
+}
+
+# Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
+use_snapper_userdata() {
+    local i
+    local key value
+    local args=()
+    IFS=',' read -r -a args <<< "$1"
+    for i in "${args[@]}" ; do
+        key=""
+        value=""
+        IFS='=' read -r key value <<< "$i"
+        [[ "$key" = "snapraid-btrfs" ]] ||
+            snapper_userdata+=",${key}=${value}"
+    done
+}
+
+# Set use_snapshot to $1 for all configs, overriding any previous values
+use_snapshot_all() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        use_snapshot[$i]="$1"
+    done
+}
+
+# If use_snapshot[$i] is the empty string for any snapper config, indicating
+# that find_snapshots did not find one, display an error message and exit
+use_snapshot_check() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        if [[ -z "${use_snapshot[$i]}" ]] ; then
+            printf "%s: Couldn't find a snapshot for config %s\n" "$0" "$i" >&2
+            exit $EXIT_SNAPSHOT_NOT_FOUND
+        fi
+    done
+}
+
+# For any configs where use_snapshot is undefined, set it to $1
+use_snapshot_default() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        [[ "${use_snapshot[$i]:-}" ]] ||
+            use_snapshot[$i]="$1"
+    done
+}
+
+main "$@"
