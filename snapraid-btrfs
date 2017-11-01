@@ -116,6 +116,26 @@ check_dependencies() {
     done
 }
 
+check_snapraid_arguments() {
+    # Make sure the user hasn't tried to pass through the -c option to snapraid
+    while [[ $# -gt 0 ]] ; do
+        case $1 in
+            '-c'|'--conf')
+                printf "%s: The -c option may not be passed through - " "$0" >&2
+                printf "place the -c option before the command instead.\n" >&2
+                printf "Use %s --help for help.\n" "$0" >&2
+                exit $EXIT_INVALID_ARGUMENT ;;
+            # snapraid options that take arguments, meaning we should shift 2
+            --@(filter?(-disk)|import|plan|older-than|log|start|count)) ;&
+            --@(error-limit|gen-conf)) ;&
+            -[fdipolSBLC])
+                shift 2 || shift ;;
+            *)
+                shift ;;
+        esac
+    done
+}
+
 # called from trap, $1 should be $my_tmpdir and $2 should depend on
 # the signal being trapped
 cleanup_before_exiting() {
@@ -613,6 +633,7 @@ run_command() {
 # Returns exit status of snapraid, postfix calls with '&& true' to avoid
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
+    check_snapraid_arguments "$@"
     local cmd=()
     local ret
     # Set up snapraid configuration
@@ -630,13 +651,7 @@ run_snapraid() {
         printf "Using snapraid config file:\n"
         cat "$snapraid_temp_conf"
     fi
-    # specify -c both before and after $@, after to override any specification
-    # of -c in $@, and before in case -- is in $@, neither of which should occur
-    # However, in case of user error it's better to consistently use the wrong
-    # (default) config location, which should be easily noticed, than have
-    # snapraid reading a config file snapraid-btrfs doesn't know about
-    cmd=( "$my_snapraid" "-c" "$snapraid_temp_conf"
-          "$@" "-c" "$snapraid_temp_conf" )
+    cmd=( "$my_snapraid" "-c" "$snapraid_temp_conf" "$@" )
     if [[ -n "$interactive" ]] ; then
         interactive_ask "${cmd[@]}" >&2
     elif [[ $verbose -ge 0 ]] ; then
