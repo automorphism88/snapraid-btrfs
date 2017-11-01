@@ -105,8 +105,9 @@ check_config() {
 
 check_dependencies() {
     # Make sure all external binaries we need can be found in $PATH
+    # doesn't include those only used if -x option is enabled
     local deps=( "$my_snapraid" "$my_snapper"
-                 awk cat dirname grep mktemp rm sed stat tail touch tr )
+                 awk cat dirname grep sed stat tail tr )
     local i
     for i in "${deps[@]}" ; do
         if ! type "$i" &> /dev/null ; then
@@ -136,18 +137,16 @@ check_snapraid_arguments() {
     done
 }
 
-# called from trap, $1 should be $my_tmpdir and $2 should depend on
-# the signal being trapped
+# called from trap, exits with $1 if defined, otherwise $?
 cleanup_before_exiting() {
     local ret=$?
-    rm -fr "$1"
     local i
     for i in $(jobs -p) ; do
         kill -TERM "$i"
     done
-    if [[ $# -ge 2 ]] ; then
+    if [[ $# -ge 1 ]] ; then
         trap - EXIT
-        exit "$2"
+        exit "$1"
     else
         exit "$ret"
     fi
@@ -225,7 +224,8 @@ create_pre_post_snapshots() {
 # Replace literal \t and \r characters in stdout and stderr with escapes
 # used when -x is specified to avoid clobbering output with \r
 escape_output() {
-    local sed_escape_pipe="${my_tmpdir}/sed-escape-pipe"
+    local sed_escape_pipe
+    sed_escape_pipe="$(mktemp -u)"
     mkfifo "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
@@ -233,6 +233,9 @@ escape_output() {
     exec &> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
     rm -f "$sed_escape_pipe"
+    # kill tail and sed when we exit
+    trap "cleanup_before_exiting" EXIT
+    trap "cleanup_before_exiting $EXIT_INTERACTIVE_NO" INT TERM
 }
 
 # compare output of snapper list-configs with snapraid.conf
@@ -384,7 +387,6 @@ main() {
     local interactive=""
     local my_snapper="snapper"
     local my_snapraid="snapraid"
-    local my_tmpdir
     local no_pre_post=()
     local pool_dir=""
     local pre_post=()
@@ -398,9 +400,6 @@ main() {
     local use_snapshot_all=""
     local use_snapshot_option=""
     local verbose=0
-    my_tmpdir="$(mktemp -d -t snapraid-btrfs.XXXXXXXXXXXX)"
-    trap "cleanup_before_exiting \"$my_tmpdir\"" EXIT
-    trap "cleanup_before_exiting \"$my_tmpdir\" $EXIT_INTERACTIVE_NO" INT TERM
     parse_arguments "$@"
 }
 
@@ -634,24 +633,13 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local cmd=()
     local ret
-    # Set up snapraid configuration
-    local snapraid_temp_conf
-    case $1 in
-        'fix'|'touch')
-            snapraid_temp_conf="$config_file" ;;
-        *)
-            snapraid_temp_conf="${my_tmpdir}/snapraid.conf.tmp"
-            touch "$snapraid_temp_conf"
-            trap "rm -f \"$snapraid_temp_conf\" && trap - RETURN" RETURN
-            generate_temp_snapraid_conf > "$snapraid_temp_conf" ;;
-    esac
+    # Just for display purposes with -v and -i options, not actually used
+    local cmd=( "$my_snapraid" "-c" "<(generate_temp_snapraid_conf)" "$@" )
     if [[ $verbose -ge 0 ]] ; then
         printf "Using snapraid config file:\n"
-        cat "$snapraid_temp_conf"
+        generate_temp_snapraid_conf
     fi
-    cmd=( "$my_snapraid" "-c" "$snapraid_temp_conf" "$@" )
     if [[ -n "$interactive" ]] ; then
         interactive_ask "${cmd[@]}" >&2
     elif [[ $verbose -ge 0 ]] ; then
@@ -667,7 +655,7 @@ run_snapraid() {
     # If starting sync, update snapper userdata key
     [[ "$1" = "sync" ]] && modify_userdata 'syncing'
     # Run snapraid
-    "${cmd[@]}" && true
+    "$my_snapraid" -c <(generate_temp_snapraid_conf) "$@" && true
     ret=$?
     # Update snapper userdata key to reflect completion
     case $1 in
