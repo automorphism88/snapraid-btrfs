@@ -443,9 +443,8 @@ parse_arguments() {
         if [[ $# -ge 1 ]] ; then
             case $1 in
                 # matching any command means option processing is complete
-                @(cleanup?(-all)|config|create|snapper-l@(s|ist))) ;&
-                @(check|dup|list|pool|scrub|status|fix|touch)) ;&
-                @(diff|?(diff-|d)sync))
+                check|dup|list|pool|scrub|status|fix|touch|diff) ;&
+                cleanup?(-all)|config|create|snapper-l@(s|ist)|?(diff-|d)sync)
                     setup_config
                     run_command "$@" ;;
                 # snapraid-btrfs options specified before command
