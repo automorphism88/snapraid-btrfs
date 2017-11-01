@@ -324,14 +324,7 @@ generate_temp_snapraid_conf() {
             fi
         fi
     done
-    # Use temporary file to avoid ARG_MAX issues, since -f - is a GNU extension
-    local sed_file="${my_tmpdir}/snapraid-btrfs.sed"
-    touch "$sed_file"
-    trap "rm -f \"$sed_file\" && trap - RETURN" RETURN
-    for i in "${sed_exps[@]}" ; do
-        printf "%s\n" "$i" >> "$sed_file"
-    done
-    sed -f "$sed_file" "$config_file"
+    sed -f <(printf "%s\n" "${sed_exps[@]}") "$config_file"
 }
 
 interactive_ask() {
