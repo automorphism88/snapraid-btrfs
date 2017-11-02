@@ -229,9 +229,9 @@ err_trap() {
     exit "$2"
 }
 
-# Replace literal \t and \r characters in stdout and stderr with escapes
+# Replace literal \t and \r characters in stderr with escapes
 # used when -x is specified to avoid clobbering output with \r
-escape_output() {
+escape_stderr() {
     local sed_escape_pipe tail_pid
     sed_escape_pipe="$(mktemp -u)"
     mkfifo "$sed_escape_pipe"
@@ -716,7 +716,7 @@ set_option() {
         '-v'|'--verbose')
             ((++verbose)) ;;
         '-x'|'--debug')
-            escape_output
+            escape_stderr
             PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME:+$FUNCNAME(): }'
             set -x ;;
         '--no-pre-post')
