@@ -435,6 +435,7 @@ must_be_executable() {
         exit $EXIT_INVALID_ARGUMENT
     fi
 }
+
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
     if [[ -z "${2:-}" ]] ; then
