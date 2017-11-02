@@ -146,21 +146,6 @@ check_snapraid_arguments() {
     done
 }
 
-# called from trap, exits with $1 if defined, otherwise $?
-cleanup_before_exiting() {
-    local ret=$?
-    local i
-    for i in $(jobs -p) ; do
-        kill -TERM "$i"
-    done
-    if [[ $# -ge 1 ]] ; then
-        trap - EXIT
-        exit "$1"
-    else
-        exit "$ret"
-    fi
-}
-
 # In each config, delete snapshots with userdata key snapraid-btrfs created
 # before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
@@ -247,18 +232,18 @@ err_trap() {
 # Replace literal \t and \r characters in stdout and stderr with escapes
 # used when -x is specified to avoid clobbering output with \r
 escape_output() {
-    local sed_escape_pipe
+    local sed_escape_pipe tail_pid
     sed_escape_pipe="$(mktemp -u)"
     mkfifo "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
-    sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" &
-    exec &> "$sed_escape_pipe"
+    tail_pid=$!
+    sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
+    exec 2> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
     rm -f "$sed_escape_pipe"
-    # kill tail and sed when we exit
-    trap "cleanup_before_exiting" EXIT
-    trap "cleanup_before_exiting $EXIT_INTERACTIVE_NO" INT TERM
+    # kill tail when we exit, so sed will terminate when finished
+    trap "kill -TERM $tail_pid" EXIT
 }
 
 # compare output of snapper list-configs with snapraid.conf
