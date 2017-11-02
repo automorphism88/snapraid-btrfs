@@ -932,7 +932,8 @@ or one of the following snapraid-btrfs specific commands:
         Use snapper undochange to revert the array to the state it was in at
         the time of the last successful sync (or another snapshot if the -u or
         -U option is specified), creating pre/post snapshots. Arguments are
-        passed through to snapper undochange, including the -i option.
+        passed through to snapper undochange, including the snapper undochange
+        -i option.
 'rollback':
         Run snapper rollback in all snapper configs using the snapshots from
         the last successful sync (or another snapshot if the -u or -U option
