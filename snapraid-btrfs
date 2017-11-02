@@ -414,11 +414,16 @@ main() {
 
 # set snapraid-btrfs userdata key to $1
 modify_userdata() {
+    local ret=0
+    local snapper_ret
     local i
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" modify -u "snapraid-btrfs=$1" \
-                      "${use_snapshot[$i]}"
+                      "${use_snapshot[$i]}" && true
+        snapper_ret=$?
+        [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
     done
+    return "$ret"
 }
 
 # argument should be a directory, otherwise exit
