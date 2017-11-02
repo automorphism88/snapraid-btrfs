@@ -231,6 +231,8 @@ err_trap() {
 
 # Replace literal \t and \r characters in stderr with escapes
 # used when -x is specified to avoid clobbering output with \r
+# Literal \t and \r sequences are not replaced by \\t and \\r in order to
+# preserve readability - ambiguity should be minimal
 escape_stderr() {
     local sed_escape_pipe tail_pid
     sed_escape_pipe="$(mktemp -u)"
@@ -881,8 +883,7 @@ snapraid-btrfs:
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
 -v, --verbose                   Increase verbosity of output
--x, --debug                     Enable set -x in bash and also replace literal
-                                \t and \r characters in output with escapes
+-x, --debug                     Enable debugging output
 --no-pre-post STR               Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
