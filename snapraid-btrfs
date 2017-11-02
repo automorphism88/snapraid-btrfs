@@ -126,8 +126,8 @@ check_dependencies() {
     done
 }
 
+# Make sure the user hasn't tried to pass through the -c option to snapraid
 check_snapraid_arguments() {
-    # Make sure the user hasn't tried to pass through the -c option to snapraid
     while [[ $# -gt 0 ]] ; do
         case $1 in
             '-c'|'--conf')
