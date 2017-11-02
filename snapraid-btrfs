@@ -68,10 +68,9 @@ apply_use_snapshot_option() {
 
 # Replacement for cat to avoid calling external binary
 cat_heredoc() {
-    local line
-    while IFS= read -r line ; do
-        printf "%s\n" "$line"
-    done
+    local doc
+    read -r -d '' doc || true
+    printf "%s\n" "$doc"
 }
 
 # Sanity check snapper configuration
