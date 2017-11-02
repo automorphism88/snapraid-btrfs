@@ -733,6 +733,7 @@ set_option() {
             ((++verbose)) ;;
         '-x'|'--debug')
             escape_output
+            PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME:+$FUNCNAME(): }'
             set -x ;;
         '--no-pre-post')
             IFS=',' read -r -a no_pre_post <<< "$2" ;;
