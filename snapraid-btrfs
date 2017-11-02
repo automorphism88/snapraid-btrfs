@@ -364,8 +364,7 @@ interactive_ask() {
     printf "%s " "$@"
     printf "\n"
     while true ; do
-        printf "Do it (Y/N)? "
-        read -r choice
+        read -r -p 'Do it [Y/N]? ' choice
         case $choice in
             'y'|'Y')
                 break ;;
