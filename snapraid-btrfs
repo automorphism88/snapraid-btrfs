@@ -624,18 +624,6 @@ run_command() {
             snapper_rollback
             exit $? ;;
         # commands that invoke snapraid
-        'check'|'dup'|'list'|'pool'|'scrub'|'status')
-            use_snapshot_default 'sync'
-            find_snapshots "$1"
-            use_snapshot_check
-            run_snapraid "$@" && true
-            exit $? ;;
-        'diff'|'sync')
-            use_snapshot_default 'new'
-            find_snapshots "$1"
-            use_snapshot_check
-            run_snapraid "$@" && true
-            exit $? ;;
         'diff-sync'|'dsync')
             shift
             use_snapshot_default 'new'
@@ -645,12 +633,19 @@ run_command() {
             interactive=1
             run_snapraid 'sync' "$@" && true
             exit $? ;;
+        'check'|'dup'|'list'|'pool'|'scrub'|'status')
+            use_snapshot_default 'sync'
+            find_snapshots "$1"
+            use_snapshot_check ;;&
+        'diff'|'sync')
+            use_snapshot_default 'new'
+            find_snapshots "$1"
+            use_snapshot_check ;;&
         'fix'|'touch')
-            use_snapshot_all '0'
+            use_snapshot_all '0' ;;&
+        *)
             run_snapraid "$@" && true
             exit $? ;;
-        *)
-            invalid_argument "$1" ;;
     esac
 }
 
