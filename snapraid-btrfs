@@ -34,17 +34,19 @@ apply_pre_post_options() {
         for i in "${pre_post[@]}" ; do
             config_must_exist "$i"
         done
-        snapper_configs=( "${pre_post[@]}" )
+        pre_post_configs=( "${pre_post[@]}" )
+    else
+        pre_post_configs=( "${snapper_configs[@]}" )
     fi
     if [[ "${#no_pre_post[@]}" -gt 0 ]] ; then
         local temp_array=()
         for i in "${no_pre_post[@]}" ; do
             config_must_exist "$i"
             temp_array=()
-            for j in "${snapper_configs[@]}" ; do
+            for j in "${pre_post_configs[@]}" ; do
                 [[ "$j" = "$i" ]] || temp_array+=( "$j" )
             done
-            snapper_configs=( "${temp_array[@]}" )
+            pre_post_configs=( "${temp_array[@]}" )
         done
     fi
 }
@@ -192,7 +194,7 @@ config_must_exist() {
 create_pre_post_snapshots() {
     local snapper_cmd=()
     local i
-    for i in "${snapper_configs[@]}" ; do
+    for i in "${pre_post_configs[@]}" ; do
         snapper_cmd=( "$my_snapper" "-c" "$i" "create" )
         [[ -z "$snapper_cleanup" ]] ||
             snapper_cmd+=( "-c" "$snapper_cleanup" )
@@ -390,6 +392,7 @@ main() {
     local no_pre_post=()
     local pool_dir=""
     local pre_post=()
+    local pre_post_configs=()
     local -A pre_snapshots
     local snapper_cleanup=""
     local snapper_configs=()
@@ -617,7 +620,6 @@ run_command() {
             run_snapraid 'sync' "$@" && true
             exit $? ;;
         'fix'|'touch')
-            apply_pre_post_options
             use_snapshot_all '0'
             run_snapraid "$@" && true
             exit $? ;;
@@ -735,6 +737,7 @@ setup_config() {
                 use_snapshot[$i]="$use_snapshot_all"
         done
     fi
+    apply_pre_post_options
 }
 
 # Do a snapper ls in all configs, and if argument is specified, additionally
