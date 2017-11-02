@@ -643,9 +643,7 @@ run_command() {
             run_snapraid "$@" && true
             exit $? ;;
         *)
-            printf "%s: Invalid command!\n" "$0" >&2
-            printf "Use %s --help for help.\n" "$0" >&2
-            exit $EXIT_INVALID_ARGUMENT ;;
+            invalid_argument "$1" ;;
     esac
 }
 
