@@ -282,7 +282,7 @@ find_snapshots() {
     if [[ -n "$snapper_description" ]] ; then
         snapper_create_opts+=( "-d" "$snapper_description" )
     else
-        snapper_create_opts+=( "-d" "snapraid-btrfs" )
+        snapper_create_opts+=( "-d" "snapraid-btrfs $1" )
     fi
     local i
     for i in "${snapper_configs[@]}" ; do
@@ -572,7 +572,7 @@ run_command() {
         # commands that don't invoke snapraid
         'cleanup')
             use_snapshot_all 'sync'
-            find_snapshots
+            find_snapshots "$1"
             cleanup_snapshots
             exit 0 ;;
         'cleanup-all')
@@ -581,13 +581,13 @@ run_command() {
             exit 0 ;;
         'config')
             use_snapshot_default 'last'
-            find_snapshots
+            find_snapshots "$1"
             use_snapshot_check
             generate_temp_snapraid_conf
             exit 0 ;;
         'create')
             use_snapshot_default 'new'
-            find_snapshots
+            find_snapshots "$1"
             use_snapshot_check
             exit 0 ;;
         'snapper-ls'|'snapper-list')
@@ -597,20 +597,20 @@ run_command() {
         # commands that invoke snapraid
         'check'|'dup'|'list'|'pool'|'scrub'|'status')
             use_snapshot_default 'sync'
-            find_snapshots
+            find_snapshots "$1"
             use_snapshot_check
             run_snapraid "$@" && true
             exit $? ;;
         'diff'|'sync')
             use_snapshot_default 'new'
-            find_snapshots
+            find_snapshots "$1"
             use_snapshot_check
             run_snapraid "$@" && true
             exit $? ;;
         'diff-sync'|'dsync')
             shift
             use_snapshot_default 'new'
-            find_snapshots
+            find_snapshots "$1"
             use_snapshot_check
             run_snapraid 'diff' "$@" && true
             interactive=1
