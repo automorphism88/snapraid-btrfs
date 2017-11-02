@@ -451,8 +451,9 @@ parse_arguments() {
         if [[ $# -ge 1 ]] ; then
             case $1 in
                 # matching any command means option processing is complete
-                check|dup|list|pool|scrub|status|fix|touch|diff|config) ;&
-                cleanup?(-all)|create|revert|snapper-l@(s|ist)|?(diff-|d)sync)
+                check|diff|dup|list|pool|scrub|status|fix|touch) ;&
+                cleanup?(-all)|config|create|revert|rollback) ;&
+                snapper-l@(s|ist)|?(diff-|d)sync)
                     setup_config
                     run_command "$@" ;;
                 # snapraid-btrfs options specified before command
@@ -602,12 +603,16 @@ run_command() {
             shift
             snapper_ls_all "$@"
             exit 0 ;;
-        'revert')
+        'revert'|'rollback')
             use_snapshot_default 'sync'
             find_snapshots "$1"
-            use_snapshot_check
+            use_snapshot_check ;;&
+        'revert')
             shift
             snapper_revert "$@"
+            exit $? ;;
+        'rollback')
+            snapper_rollback
             exit $? ;;
         # commands that invoke snapraid
         'check'|'dup'|'list'|'pool'|'scrub'|'status')
@@ -809,6 +814,28 @@ snapper_revert() {
     return "$ret"
 }
 
+# Run snapper rollback in each snapper config
+snapper_rollback() {
+    local ret=0
+    local snapper_ret
+    local snapper_rollback_opts=( "-u" "$snapper_userdata" )
+    [[ -z "$snapper_cleanup" ]] ||
+        snapper_rollback_opts+=( "-c" "$snapper_cleanup" )
+    if [[ -n "$snapper_description" ]] ; then
+        snapper_rollback_opts+=( "-d" "$snapper_description" )
+    else
+        snapper_rollback_opts+=( "-d" "snapraid-btrfs rollback" )
+    fi
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        "$my_snapper" -c "$i" rollback "${snapper_rollback_opts[@]}" \
+                      "${use_snapshot[$i]}" && true
+        snapper_ret=$?
+        [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
+    done
+    return "$ret"
+}
+
 usage() {
     printf "Usage: %s [options] <command> [arguments]\n" "$0"
     cat <<'_EOF_'
@@ -899,6 +926,12 @@ or one of the following snapraid-btrfs specific commands:
         the time of the last successful sync (or another snapshot if the -u or
         -U option is specified), creating pre/post snapshots. Arguments are
         passed through to snapper undochange, including the -i option.
+'rollback':
+        Run snapper rollback in all snapper configs using the snapshots from
+        the last successful sync (or another snapshot if the -u or -U option
+        is specified). WARNING: Do not use this command unless you are familiar
+        with the snapper rollback command and its effects. Instead consider
+        using the revert command.
 'snapper-list'|'snapper-ls':
         Run snapper ls for all snapper configs found in snapraid config file.
         If an argument is given, also list which snapshots in each config were
