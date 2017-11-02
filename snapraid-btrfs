@@ -66,6 +66,14 @@ apply_use_snapshot_option() {
     done
 }
 
+# Replacement for cat to avoid calling external binary
+cat_heredoc() {
+    local line
+    while IFS= read -r line ; do
+        printf "%s\n" "$line"
+    done
+}
+
 # Sanity check snapper configuration
 check_config() {
     # Make sure we found some configs
@@ -109,7 +117,7 @@ check_dependencies() {
     # Make sure all external binaries we need can be found in $PATH
     # doesn't include those only used if -x option is enabled
     local deps=( "$my_snapraid" "$my_snapper"
-                 awk cat dirname grep sed stat tail tr )
+                 awk dirname grep sed stat tail tr )
     local i
     for i in "${deps[@]}" ; do
         if ! type "$i" &> /dev/null ; then
@@ -530,7 +538,7 @@ parse_snapper_ls() {
     # We don't care whether $1 or $2 are empty, since to awk an undefined
     # variable is the same as one which is defined to equal the empty string
     awk -v key="$1" -v value="$2" \
-        -f <(cat - <<'_EOF_'
+        -f <(cat_heredoc <<'_EOF_'
 BEGIN { FS="|" } # snapper separates columns with '|' characters
 NR<=2 { next } # first 2 lines are the header
 {
@@ -573,7 +581,7 @@ NR<=2 { next } # first 2 lines are the header
     }
 }
 _EOF_
-            ) # close process redirection of cat
+            ) # close process redirection
 }
 
 # Implementation of all commands is in this function
@@ -839,7 +847,7 @@ snapper_rollback() {
 
 usage() {
     printf "Usage: %s [options] <command> [arguments]\n" "$0"
-    cat <<'_EOF_'
+    cat_heredoc <<'_EOF_'
 
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
