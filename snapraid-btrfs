@@ -157,6 +157,8 @@ cleanup_before_exiting() {
 # In each config, delete snapshots with userdata key snapraid-btrfs created
 # before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
+    local ret=0
+    local snapper_ret
     local snaps_to_consider
     local snapper_cmd=()
     local i j
@@ -175,10 +177,13 @@ cleanup_snapshots() {
                     printf "%s " "${snapper_cmd[@]}"
                     printf "\n"
                 fi
-                "${snapper_cmd[@]}"
+                "${snapper_cmd[@]}" && true
+                snapper_ret=$?
+                [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
             fi
         done
     done
+    return "$ret"
 }
 
 # Check that the user didn't specify a nonexistent snapper config by ensuring
@@ -577,11 +582,11 @@ run_command() {
             use_snapshot_all 'sync'
             find_snapshots "$1"
             cleanup_snapshots
-            exit 0 ;;
+            exit $? ;;
         'cleanup-all')
             use_snapshot_all '0'
             cleanup_snapshots
-            exit 0 ;;
+            exit $? ;;
         'config')
             use_snapshot_default 'last'
             find_snapshots "$1"
