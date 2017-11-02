@@ -17,7 +17,7 @@
 # SC1117 - allow \n in double quoted printf strings instead of \\n
 # SC2064 - allow double quoting trap argument
 
-set -euo pipefail
+set -eEuo pipefail
 shopt -s extglob
 
 readonly EXIT_INTERNAL_ERROR=64
@@ -235,6 +235,15 @@ create_pre_post_snapshots() {
     done
 }
 
+err_trap() {
+    printf "%s: %s: %s failed with exit status %s\n" "$0" "$1" \
+           "$BASH_COMMAND" "$2" >&2
+    printf "Traceback:\n" >&2
+    local i=0
+    while caller "$i" ; do ((++i)) ; done
+    exit "$2"
+}
+
 # Replace literal \t and \r characters in stdout and stderr with escapes
 # used when -x is specified to avoid clobbering output with \r
 escape_output() {
@@ -397,6 +406,7 @@ main() {
                "$0" >&2
         exit $EXIT_INTERNAL_ERROR
     fi
+    trap 'err_trap ${LINENO} $?' ERR
     local config_file="/etc/snapraid.conf"
     local interactive=""
     local my_snapper="snapper"
