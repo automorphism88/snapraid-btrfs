@@ -456,77 +456,74 @@ option_requires_argument() {
 parse_arguments() {
     local opt_str length
     local i
-    while true ; do
-        if [[ $# -ge 1 ]] ; then
-            case $1 in
-                # matching any command means option processing is complete
-                check|diff|dup|list|pool|scrub|status|fix|touch) ;&
-                cleanup?(-all)|config|create|revert|rollback) ;&
-                snapper-l@(s|ist)|?(diff-|d)sync)
-                    setup_config
-                    run_command "$@" ;;
-                # snapraid-btrfs options specified before command
-                # long form options that don't take arguments
-                --@(help|interactive|quiet|verbose|debug)?(=*))
-                    # ignore any argument passed with --opt=arg format
-                    set_option "${1%%=*}"
-                    shift ;;
-                # long form options that require arguments
-                --@(conf|cleanup-algorithm|description|pool-dir)?(=*)) ;&
-                --@(snap@(per-@(path|userdata)|raid-path))?(=*)) ;&
-                --@(use-snapshot?(-all)|?(no-)pre-post)?(=*))
-                    # allow POSIX --argument option or --argument=option formats
-                    opt_str="${1%%=*}"
-                    if [[ "$opt_str" = "$1" ]] ; then
-                        set_option "$opt_str" "${2:-}"
-                        shift 2 || shift
-                    else
-                        set_option "$opt_str" "${1#${opt_str}=}"
-                        shift
-                    fi ;;
-                # no need for -- to signal end of options since the
-                # only valid non-option arguments are commands, which
-                # never begin with a hyphen, but support it as a no-op
-                '--')
-                    shift ;;
-                --*)
-                    invalid_argument "$1" ;;
-                # allow POSIX-style combining of short options
-                -*)
-                    opt_str="${1#-}"
-                    length="${#opt_str}"
-                    for ((i=0;i<length;i++)) ; do
-                        case ${opt_str:$i:1} in
-                            # short options that don't take arguments
-                            [hiqvx])
-                                set_option "-${opt_str:$i:1}"
-                                [[ $((length-1-i)) -eq 0 ]] &&
-                                    shift ;;
-                            # short options that require arguments
-                            [cCduU])
-                                if [[ $((length-1-i)) -eq 0 ]] ; then
-                                    set_option "-${opt_str:$i:1}" "${2:-}"
-                                    shift 2 || shift
-                                else
-                                    set_option "-${opt_str:$i:1}" \
-                                               "${opt_str:$((i+1))}"
-                                    shift
-                                    break
-                                fi ;;
-                            *)
-                                invalid_argument "-${opt_str:$i:1}" ;;
-                        esac
-                    done ;;
-                *)
-                    invalid_argument "$1" ;;
-            esac
-        else
-            printf "%s: You must specify a command (or you did not " "$0" >&2
-            printf "specify an argument to an option that requires one)\n" >&2
-            printf "Use %s -h to see options.\n" "$0" >&2
-            exit $EXIT_INVALID_ARGUMENT
-        fi
+    while [[ $# -ge 1 ]] ; do
+        case $1 in
+            # matching any command means option processing is complete
+            check|diff|dup|list|pool|scrub|status|fix|touch) ;&
+            cleanup?(-all)|config|create|revert|rollback) ;&
+            snapper-l@(s|ist)|?(diff-|d)sync)
+                setup_config
+                run_command "$@" ;;
+            # snapraid-btrfs options specified before command
+            # long form options that don't take arguments
+            --@(help|interactive|quiet|verbose|debug)?(=*))
+                # ignore any argument passed with --opt=arg format
+                set_option "${1%%=*}"
+                shift ;;
+            # long form options that require arguments
+            --@(conf|cleanup-algorithm|description|pool-dir)?(=*)) ;&
+            --@(snap@(per-@(path|userdata)|raid-path))?(=*)) ;&
+            --@(use-snapshot?(-all)|?(no-)pre-post)?(=*))
+                # allow POSIX --argument option or --argument=option formats
+                opt_str="${1%%=*}"
+                if [[ "$opt_str" = "$1" ]] ; then
+                    set_option "$opt_str" "${2:-}"
+                    shift 2 || shift
+                else
+                    set_option "$opt_str" "${1#${opt_str}=}"
+                    shift
+                fi ;;
+            # no need for -- to signal end of options since the
+            # only valid non-option arguments are commands, which
+            # never begin with a hyphen, but support it as a no-op
+            '--')
+                shift ;;
+            --*)
+                invalid_argument "$1" ;;
+            # allow POSIX-style combining of short options
+            -*)
+                opt_str="${1#-}"
+                length="${#opt_str}"
+                for ((i=0;i<length;i++)) ; do
+                    case ${opt_str:$i:1} in
+                        # short options that don't take arguments
+                        [hiqvx])
+                            set_option "-${opt_str:$i:1}"
+                            [[ $((length-1-i)) -eq 0 ]] &&
+                                shift ;;
+                        # short options that require arguments
+                        [cCduU])
+                            if [[ $((length-1-i)) -eq 0 ]] ; then
+                                set_option "-${opt_str:$i:1}" "${2:-}"
+                                shift 2 || shift
+                            else
+                                set_option "-${opt_str:$i:1}" \
+                                           "${opt_str:$((i+1))}"
+                                shift
+                                break
+                            fi ;;
+                        *)
+                            invalid_argument "-${opt_str:$i:1}" ;;
+                    esac
+                done ;;
+            *)
+                invalid_argument "$1" ;;
+        esac
     done
+    printf "%s: You must specify a command (or you did not " "$0" >&2
+    printf "specify an argument to an option that requires one)\n" >&2
+    printf "Use %s -h to see options.\n" "$0" >&2
+    exit $EXIT_INVALID_ARGUMENT
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
