@@ -942,7 +942,6 @@ NOTE: The snapraid '-c' option will not work unless placed before the command,
 allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
 is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
-
 _EOF_
 }
 
