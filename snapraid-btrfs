@@ -112,9 +112,9 @@ check_config() {
     done < "$config_file"
 }
 
+# Make sure all external binaries we need can be found in $PATH
+# doesn't include those only used if -x option is enabled
 check_dependencies() {
-    # Make sure all external binaries we need can be found in $PATH
-    # doesn't include those only used if -x option is enabled
     local deps=( "$my_snapraid" "$my_snapper"
                  awk dirname grep sed stat tail tr )
     local i
