@@ -393,6 +393,7 @@ main() {
         exit $EXIT_INTERNAL_ERROR
     fi
     trap 'err_trap ${LINENO} $?' ERR
+    local awk_script
     local config_file="/etc/snapraid.conf"
     local interactive=""
     local my_snapper="snapper"
@@ -411,6 +412,7 @@ main() {
     local use_snapshot_all=""
     local use_snapshot_option=""
     local verbose=0
+    read_awk_script
     parse_arguments "$@"
 }
 
@@ -534,8 +536,13 @@ parse_arguments() {
 parse_snapper_ls() {
     # We don't care whether $1 or $2 are empty, since to awk an undefined
     # variable is the same as one which is defined to equal the empty string
-    awk -v key="$1" -v value="$2" \
-        -f <(cat_heredoc <<'_EOF_'
+    awk -v key="$1" -v value="$2" -f <(printf "%s\n" "$awk_script")
+}
+
+# Read awk script from heredoc into variable once here to reduce overhead
+# when awk is called in a loop
+read_awk_script() {
+    read -r -d '' awk_script <<'_EOF_' || true
 BEGIN { FS="|" } # snapper separates columns with '|' characters
 NR<=2 { next } # first 2 lines are the header
 {
@@ -578,7 +585,6 @@ NR<=2 { next } # first 2 lines are the header
     }
 }
 _EOF_
-            ) # close process redirection
 }
 
 # Implementation of all commands is in this function
