@@ -66,13 +66,6 @@ apply_use_snapshot_option() {
     done
 }
 
-# Replacement for cat to avoid calling external binary
-cat_heredoc() {
-    local doc
-    read -r -d '' doc || true
-    printf "%s\n" "$doc"
-}
-
 # Sanity check snapper configuration
 check_config() {
     # Make sure we found some configs
@@ -844,7 +837,8 @@ snapper_rollback() {
 
 usage() {
     printf "Usage: %s [options] <command> [arguments]\n" "$0"
-    cat_heredoc <<'_EOF_'
+    local doc
+    read -r -d '' doc <<'_EOF_' || true
 
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
@@ -949,6 +943,7 @@ allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
 is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
 _EOF_
+    printf "%s\n\n" "$doc"
 }
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
