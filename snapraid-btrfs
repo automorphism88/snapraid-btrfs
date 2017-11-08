@@ -227,18 +227,16 @@ err_trap() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 escape_stderr() {
-    local sed_escape_pipe tail_pid
+    local sed_escape_pipe
     sed_escape_pipe="$(mktemp -u)"
     mkfifo "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
-    tail_pid=$!
+    trap "kill -TERM $!" EXIT
     sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
     exec 2> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
     rm -f "$sed_escape_pipe"
-    # kill tail when we exit, so sed will terminate when finished
-    trap "kill -TERM $tail_pid" EXIT
 }
 
 # compare output of snapper list-configs with snapraid.conf
