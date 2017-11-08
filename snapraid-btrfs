@@ -529,7 +529,7 @@ parse_arguments() {
 parse_snapper_ls() {
     # We don't care whether $1 or $2 are empty, since to awk an undefined
     # variable is the same as one which is defined to equal the empty string
-    awk -v key="$1" -v value="$2" -f <(printf "%s\n" "$awk_script")
+    awk -v key="$1" -v value="$2" "$awk_script"
 }
 
 # Read awk script from heredoc into variable once here to reduce overhead
