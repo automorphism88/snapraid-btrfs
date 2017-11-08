@@ -586,11 +586,10 @@ run_command() {
         # commands that don't invoke snapraid
         'cleanup')
             use_snapshot_all 'sync'
-            find_snapshots "$1"
-            cleanup_snapshots
-            exit $? ;;
+            find_snapshots "$1" ;;&
         'cleanup-all')
-            use_snapshot_all '0'
+            use_snapshot_all '0' ;;&
+        cleanup?(-all))
             cleanup_snapshots
             exit $? ;;
         'config')
@@ -604,7 +603,7 @@ run_command() {
             find_snapshots "$1"
             use_snapshot_check
             exit 0 ;;
-        'snapper-ls'|'snapper-list')
+        snapper-l@(s|ist))
             shift
             snapper_ls_all "$@"
             exit 0 ;;
@@ -620,7 +619,7 @@ run_command() {
             snapper_rollback
             exit $? ;;
         # commands that invoke snapraid
-        'diff-sync'|'dsync')
+        @(d|diff-)sync)
             shift
             use_snapshot_default 'new'
             find_snapshots "$1"
