@@ -591,22 +591,22 @@ run_command() {
             use_snapshot_all '0' ;;&
         cleanup?(-all))
             cleanup_snapshots
-            exit $? ;;
+            exit ;;
         'config')
             use_snapshot_default 'last'
             find_snapshots "$1"
             use_snapshot_check
             generate_temp_snapraid_conf
-            exit 0 ;;
+            exit ;;
         'create')
             use_snapshot_default 'new'
             find_snapshots "$1"
             use_snapshot_check
-            exit 0 ;;
+            exit ;;
         snapper-l@(s|ist))
             shift
             snapper_ls_all "$@"
-            exit 0 ;;
+            exit ;;
         'revert'|'rollback')
             use_snapshot_default 'sync'
             find_snapshots "$1"
@@ -614,10 +614,10 @@ run_command() {
         'revert')
             shift
             snapper_revert "$@"
-            exit $? ;;
+            exit ;;
         'rollback')
             snapper_rollback
-            exit $? ;;
+            exit ;;
         # commands that invoke snapraid
         @(d|diff-)sync)
             shift
@@ -627,7 +627,7 @@ run_command() {
             run_snapraid 'diff' "$@" && true
             interactive=1
             run_snapraid 'sync' "$@" && true
-            exit $? ;;
+            exit ;;
         'check'|'dup'|'list'|'pool'|'scrub'|'status')
             use_snapshot_default 'sync'
             find_snapshots "$1"
@@ -640,7 +640,7 @@ run_command() {
             use_snapshot_all '0' ;;&
         *)
             run_snapraid "$@" && true
-            exit $? ;;
+            exit ;;
     esac
 }
 
@@ -699,7 +699,7 @@ set_option() {
             snapper_description="$2" ;;
         '-h'|'--help')
             usage
-            exit 0 ;;
+            exit ;;
         '-i'|'--interactive')
             interactive=1 ;;
         '-q'|'--quiet')
