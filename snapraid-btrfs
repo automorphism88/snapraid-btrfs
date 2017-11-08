@@ -378,9 +378,13 @@ invalid_argument() {
 main() {
     # bash version 4+ required for associative arrays and
     # ;& and ;;& terminators in case statements
-    if ! [[ "${BASH_VERSINFO[0]}" -ge 4 ]] ; then
-        printf "%s: bash version 4 or greater is required to use this script\n"\
-               "$0" >&2
+    # 4.1+ required for ACL support
+    if ! { [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ||
+            { [[ "${BASH_VERSINFO[0]}" -eq 4 ]] &&
+                  [[ "${BASH_VERSINFO[1]}" -ge 1 ]] ; } ; }
+    then
+        printf "%s: bash version 4.1 or greater is required" "$0" >&2
+        printf " to use this script\n" >&2
         exit $EXIT_INTERNAL_ERROR
     fi
     trap 'err_trap ${LINENO} $?' ERR

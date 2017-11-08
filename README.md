@@ -45,7 +45,7 @@ matching data drives in your snapraid configuration file. If you are satisfied
 that it has found them all, you are ready to run your first
 `snapraid-btrfs sync` which will, by default, create new snapshots and use them
 for the sync. For more details on using snapraid-btrfs, see the output of
-`snapraid-btrfs --help`. Bash version 4+ is required.
+`snapraid-btrfs --help`. Bash version 4.1+ is required.
 
 ## FAQ
 
