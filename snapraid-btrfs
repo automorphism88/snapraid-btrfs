@@ -13,9 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=SC1117,SC2064
-# SC1117 - allow \n in double quoted printf strings instead of \\n
-# SC2064 - allow double quoting trap argument
+# allow double quoting trap argument
+# shellcheck disable=SC2064
 
 set -eEuo pipefail
 shopt -s extglob
@@ -70,15 +69,15 @@ apply_use_snapshot_option() {
 check_config() {
     # Make sure we found some configs
     if [[ "${#snapper_configs[@]}" -eq 0 ]] ; then
-        printf "%s: No snapper configs found for any data drives " "$0" >&2
-        printf "in snapraid config file\n" >&2
+        printf '%s: No snapper configs found for any data drives ' "$0" >&2
+        printf 'in snapraid config file\n' >&2
         exit $EXIT_INVALID_CONFIG
     fi
     # Check to make sure the user has permission to access snapshots
     local i
     for i in "${snapper_configs[@]}" ; do
         if ! [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; then
-           printf "%s: Couldn't read %s - is SYNC_ACL set?\n" "$0" \
+           printf '%s: Could not read %s - is SYNC_ACL set?\n' "$0" \
                   "${snapper_subvols[$i]}/.snapshots" >&2
            exit $EXIT_NO_PERMISSIONS
         fi
@@ -94,10 +93,10 @@ check_config() {
             content_mount="$(stat --format=%m "$content_dir")"
             for i in "${snapper_configs[@]}" ; do
                 if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]] ; then
-                    printf "%s: Content file %s found in data subvolume %s - " \
+                    printf '%s: Content file %s found in data subvolume %s - ' \
                            "$0" "$f2" "${snapper_subvols[$i]}" >&2
-                    printf "create a dedicated subvolume for the content " >&2
-                    printf "file and try again.\n" >&2
+                    printf 'create a dedicated subvolume for the content ' >&2
+                    printf 'file and try again.\n' >&2
                     exit $EXIT_INVALID_CONFIG
                 fi
             done
@@ -113,7 +112,8 @@ check_dependencies() {
     local i
     for i in "${deps[@]}" ; do
         if ! type "$i" &> /dev/null ; then
-            printf "%s: Couldn't find %s in \$PATH\n" "$0" "$i" >&2
+            # shellcheck disable=SC2016
+            printf '%s: Could not find %s in $PATH\n' "$0" "$i" >&2
             exit $EXIT_INTERNAL_ERROR
         fi
     done
@@ -124,9 +124,9 @@ check_snapraid_arguments() {
     while [[ $# -gt 0 ]] ; do
         case $1 in
             '-c'|'--conf')
-                printf "%s: The -c option may not be passed through - " "$0" >&2
-                printf "place the -c option before the command instead.\n" >&2
-                printf "Use %s --help for help.\n" "$0" >&2
+                printf '%s: The -c option may not be passed through - ' "$0" >&2
+                printf 'place the -c option before the command instead.\n' >&2
+                printf 'Use %s --help for help.\n' "$0" >&2
                 exit $EXIT_INVALID_ARGUMENT ;;
             # snapraid options that take arguments, meaning we should shift 2
             --@(filter?(-disk)|import|plan|older-than|log|start|count)) ;&
@@ -159,8 +159,8 @@ cleanup_snapshots() {
                 if [[ -n "$interactive" ]] ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
                 elif [[ $verbose -ge 1 ]] ; then
-                    printf "%s " "${snapper_cmd[@]}"
-                    printf "\n"
+                    printf '%s ' "${snapper_cmd[@]}"
+                    printf '\n'
                 fi
                 "${snapper_cmd[@]}" && true
                 snapper_ret=$?
@@ -175,7 +175,7 @@ cleanup_snapshots() {
 # that a subvolume is set for the config name
 config_must_exist() {
     if ! [[ "${snapper_subvols[$1]:-}" ]] ; then
-        printf "%s: Invalid snapper configuration %s!\n" "$0" "$1" >&2
+        printf '%s: Invalid snapper configuration %s!\n' "$0" "$1" >&2
         exit $EXIT_INVALID_ARGUMENT
     fi
 }
@@ -214,9 +214,9 @@ create_pre_post_snapshots() {
 }
 
 err_trap() {
-    printf "%s: %s: %s failed with exit status %s\n" "$0" "$1" \
+    printf '%s: %s: %s failed with exit status %s\n' "$0" "$1" \
            "$BASH_COMMAND" "$2" >&2
-    printf "Traceback:\n" >&2
+    printf 'Traceback:\n' >&2
     local i=0
     while caller "$i" ; do ((++i)) ; done
     exit "$2"
@@ -243,12 +243,12 @@ escape_stderr() {
 find_configs() {
     # Find snapraid config file
     if ! [[ -r "$config_file" ]] ; then
-        printf "%s: Couldn't read snapraid config file at %s\n" "$0" \
+        printf '%s: Could not read snapraid config file at %s\n' "$0" \
                "$config_file" >&2
-        printf "Please specify a valid snapraid config file with -c\n" >&2
+        printf 'Please specify a valid snapraid config file with -c\n' >&2
         exit $EXIT_INVALID_ARGUMENT
     elif [[ $verbose -ge 1 ]] ; then
-        printf "Using snapraid config file %s\n" "$config_file"
+        printf 'Using snapraid config file %s\n' "$config_file"
     fi
     # Find snapper configs with paths in snapraid config file
     local config subvol
@@ -267,9 +267,9 @@ find_configs() {
         fi
     done < <("$my_snapper" list-configs | tail -n +3)
     if [[ $verbose -ge 0 ]] ; then
-        printf "Snapper configs found matching snapraid config file:\n"
+        printf 'Snapper configs found matching snapraid config file:\n'
         for i in "${snapper_configs[@]}" ; do
-            printf "%s %s\n" "$i" "${snapper_subvols[$i]}"
+            printf '%s %s\n' "$i" "${snapper_subvols[$i]}"
         done
     fi
 }
@@ -343,19 +343,19 @@ generate_temp_snapraid_conf() {
                 match_line="${match_line/data/disk}"
                 sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
             else
-                printf "%s: Couldn't read directory %s\n" "$0" "$new_path" >&2
+                printf '%s: Could not read directory %s\n' "$0" "$new_path" >&2
                 exit $EXIT_NO_PERMISSIONS
             fi
         fi
     done
-    sed -f <(printf "%s\n" "${sed_exps[@]}") "$config_file"
+    sed -f <(printf '%s\n' "${sed_exps[@]}") "$config_file"
 }
 
 interactive_ask() {
     local choice
-    printf "About to run the command:\n"
-    printf "%s " "$@"
-    printf "\n"
+    printf 'About to run the command:\n'
+    printf '%s ' "$@"
+    printf '\n'
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
@@ -364,14 +364,14 @@ interactive_ask() {
             'n'|'N')
                 exit $EXIT_INTERACTIVE_NO ;;
             *)
-                printf "Invalid choice! Please enter y or n.\n" ;;
+                printf 'Invalid choice! Please enter y or n.\n' ;;
         esac
     done
 }
 
 invalid_argument() {
-    printf "%s: Invalid argument '%s'!\n" "$0" "$1" >&2
-    printf "Use %s -h to see options.\n" "$0" >&2
+    printf '%s: Invalid argument '%s'!\n' "$0" "$1" >&2
+    printf 'Use %s -h to see options.\n' "$0" >&2
     exit $EXIT_INVALID_ARGUMENT
 }
 
@@ -383,8 +383,8 @@ main() {
             { [[ "${BASH_VERSINFO[0]}" -eq 4 ]] &&
                   [[ "${BASH_VERSINFO[1]}" -ge 1 ]] ; } ; }
     then
-        printf "%s: bash version 4.1 or greater is required" "$0" >&2
-        printf " to use this script\n" >&2
+        printf '%s: bash version 4.1 or greater is required' "$0" >&2
+        printf ' to use this script\n' >&2
         exit $EXIT_INTERNAL_ERROR
     fi
     trap 'err_trap ${LINENO} $?' ERR
@@ -428,7 +428,7 @@ modify_userdata() {
 # argument should be a directory, otherwise exit
 must_be_directory() {
     if ! [[ -d "$1" ]] ; then
-        printf "%s: %s is not a valid directory\n" "$0" "$1" >&2
+        printf '%s: %s is not a valid directory\n' "$0" "$1" >&2
         exit $EXIT_INVALID_ARGUMENT
     fi
 }
@@ -436,7 +436,7 @@ must_be_directory() {
 # argument should be an executable file, otherwise exit
 must_be_executable() {
     if ! [[ -x "$1" ]] ; then
-        printf "%s: %s is not an executable file\n" "$0" "$1" >&2
+        printf '%s: %s is not an executable file\n' "$0" "$1" >&2
         exit $EXIT_INVALID_ARGUMENT
     fi
 }
@@ -444,8 +444,8 @@ must_be_executable() {
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
     if [[ -z "${2:-}" ]] ; then
-        printf "%s: Option %s requires an argument!\n" "$0" "$1" >&2
-        printf "Use %s -h for help.\n" "$0" >&2
+        printf '%s: Option %s requires an argument!\n' "$0" "$1" >&2
+        printf 'Use %s -h for help.\n' "$0" >&2
         exit $EXIT_INVALID_ARGUMENT
     fi
 }
@@ -512,9 +512,9 @@ parse_arguments() {
                 invalid_argument "$1" ;;
         esac
     done
-    printf "%s: You must specify a command (or you did not " "$0" >&2
-    printf "specify an argument to an option that requires one)\n" >&2
-    printf "Use %s -h to see options.\n" "$0" >&2
+    printf '%s: You must specify a command (or you did not ' "$0" >&2
+    printf 'specify an argument to an option that requires one)\n' >&2
+    printf 'Use %s -h to see options.\n' "$0" >&2
     exit $EXIT_INVALID_ARGUMENT
 }
 
@@ -647,14 +647,14 @@ run_snapraid() {
     # Just for display purposes with -v and -i options, not actually used
     local cmd=( "$my_snapraid" "-c" "<(generate_temp_snapraid_conf)" "$@" )
     if [[ $verbose -ge 0 ]] ; then
-        printf "Using snapraid config file:\n"
+        printf 'Using snapraid config file:\n'
         generate_temp_snapraid_conf
     fi
     if [[ -n "$interactive" ]] ; then
         interactive_ask "${cmd[@]}" >&2
     elif [[ $verbose -ge 0 ]] ; then
-        printf "%s " "${cmd[@]}"
-        printf "\n"
+        printf '%s ' "${cmd[@]}"
+        printf '\n'
     fi
     # Create pre/post snapshots if applicable
     case $1 in
@@ -755,16 +755,16 @@ setup_config() {
 snapper_ls_all() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        printf "\n%s %s\n" "$i" "${snapper_subvols[$i]}"
+        printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
         "$my_snapper" -c "$i" ls
         if [[ $# -ge 1 ]] ; then
-            printf "Snapshots with userdata key snapraid-btrfs=%s:\n" "$*"
+            printf 'Snapshots with userdata key snapraid-btrfs=%s:\n' "$*"
             "$my_snapper" -c "$i" ls |
                 parse_snapper_ls 'snapraid-btrfs' "$*" | tr '\n' ' '
-            printf "\n"
+            printf '\n'
         fi
     done
-    printf "\n"
+    printf '\n'
 }
 
 # Run snapper undochange in each snapper config to revert to the state at the
@@ -830,7 +830,7 @@ snapper_rollback() {
 }
 
 usage() {
-    printf "Usage: %s [options] <command> [arguments]\n" "$0"
+    printf 'Usage: %s [options] <command> [arguments]\n' "$0"
     local doc
     read -r -d '' doc <<'_EOF_' || true
 
@@ -937,7 +937,7 @@ allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
 is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
 _EOF_
-    printf "%s\n\n" "$doc"
+    printf '%s\n\n' "$doc"
 }
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
@@ -969,7 +969,7 @@ use_snapshot_check() {
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            printf "%s: Couldn't find a snapshot for config %s\n" "$0" "$i" >&2
+            printf '%s: Could not find a snapshot for config %s\n' "$0" "$i" >&2
             exit $EXIT_SNAPSHOT_NOT_FOUND
         fi
     done
