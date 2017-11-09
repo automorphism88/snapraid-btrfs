@@ -480,11 +480,6 @@ parse_arguments() {
                     set_option "$opt_str" "${1#${opt_str}=}"
                     shift
                 fi ;;
-            # no need for -- to signal end of options since the
-            # only valid non-option arguments are commands, which
-            # never begin with a hyphen, but support it as a no-op
-            '--')
-                shift ;;
             --*)
                 invalid_argument "$1" ;;
             # allow POSIX-style combining of short options
