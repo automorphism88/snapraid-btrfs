@@ -524,8 +524,7 @@ parse_arguments() {
 # else if $1 is nonempty, match snapshots with userdata key $1 defined
 # else match all snapshots
 parse_snapper_ls() {
-    # We don't care whether $1 or $2 are empty, since to awk an undefined
-    # variable is the same as one which is defined to equal the empty string
+    # Use "$1" instead of "${1:-}" to catch errors
     awk -v key="$1" -v value="$2" "$awk_script"
 }
 
