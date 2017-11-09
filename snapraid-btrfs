@@ -13,9 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# allow double quoting trap argument
-# shellcheck disable=SC2064
-
 set -eEuo pipefail
 shopt -s extglob
 
@@ -232,6 +229,7 @@ escape_stderr() {
     mkfifo -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
+    # shellcheck disable=SC2064
     trap "kill -TERM $!" EXIT
     sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
     exec 2> "$sed_escape_pipe"
@@ -660,6 +658,7 @@ run_snapraid() {
     case $1 in
         'fix'|'touch')
             create_pre_post_snapshots "$1"
+            # shellcheck disable=SC2064
             trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
     esac
     # If starting sync, update snapper userdata key
