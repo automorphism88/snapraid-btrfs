@@ -150,7 +150,7 @@ cleanup_snapshots() {
     for i in "${snapper_configs[@]}" ; do
         [[ -z "${use_snapshot[$i]}" ]] && break
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
-            parse_snapper_ls 'snapraid-btrfs' '')"
+            parse_snapper_ls 'snapraid-btrfs')"
         for j in $snaps_to_consider ; do
             if [[ "${use_snapshot[$i]}" -eq 0 ]] ||
                    [[ "${use_snapshot[$i]}" -gt "$j" ]]
@@ -294,7 +294,7 @@ find_snapshots() {
                     tail -n 1)" ;;
             'last')
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls 'snapraid-btrfs' '' |
+                    parse_snapper_ls 'snapraid-btrfs' |
                     tail -n 1)" ;;
             'new')
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
@@ -308,7 +308,7 @@ find_snapshots() {
                     parse_snapper_ls 'snapraid-btrfs' 'synced' |
                     tail -n 1)" ;;
             *)
-                "$my_snapper" -c "$i" ls | parse_snapper_ls '' '' |
+                "$my_snapper" -c "$i" ls | parse_snapper_ls |
                     grep -F "${use_snapshot[$i]}" > /dev/null ||
                     use_snapshot[$i]="" ;;
         esac
@@ -524,8 +524,7 @@ parse_arguments() {
 # else if $1 is nonempty, match snapshots with userdata key $1 defined
 # else match all snapshots
 parse_snapper_ls() {
-    # Use "$1" instead of "${1:-}" to catch errors
-    awk -v key="$1" -v value="$2" "$awk_script"
+    awk -v key="${1:-}" -v value="${2:-}" "$awk_script"
 }
 
 # Read awk script from heredoc into variable once here to reduce overhead
