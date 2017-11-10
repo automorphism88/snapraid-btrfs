@@ -850,7 +850,7 @@ snapraid-btrfs:
 -C, --cleanup STR               Specify snapper cleanup algorithm to set for any
                                 snapshots created (default none)
 -d, --description STR           Specify snapper description to set for any
-                                snapshots created (default none)
+                                snapshots created
 -i, --interactive               Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
                                 cleanup(-all), revert, or rollback commands)
