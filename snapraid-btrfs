@@ -35,7 +35,7 @@ apply_pre_post_options() {
         pre_post_configs=( "${snapper_configs[@]}" )
     fi
     if [[ "${#no_pre_post_option[@]}" -gt 0 ]] ; then
-        local temp_array=()
+        local -a temp_array
         for i in "${no_pre_post_option[@]}" ; do
             config_must_exist "$i"
             temp_array=()
@@ -49,7 +49,7 @@ apply_pre_post_options() {
 
 # Set use_snapshot from comma-separated key=value pairs specified in $1
 apply_use_snapshot_option() {
-    local args=()
+    local -a args
     local config config_using i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
@@ -273,7 +273,7 @@ find_configs() {
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
     local snapper_create_opts=( -u "$snapper_userdata" )
-    [[ "${snapper_cleanup:-}" ]] ||
+    [[ "${snapper_cleanup:-}" ]] &&
         snapper_create_opts+=( -c "$snapper_cleanup" )
     if [[ "${snapper_description:-}" ]] ; then
         snapper_create_opts+=( -d "$snapper_description" )
@@ -385,12 +385,14 @@ main() {
     # Set default values for "global" configuration variables
     local config_file=/etc/snapraid.conf
     local my_{snapper=snapper,snapraid=snapraid}
+    local no_pre_post_option=()
+    local pre_post_option=()
     local snapper_userdata='snapraid-btrfs=created'
     local verbose=0
     # Declare "global" variables without initial values
     local awk_script interactive pool_dir
     local snapper_{cleanup,description} use_snapshot{,_all}_option
-    local -a snapper_configs pre_post_configs {no_,}pre_post_option
+    local -a snapper_configs pre_post_configs
     local -A snapper_subvols use_snapshot pre_snapshots
     read_awk_script
     parse_arguments "$@"
@@ -790,13 +792,13 @@ snapper_revert() {
 # Run snapper rollback in each snapper config
 snapper_rollback() {
     local ret=0 snapper_ret i
-    local snapper_rollback_opts=( "-u" "$snapper_userdata" )
+    local snapper_rollback_opts=( -u "$snapper_userdata" )
     [[ "${snapper_cleanup:-}" ]] ||
-        snapper_rollback_opts+=( "-c" "$snapper_cleanup" )
-    if [[ "{$snapper_description:-}" ]] ; then
-        snapper_rollback_opts+=( "-d" "$snapper_description" )
+        snapper_rollback_opts+=( -c "$snapper_cleanup" )
+    if [[ "${snapper_description:-}" ]] ; then
+        snapper_rollback_opts+=( -d "$snapper_description" )
     else
-        snapper_rollback_opts+=( "-d" "snapraid-btrfs rollback" )
+        snapper_rollback_opts+=( -d "snapraid-btrfs rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" rollback "${snapper_rollback_opts[@]}" \
@@ -921,7 +923,7 @@ _EOF_
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
 use_snapper_userdata() {
     local key value i
-    local args=()
+    local -a args
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
         key=''
