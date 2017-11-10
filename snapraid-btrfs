@@ -452,9 +452,8 @@ parse_arguments() {
                 set_option "${1%%=*}"
                 shift ;;
             # long form options that require arguments
-            --@(conf|cleanup|description|pool-dir)?(=*)) ;&
-            --@(snap@(per-@(path|userdata)|raid-path))?(=*)) ;&
-            --@(use-snapshot?(-all)|?(no-)pre-post)?(=*))
+            --@(conf|cleanup|description|pool-dir|use-snapshot?(-all))?(=*)) ;&
+            --@(?(no-)pre-post|@(snap@(per-@(path|userdata)|raid-path)))?(=*))
                 # allow POSIX --argument option or --argument=option formats
                 opt_str="${1%%=*}"
                 if [[ "$opt_str" = "$1" ]] ; then
@@ -676,9 +675,8 @@ run_snapraid() {
 # $2 can be either undefined or empty
 set_option() {
     case $1 in
-        --@(conf|cleanup|description|pool-dir)) ;&
-        --@(snap@(per-@(path|userdata)|raid-path))) ;&
-        --@(use-snapshot?(-all)|?(no-)pre-post)) ;&
+        --@(conf|cleanup|description|pool-dir|use-snapshot?(-all))) ;&
+        --@(?(no-)pre-post|@(snap@(per-@(path|userdata)|raid-path)))) ;&
         -[cCduU])
             option_requires_argument "$@" ;;&
         -c|--conf)
