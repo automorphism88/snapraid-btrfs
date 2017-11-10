@@ -402,7 +402,7 @@ main() {
     local -A snapper_subvols
     local snapper_userdata="snapraid-btrfs=created"
     local -A use_snapshot
-    local use_snapshot_all_option=""
+    local use_snapshot_all_option
     local use_snapshot_option=""
     local verbose=0
     read_awk_script
@@ -740,7 +740,7 @@ setup_config() {
         apply_use_snapshot_option "$use_snapshot_option"
     local i
     # Set -u argument for any configurations not specified by -U
-    if [[ -n "$use_snapshot_all_option" ]] ; then
+    if [[ "${use_snapshot_all_option:-}" ]] ; then
         for i in "${snapper_configs[@]}" ; do
             [[ "${use_snapshot[$i]:-}" ]] ||
                 use_snapshot[$i]="$use_snapshot_all_option"
