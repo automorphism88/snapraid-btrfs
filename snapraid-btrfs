@@ -53,8 +53,8 @@ apply_use_snapshot_option() {
     local config config_using i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        config=""
-        config_using=""
+        config=''
+        config_using=''
         IFS='=' read -r config config_using <<< "$i"
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
@@ -74,7 +74,7 @@ check_config() {
     # subvolumes we are snapshotting, to see if any match
     local f1 f2 content_dir content_mount i
     while IFS=$' \t' read -r f1 f2 ; do
-        if [[ "$f1" = "content" ]] ; then
+        if [[ "$f1" = content ]] ; then
             content_dir="$(dirname "$f2")"
             content_mount="$(stat --format=%m "$content_dir")"
             for i in "${snapper_configs[@]}" ; do
@@ -141,12 +141,12 @@ cleanup_snapshots() {
     for i in "${snapper_configs[@]}" ; do
         [[ -z "${use_snapshot[$i]}" ]] && break
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
-            parse_snapper_ls 'snapraid-btrfs')"
+            parse_snapper_ls snapraid-btrfs)"
         for j in $snaps_to_consider ; do
             if [[ "${use_snapshot[$i]}" -eq 0 ]] ||
                    [[ "${use_snapshot[$i]}" -gt "$j" ]]
             then
-                snapper_cmd=( "$my_snapper" "-c" "$i" "rm" "$j" )
+                snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
                 if [[ "${interactive:-}" ]] ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
                 elif [[ $verbose -ge 1 ]] ; then
@@ -176,29 +176,29 @@ create_pre_post_snapshots() {
     local snapper_cmd=()
     local i
     for i in "${pre_post_configs[@]}" ; do
-        snapper_cmd=( "$my_snapper" "-c" "$i" "create" )
+        snapper_cmd=( "$my_snapper" -c "$i" create )
         [[ "${snapper_cleanup:-}" ]] &&
-            snapper_cmd+=( "-c" "$snapper_cleanup" )
-        snapper_cmd+=( "-u" "$snapper_userdata" )
+            snapper_cmd+=( -c "$snapper_cleanup" )
+        snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
         if [[ "${pre_snapshots[$i]:-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
             if [[ "${snapper_description:-}" ]] ; then
-                snapper_cmd+=( "-d" "$snapper_description" )
+                snapper_cmd+=( -d "$snapper_description" )
             else
-                snapper_cmd+=( "-d" "snapraid-btrfs post-$1" )
+                snapper_cmd+=( -d "snapraid-btrfs post-$1" )
             fi
-            snapper_cmd+=( "-t" "post" "--pre-number" "${pre_snapshots[$i]}" )
+            snapper_cmd+=( -t post --pre-number "${pre_snapshots[$i]}" )
             "${snapper_cmd[@]}" || true
         else
             # We haven't created pre snapshots yet, so create them and store the
             # snapshot numbers from snapper -p option in ${pre_snapshots[@]}
             if [[ -n "$snapper_description" ]] ; then
-                snapper_cmd+=( "-d" "$snapper_description" )
+                snapper_cmd+=( -d "$snapper_description" )
             else
-                snapper_cmd+=( "-d" "snapraid-btrfs pre-$1" )
+                snapper_cmd+=( -d "snapraid-btrfs pre-$1" )
             fi
-            snapper_cmd+=( "-t" "pre" "-p" )
+            snapper_cmd+=( -t pre -p )
             pre_snapshots[$i]="$("${snapper_cmd[@]}")"
         fi
     done
@@ -269,35 +269,35 @@ find_configs() {
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
-    local snapper_create_opts=( "-u" "$snapper_userdata" )
+    local snapper_create_opts=( -u "$snapper_userdata" )
     [[ "${snapper_cleanup:-}" ]] ||
-        snapper_create_opts+=( "-c" "$snapper_cleanup" )
+        snapper_create_opts+=( -c "$snapper_cleanup" )
     if [[ "${snapper_description:-}" ]] ; then
-        snapper_create_opts+=( "-d" "$snapper_description" )
+        snapper_create_opts+=( -d "$snapper_description" )
     else
-        snapper_create_opts+=( "-d" "snapraid-btrfs $1" )
+        snapper_create_opts+=( -d "snapraid-btrfs $1" )
     fi
     local i
     for i in "${snapper_configs[@]}" ; do
         case ${use_snapshot[$i]} in
             diff)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls 'snapraid-btrfs' 'diff' |
+                    parse_snapper_ls snapraid-btrfs diff |
                     tail -n 1)" ;;
             last)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls 'snapraid-btrfs' |
+                    parse_snapper_ls snapraid-btrfs |
                     tail -n 1)" ;;
             new)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")" ;;
             res)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls 'snapraid-btrfs' 'syncing' |
+                    parse_snapper_ls snapraid-btrfs syncing |
                     tail -n 1)" ;;
             sync)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls 'snapraid-btrfs' 'synced' |
+                    parse_snapper_ls snapraid-btrfs synced |
                     tail -n 1)" ;;
             *)
                 "$my_snapper" -c "$i" ls | parse_snapper_ls |
@@ -361,7 +361,7 @@ interactive_ask() {
 }
 
 invalid_argument() {
-    printf '%s: Invalid argument '%s'!\n' "$0" "$1" >&2
+    printf '%s: Invalid argument %s!\n' "$0" "$1" >&2
     printf 'Use %s -h to see options.\n' "$0" >&2
     exit $EXIT_INVALID_ARGUMENT
 }
@@ -382,7 +382,7 @@ main() {
     # Set default values for "global" configuration variables
     local config_file=/etc/snapraid.conf
     local my_{snapper=snapper,snapraid=snapraid}
-    local snapper_userdata="snapraid-btrfs=created"
+    local snapper_userdata='snapraid-btrfs=created'
     local verbose=0
     # Declare "global" variables without initial values
     local awk_script interactive pool_dir
@@ -559,21 +559,21 @@ run_command() {
     case $1 in
         # commands that don't invoke snapraid
         cleanup)
-            use_snapshot_all 'sync'
+            use_snapshot_all sync
             find_snapshots "$1" ;;&
         cleanup-all)
-            use_snapshot_all '0' ;;&
+            use_snapshot_all 0 ;;&
         cleanup?(-all))
             cleanup_snapshots
             exit ;;
         config)
-            use_snapshot_default 'last'
+            use_snapshot_default last
             find_snapshots "$1"
             use_snapshot_check
             generate_temp_snapraid_conf
             exit ;;
         create)
-            use_snapshot_default 'new'
+            use_snapshot_default new
             find_snapshots "$1"
             use_snapshot_check
             exit ;;
@@ -582,7 +582,7 @@ run_command() {
             snapper_ls_all "$@"
             exit ;;
         revert|rollback)
-            use_snapshot_default 'sync'
+            use_snapshot_default sync
             find_snapshots "$1"
             use_snapshot_check ;;&
         revert)
@@ -595,23 +595,23 @@ run_command() {
         # commands that invoke snapraid
         @(d|diff-)sync)
             shift
-            use_snapshot_default 'new'
+            use_snapshot_default new
             find_snapshots "$1"
             use_snapshot_check
-            run_snapraid 'diff' "$@" && true
+            run_snapraid diff "$@" && true
             interactive=1
-            run_snapraid 'sync' "$@" && true
+            run_snapraid sync "$@" && true
             exit ;;
         check|dup|list|pool|scrub|status)
-            use_snapshot_default 'sync'
+            use_snapshot_default sync
             find_snapshots "$1"
             use_snapshot_check ;;&
         diff|sync)
-            use_snapshot_default 'new'
+            use_snapshot_default new
             find_snapshots "$1"
             use_snapshot_check ;;&
         fix|touch)
-            use_snapshot_all '0' ;;&
+            use_snapshot_all 0 ;;&
         *)
             run_snapraid "$@" && true
             exit ;;
@@ -643,7 +643,7 @@ run_snapraid() {
             trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
     esac
     # If starting sync, update snapper userdata key
-    [[ "$1" = "sync" ]] && modify_userdata 'syncing'
+    [[ "$1" = sync ]] && modify_userdata syncing
     # Run snapraid
     "$my_snapraid" -c <(generate_temp_snapraid_conf) "$@" && true
     ret=$?
@@ -652,7 +652,7 @@ run_snapraid() {
         diff)
             modify_userdata "$1" ;;
         sync)
-            [[ $ret -eq 0 ]] && modify_userdata 'synced' ;;
+            [[ $ret -eq 0 ]] && modify_userdata synced ;;
     esac
     return $ret
 }
@@ -740,7 +740,7 @@ snapper_ls_all() {
         if [[ $# -ge 1 ]] ; then
             printf 'Snapshots with userdata key snapraid-btrfs=%s:\n' "$*"
             "$my_snapper" -c "$i" ls |
-                parse_snapper_ls 'snapraid-btrfs' "$*" | tr '\n' ' '
+                parse_snapper_ls snapraid-btrfs "$*" | tr '\n' ' '
             printf '\n'
         fi
     done
@@ -751,7 +751,7 @@ snapper_ls_all() {
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_revert() {
     local ret=0 snapper_ret i
-    create_pre_post_snapshots 'revert'
+    create_pre_post_snapshots revert
     trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
     local -a undochange_opts undochange_files
     # ensure that -i option, if specified, appears before snapshots
@@ -921,10 +921,10 @@ use_snapper_userdata() {
     local args=()
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        key=""
-        value=""
+        key=''
+        value=''
         IFS='=' read -r key value <<< "$i"
-        [[ "$key" = "snapraid-btrfs" ]] ||
+        [[ "$key" = snapraid-btrfs ]] ||
             snapper_userdata+=",${key}=${value}"
     done
 }
