@@ -153,7 +153,7 @@ cleanup_snapshots() {
                    [[ "${use_snapshot[$i]}" -gt "$j" ]]
             then
                 snapper_cmd=( "$my_snapper" "-c" "$i" "rm" "$j" )
-                if [[ -n "$interactive" ]] ; then
+                if [[ "${interactive:-}" ]] ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
                 elif [[ $verbose -ge 1 ]] ; then
                     printf '%s ' "${snapper_cmd[@]}"
@@ -388,7 +388,7 @@ main() {
     trap 'err_trap ${LINENO} $?' ERR
     local awk_script
     local config_file="/etc/snapraid.conf"
-    local interactive=""
+    local interactive
     local my_snapper="snapper"
     local my_snapraid="snapraid"
     local no_pre_post=()
@@ -648,7 +648,7 @@ run_snapraid() {
         printf 'Using snapraid config file:\n'
         generate_temp_snapraid_conf
     fi
-    if [[ -n "$interactive" ]] ; then
+    if [[ "${interactive:-}" ]] ; then
         interactive_ask "${cmd[@]}" >&2
     elif [[ $verbose -ge 0 ]] ; then
         printf '%s ' "${cmd[@]}"
