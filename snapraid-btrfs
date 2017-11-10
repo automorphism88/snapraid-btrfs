@@ -558,76 +558,56 @@ NR<=2 { next } # first 2 lines are the header
 _EOF_
 }
 
-# Implementation of all commands is in this function
+# Run the command given in $1
 run_command() {
     case $1 in
-        # commands that don't invoke snapraid
+        # Setup ${use_snapshot[@]}
         cleanup)
-            use_snapshot_all sync
-            find_snapshots "$1" ;;&
-        cleanup-all)
+            use_snapshot_all sync ;;&
+        cleanup-all|fix|touch)
             use_snapshot_all 0 ;;&
-        cleanup?(-all))
-            cleanup_snapshots
-            exit ;;
         config)
-            use_snapshot_default last
-            find_snapshots "$1"
-            use_snapshot_check
-            generate_temp_snapraid_conf
-            exit ;;
-        create)
-            use_snapshot_default new
-            find_snapshots "$1"
-            use_snapshot_check
-            exit ;;
+            use_snapshot_default last ;;&
+        check|dup|list|pool|revert|rollback|scrub|status)
+            use_snapshot_default sync ;;&
+        create|diff|?(d|diff-)sync)
+            use_snapshot_default new ;;&
+        !(cleanup-all|snapper-l@(s|ist)|fix|touch))
+            find_snapshots "$1" ;;&
+        !(cleanup?(-all)|snapper-l@(s|ist)|fix|touch))
+            use_snapshot_check ;;&
+        # Implementation of commands that don't invoke snapraid
+        cleanup?(-all))
+            cleanup_snapshots ;;
+        config)
+            generate_temp_snapraid_conf ;;
         snapper-l@(s|ist))
             shift
-            snapper_ls_all "$@"
-            exit ;;
-        revert|rollback)
-            use_snapshot_default sync
-            find_snapshots "$1"
-            use_snapshot_check ;;&
+            snapper_ls_all "$@" ;;
         revert)
             shift
-            snapper_revert "$@"
-            exit ;;
+            snapper_revert "$@" ;;
         rollback)
-            snapper_rollback
-            exit ;;
-        # commands that invoke snapraid
+            snapper_rollback ;;
+        # Implementation of commands that invoke snapraid
+        check|diff|dup|fix|list|pool|scrub|status|sync|touch)
+            run_snapraid "$@" && true ;;
         @(d|diff-)sync)
             shift
             local diff_ret
-            use_snapshot_default new
-            find_snapshots "$1"
-            use_snapshot_check
             run_snapraid diff "$@" && true
             diff_ret=$?
             # snapraid diff returns 2 if a sync is required
             if [[ $diff_ret -eq 2 ]] ; then
                 interactive=1
                 run_snapraid sync "$@" && true
-                exit
             elif [[ $diff_ret -eq 0 ]] && [[ $verbose -gt 0 ]] ; then
                 printf 'No difference, exiting\n'
-            fi
-            exit $diff_ret ;;
-        check|dup|list|pool|scrub|status)
-            use_snapshot_default sync
-            find_snapshots "$1"
-            use_snapshot_check ;;&
-        diff|sync)
-            use_snapshot_default new
-            find_snapshots "$1"
-            use_snapshot_check ;;&
-        fix|touch)
-            use_snapshot_all 0 ;;&
-        *)
-            run_snapraid "$@" && true
-            exit ;;
+            else
+                exit $diff_ret
+            fi ;;
     esac
+    exit
 }
 
 # Returns exit status of snapraid, postfix calls with '&& true' to avoid
