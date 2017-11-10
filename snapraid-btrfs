@@ -322,7 +322,7 @@ generate_temp_snapraid_conf() {
     local sed_exps=( 's/^//' )
     local new_path sed_find sed_replace match_line
     # shellcheck disable=SC2016
-    [[ -n "$pool_dir" ]] &&
+    [[ "${pool_dir:-}" ]] &&
         sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
     local i
@@ -392,7 +392,7 @@ main() {
     local my_snapper="snapper"
     local my_snapraid="snapraid"
     local no_pre_post=()
-    local pool_dir=""
+    local pool_dir
     local pre_post=()
     local pre_post_configs=()
     local -A pre_snapshots
