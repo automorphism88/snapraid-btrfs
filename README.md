@@ -49,7 +49,7 @@ for the sync. For more details on using snapraid-btrfs, see the output of
 
 ## FAQ
 
-### Q: Why use snapraid-btrfs?  
+### Q: Why use snapraid-btrfs?
 A: A major disadvantage of snapraid is that the parity files are not updated in
 real time. This not only means that new files are not protected until after
 running `snapraid sync`, but also creates a form of "write hole" where if files
@@ -73,21 +73,21 @@ snapshots guarantees the consistency of the result, while using `dd` would
 require that the entire filesystem be mounted read-only to prevent corruption
 caused by writes to the live filesystem during the backup.
 
-### Q: Are all snapraid commands supported?  
+### Q: Are all snapraid commands supported?
 A: Only the ones which either read from or write to the data drives, since for
 the others (e.g. `snapraid smart`), there is no benefit to using btrfs
 snapshots. Note that snapraid-btrfs does not interfere with the ability to
 invoke snapraid directly, allowing you to use these commands, or any other
 snapraid command, with snapraid-btrfs temporarily disabled.
 
-### Q: Do I need to use btrfs for all of the data drives?  
+### Q: Do I need to use btrfs for all of the data drives?
 A: No. Any drives that don't have a corresponding snapper configuration will be
 ignored (meaning that the live filesystem will be used). This allows you to
 format data drives with any filesystem supported by snapraid. However, the
 protection offered by snapraid-btrfs will not be available for writes made to
 any data drives that it does not manage.
 
-### Q: What about the parity drives?  
+### Q: What about the parity drives?
 A: Since the parity files are (or, at least, should be) only written to during
 snapraid sync operations, there is no need to snapshot them, as the parity files
 will always correspond with the read-only snapshots they were created from. If a
@@ -106,7 +106,7 @@ reserved for root - see `man mke2fs` for more details), and because for the
 parity filesystems, there is no real use for any of the features which btrfs
 offers over ext4.
 
-### Q: What about the snapraid "content" files?  
+### Q: What about the snapraid "content" files?
 A: Just like the parity files, these do not need to be snapshotted. If they are
 stored on the data drives, they should be in a dedicated subvolume, separate
 from the one where the data is stored. You don't need to worry about COW causing
@@ -114,7 +114,7 @@ fragmentation the way it ordinarily does for database files, since when updating
 these, snapraid writes entirely new files before renaming them over the old
 ones.
 
-### Q: What about the space consumed by the snapshots?  
+### Q: What about the space consumed by the snapshots?
 A: Running out of parity space is not an issue (at least, no more of an issue
 than it is without the use of snapshots), since only one snapshot at a time is
 used for a sync. You may temporarily run out of space on the data drives if you
@@ -146,16 +146,16 @@ the array to the state it was in at the time of the last sync even if files are
 modified or deleted, those files must be saved somewhere until the parity has
 been brought up to date.
 
-### Q: Does snapraid-btrfs need to be run as root?  
+### Q: Does snapraid-btrfs need to be run as root?
 A: No, and it is recommended that you do not do so, just as you should not run
 snapraid as root.
 
-### Q: How do I make sure my user (or group) has the necessary permissions?  
+### Q: How do I make sure my user (or group) has the necessary permissions?
 A: Assuming you already have a working snapraid configuration, you just need to
 configure snapper correctly. See "How do I set up snapper for use with
 snapraid-btrfs?" below.
 
-### Q: How do I configure snapper for use with snapraid-btrfs?  
+### Q: How do I configure snapper for use with snapraid-btrfs?
 A: Create a snapper configuration for each data drive you want to use
 snapraid-btrfs for. Snapraid-btrfs will compare the output of
 `snapper list-configs` with the list of data directories found in the snapraid
@@ -170,7 +170,7 @@ template with the options you want to use for your snapraid drive configurations
 and set these variables at that level. For further details, see the snapper
 documentation.
 
-### Q: What about my snapraid.conf file? Do I need to do anything there?  
+### Q: What about my snapraid.conf file? Do I need to do anything there?
 A: Snapraid-btrfs is designed to work with your existing snapraid configuration
 without requiring further changes. However, you may wish to add the line
 `exclude /.snapshots/` to your config file. If you ever plan to sync your
@@ -188,7 +188,7 @@ mounted at `/foo/bar` then if using snapshot n it will exclude
 `/foo/bar/.snapshots/n/.snapshots`, and if using the live filesystem it will
 exclude `/foo/bar/.snapshots`.)
 
-### Q: Can I have multiple subvolumes on a single data drive?  
+### Q: Can I have multiple subvolumes on a single data drive?
 A: Snapraid-btrfs only uses one subvolume per data drive, which should contain
 all the data which is to be protected by snapraid, and should have a snapper
 config with the `SUBVOLUME` variable matching the path in the snapraid config
@@ -202,7 +202,7 @@ successful sync, the parity corresponds to a single snapshot of each data drive.
 The snapraid "content" files should be stored in a separate subvolume to prevent
 them from being snapshotted.
 
-### Q: Can I also manage snapshots manually with snapper?  
+### Q: Can I also manage snapshots manually with snapper?
 A: Yes. Snapraid-btrfs keeps track of its own snapshots using the snapraid-btrfs
 userdata key in snapper, and will ignore any snapshots without that userdata key
 defined. If you delete snapraid-btrfs snapshots using snapper, parity protection
@@ -214,7 +214,7 @@ a new sync with a fresh set of snapshots (which will initially require no space
 since they will be identical to the live filesystem), then run the
 `snapraid-btrfs cleanup` command to delete the old ones.
 
-### Q: Can I restore a previous snapshot?  
+### Q: Can I restore a previous snapshot?
 A: Just like with "vanilla" snapraid, a fix can only restore the array to the
 state that it was in at the time of the last sync. This is because the parity
 files can only correspond to one snapshot at a time, and is a fundamental
@@ -226,7 +226,7 @@ fix operation. If you want multiple snapshots protected by parity, you'll
 need to use another solution such as mdadm or btrfs RAID that operates at
 the filesystem or block device level.
 
-### Q: What is the 'dsync' command and what is it for?  
+### Q: What is the 'dsync' command and what is it for?
 A: Short for 'diff-sync', this command creates a set of read-only snapshots,
 runs a `snapraid diff`, and then asks for confirmation before running a
 `snapraid sync` with the same snapshots. Since snapraid can only restore the
@@ -236,7 +236,7 @@ snapshots are okay before continuing with the sync. The behavior of this command
 is equivalent to running `snapraid-btrfs diff` followed by
 `snapraid-btrfs -i -u diff sync`.
 
-### Q: What about pooling?  
+### Q: What about pooling?
 A: If you run `snapraid-btrfs pool` the symlinks created in your pool directory
 (or in the directory specified with the `--pool-dir` option) will be to the
 read-only snapshots instead of the live filesystem. This may or may not be what
@@ -248,13 +248,13 @@ keep the symlinks up to date with any changes, but also ensures that a
 `snapraid-btrfs cleanup` operation doesn't result in broken symlinks that point
 to deleted snapshots.
 
-### Q: How do I stop using snapraid-btrfs?  
+### Q: How do I stop using snapraid-btrfs?
 A: Just complete a full sync, invoking snapraid directly and not via
 snapraid-btrfs. Then your parity files will be up to date with the live
 filesystem, and you can safely delete all snapshots using
 `snapraid-btrfs cleanup-all` and have a regular snapraid configuration.
 
-### Q: Under what terms is snapraid-btrfs available?  
+### Q: Under what terms is snapraid-btrfs available?
 A: This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
