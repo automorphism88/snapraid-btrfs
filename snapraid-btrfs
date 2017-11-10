@@ -403,7 +403,7 @@ main() {
     local snapper_userdata="snapraid-btrfs=created"
     local -A use_snapshot
     local use_snapshot_all_option
-    local use_snapshot_option=""
+    local use_snapshot_option
     local verbose=0
     read_awk_script
     parse_arguments "$@"
@@ -736,7 +736,7 @@ setup_config() {
     # Do some sanity checks of snapraid/snapper configuration
     check_config
     # Apply -U option
-    [[ -n "$use_snapshot_option" ]] &&
+    [[ "${use_snapshot_option:-}" ]] &&
         apply_use_snapshot_option "$use_snapshot_option"
     local i
     # Set -u argument for any configurations not specified by -U
