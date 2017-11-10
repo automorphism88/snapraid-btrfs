@@ -656,7 +656,9 @@ run_snapraid() {
     # Update snapper userdata key to reflect completion
     case $1 in
         diff)
-            modify_userdata "$1" ;;
+            # snapraid diff returns 0 if no changes, 2 if sync needed
+            { [[ $ret -eq 0 ]] || [[ $ret -eq 2 ]] ; } &&
+                modify_userdata "$1" ;;
         sync)
             [[ $ret -eq 0 ]] && modify_userdata synced ;;
     esac
