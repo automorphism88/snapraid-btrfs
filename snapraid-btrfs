@@ -183,13 +183,13 @@ create_pre_post_snapshots() {
     local i
     for i in "${pre_post_configs[@]}" ; do
         snapper_cmd=( "$my_snapper" "-c" "$i" "create" )
-        [[ -z "$snapper_cleanup" ]] ||
+        [[ "${snapper_cleanup:-}" ]] &&
             snapper_cmd+=( "-c" "$snapper_cleanup" )
         snapper_cmd+=( "-u" "$snapper_userdata" )
         # Check if we've already done a pre snapshot
         if [[ "${pre_snapshots[$i]:-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
-            if [[ -n "$snapper_description" ]] ; then
+            if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( "-d" "$snapper_description" )
             else
                 snapper_cmd+=( "-d" "snapraid-btrfs post-$1" )
@@ -276,9 +276,9 @@ find_configs() {
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
     local snapper_create_opts=( "-u" "$snapper_userdata" )
-    [[ -z "$snapper_cleanup" ]] ||
+    [[ "${snapper_cleanup:-}" ]] ||
         snapper_create_opts+=( "-c" "$snapper_cleanup" )
-    if [[ -n "$snapper_description" ]] ; then
+    if [[ "${snapper_description:-}" ]] ; then
         snapper_create_opts+=( "-d" "$snapper_description" )
     else
         snapper_create_opts+=( "-d" "snapraid-btrfs $1" )
@@ -811,9 +811,9 @@ snapper_rollback() {
     local ret=0
     local snapper_ret
     local snapper_rollback_opts=( "-u" "$snapper_userdata" )
-    [[ -z "$snapper_cleanup" ]] ||
+    [[ "${snapper_cleanup:-}" ]] ||
         snapper_rollback_opts+=( "-c" "$snapper_cleanup" )
-    if [[ -n "$snapper_description" ]] ; then
+    if [[ "{$snapper_description:-}" ]] ; then
         snapper_rollback_opts+=( "-d" "$snapper_description" )
     else
         snapper_rollback_opts+=( "-d" "snapraid-btrfs rollback" )
