@@ -757,6 +757,7 @@ snapper_ls_all() {
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_revert() {
     local ret=0 snapper_ret i
+    local -a snapper_cmd
     create_pre_post_snapshots revert
     trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
     local -a undochange_{opts,files}
@@ -782,8 +783,15 @@ snapper_revert() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        "$my_snapper" -c "$i" undochange "${undochange_opts[@]}" \
-                      "${use_snapshot[$i]}..0" "${undochange_files[@]}" && true
+        snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
+                      "${use_snapshot[$i]}..0" "${undochange_files[@]}" )
+        if [[ ${interactive:-} ]] ; then
+            interactive_ask "${snapper_cmd[@]}" >&2
+        elif [[ $verbose -gt 0 ]] ; then
+            printf '%s ' "${snapper_cmd[@]}"
+            printf '\n'
+        fi
+        "${snapper_cmd[@]}" && true
         snapper_ret=$?
         [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
     done
@@ -793,6 +801,7 @@ snapper_revert() {
 # Run snapper rollback in each snapper config
 snapper_rollback() {
     local ret=0 snapper_ret i
+    local -a snapper_cmd
     local snapper_rollback_opts=( -u "$snapper_userdata" )
     [[ "${snapper_cleanup:-}" ]] ||
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
@@ -802,8 +811,15 @@ snapper_rollback() {
         snapper_rollback_opts+=( -d "snapraid-btrfs rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        "$my_snapper" -c "$i" rollback "${snapper_rollback_opts[@]}" \
-                      "${use_snapshot[$i]}" && true
+        snapper_cmd=( "$my_snapper" -c "$i" rollback
+                      "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
+        if [[ "${interactive:-}" ]] ; then
+            interactive_ask "${snapper_cmd[@]}" >&2
+        elif [[ $verbose -gt 0 ]] ; then
+            printf '%s ' "${snapper_cmd[@]}"
+            printf '\n'
+        fi
+        "${snapper_cmd[@]}" && true
         snapper_ret=$?
         [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
     done
@@ -826,8 +842,9 @@ snapraid-btrfs:
                                 snapshots created (default none)
 -d, --description STR           Specify snapper description to set for any
                                 snapshots created (default none)
--i, --interactive               Ask before running snapraid or deleting
-                                any snapshots
+-i, --interactive               Ask before running snapraid or any potentially
+                                destructive snapper commands (when using the
+                                cleanup(-all), revert, or rollback commands)
 -q, --quiet                     Only show snapraid/snapper output and errors
 -u, --use-snapshot-all STR      Use one of the following arguments:
                                     diff - Use last snapshot a diff was
