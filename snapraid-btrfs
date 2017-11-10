@@ -452,7 +452,7 @@ parse_arguments() {
                 set_option "${1%%=*}"
                 shift ;;
             # long form options that require arguments
-            --@(conf|cleanup-algorithm|description|pool-dir)?(=*)) ;&
+            --@(conf|cleanup|description|pool-dir)?(=*)) ;&
             --@(snap@(per-@(path|userdata)|raid-path))?(=*)) ;&
             --@(use-snapshot?(-all)|?(no-)pre-post)?(=*))
                 # allow POSIX --argument option or --argument=option formats
@@ -676,14 +676,14 @@ run_snapraid() {
 # $2 can be either undefined or empty
 set_option() {
     case $1 in
-        --@(conf|cleanup-algorithm|description|pool-dir)) ;&
+        --@(conf|cleanup|description|pool-dir)) ;&
         --@(snap@(per-@(path|userdata)|raid-path))) ;&
         --@(use-snapshot?(-all)|?(no-)pre-post)) ;&
         -[cCduU])
             option_requires_argument "$@" ;;&
         -c|--conf)
             config_file="$2" ;;
-        -C|--cleanup-algorithm)
+        -C|--cleanup)
             snapper_cleanup="$2" ;;
         -d|--description)
             snapper_description="$2" ;;
@@ -847,7 +847,7 @@ snapraid-btrfs:
 -h, --help                      Show this help
 -c, --conf FILE                 Specify location of snapraid config file
                                 (default /etc/snapraid.conf)
--C, --cleanup-algorithm STR     Specify snapper cleanup algorithm to set for any
+-C, --cleanup STR               Specify snapper cleanup algorithm to set for any
                                 snapshots created (default none)
 -d, --description STR           Specify snapper description to set for any
                                 snapshots created (default none)
