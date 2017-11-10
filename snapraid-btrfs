@@ -26,17 +26,17 @@ readonly EXIT_INTERACTIVE_NO=69
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
     local i j
-    if [[ "${#pre_post[@]}" -gt 0 ]] ; then
-        for i in "${pre_post[@]}" ; do
+    if [[ "${#pre_post_option[@]}" -gt 0 ]] ; then
+        for i in "${pre_post_option[@]}" ; do
             config_must_exist "$i"
         done
-        pre_post_configs=( "${pre_post[@]}" )
+        pre_post_configs=( "${pre_post_option[@]}" )
     else
         pre_post_configs=( "${snapper_configs[@]}" )
     fi
-    if [[ "${#no_pre_post[@]}" -gt 0 ]] ; then
+    if [[ "${#no_pre_post_option[@]}" -gt 0 ]] ; then
         local temp_array=()
-        for i in "${no_pre_post[@]}" ; do
+        for i in "${no_pre_post_option[@]}" ; do
             config_must_exist "$i"
             temp_array=()
             for j in "${pre_post_configs[@]}" ; do
@@ -387,7 +387,7 @@ main() {
     # Declare "global" variables without initial values
     local awk_script interactive pool_dir
     local snapper_{cleanup,description} use_snapshot{,_all}_option
-    local -a snapper_configs pre_post_configs {no_,}pre_post
+    local -a snapper_configs pre_post_configs {no_,}pre_post_option
     local -A snapper_subvols use_snapshot pre_snapshots
     read_awk_script
     parse_arguments "$@"
@@ -690,12 +690,12 @@ set_option() {
             PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME:+$FUNCNAME(): }'
             set -x ;;
         --no-pre-post)
-            IFS=',' read -r -a no_pre_post <<< "$2" ;;
+            IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
         --pool-dir)
             must_be_directory "$2"
             pool_dir="$2" ;;
         --pre-post)
-            IFS=',' read -r -a pre_post <<< "$2" ;;
+            IFS=',' read -r -a pre_post_option <<< "$2" ;;
         --snapper-path)
             must_be_executable "$2"
             my_snapper="$2" ;;
