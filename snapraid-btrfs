@@ -53,8 +53,8 @@ apply_use_snapshot_option() {
     local config config_using i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        config=''
-        config_using=''
+        config=
+        config_using=
         IFS='=' read -r config config_using <<< "$i"
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
@@ -305,7 +305,7 @@ find_snapshots() {
             *)
                 "$my_snapper" -c "$i" ls | parse_snapper_ls |
                     grep -F "${use_snapshot[$i]}" > /dev/null ||
-                    use_snapshot[$i]="" ;;
+                    use_snapshot[$i]= ;;
         esac
     done
 }
@@ -926,8 +926,8 @@ use_snapper_userdata() {
     local -a args
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        key=''
-        value=''
+        key=
+        value=
         IFS='=' read -r key value <<< "$i"
         [[ "$key" = snapraid-btrfs ]] ||
             snapper_userdata+=",${key}=${value}"
