@@ -50,9 +50,8 @@ apply_pre_post_options() {
 # Set use_snapshot from comma-separated key=value pairs specified in $1
 apply_use_snapshot_option() {
     local args=()
-    local config config_using
+    local config config_using i
     IFS=',' read -r -a args <<< "$1"
-    local i
     for i in "${args[@]}" ; do
         config=""
         config_using=""
@@ -70,20 +69,10 @@ check_config() {
         printf 'in snapraid config file\n' >&2
         exit $EXIT_INVALID_CONFIG
     fi
-    # Check to make sure the user has permission to access snapshots
-    local i
-    for i in "${snapper_configs[@]}" ; do
-        if ! [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; then
-           printf '%s: Could not read %s - is SYNC_ACL set?\n' "$0" \
-                  "${snapper_subvols[$i]}/.snapshots" >&2
-           exit $EXIT_NO_PERMISSIONS
-        fi
-    done
     # We don't want to snapshot the content files. So, check the directories of
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
-    local f1 f2
-    local content_dir content_mount
+    local f1 f2 content_dir content_mount i
     while IFS=$' \t' read -r f1 f2 ; do
         if [[ "$f1" = "content" ]] ; then
             content_dir="$(dirname "$f2")"
@@ -99,6 +88,14 @@ check_config() {
             done
         fi
     done < "$config_file"
+    # Check to make sure the user has permission to access snapshots
+    for i in "${snapper_configs[@]}" ; do
+        if ! [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; then
+           printf '%s: Could not read %s - is SYNC_ACL set?\n' "$0" \
+                  "${snapper_subvols[$i]}/.snapshots" >&2
+           exit $EXIT_NO_PERMISSIONS
+        fi
+    done
 }
 
 # Make sure all external binaries we need can be found in $PATH
@@ -139,11 +136,8 @@ check_snapraid_arguments() {
 # In each config, delete snapshots with userdata key snapraid-btrfs created
 # before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
-    local ret=0
-    local snapper_ret
-    local snaps_to_consider
+    local ret=0 snapper_ret snaps_to_consider i j
     local snapper_cmd=()
-    local i j
     for i in "${snapper_configs[@]}" ; do
         [[ -z "${use_snapshot[$i]}" ]] && break
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
@@ -320,12 +314,11 @@ generate_temp_snapraid_conf() {
     local data_line=$'^[ \t]\{0,\}data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     # no-op to ensure at least one expression is passed to sed
     local sed_exps=( 's/^//' )
-    local new_path sed_find sed_replace match_line
+    local new_path sed_find sed_replace match_line i
     # shellcheck disable=SC2016
     [[ "${pool_dir:-}" ]] &&
         sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
-    local i
     for i in "${snapper_configs[@]}" ; do
         if [[ "${use_snapshot[$i]}" -ne 0 ]] ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
@@ -386,34 +379,23 @@ main() {
         exit $EXIT_INTERNAL_ERROR
     fi
     trap 'err_trap ${LINENO} $?' ERR
-    local awk_script
-    local config_file="/etc/snapraid.conf"
-    local interactive
-    local my_snapper="snapper"
-    local my_snapraid="snapraid"
-    local no_pre_post=()
-    local pool_dir
-    local pre_post=()
-    local pre_post_configs=()
-    local -A pre_snapshots
-    local snapper_cleanup=""
-    local snapper_configs=()
-    local snapper_description=""
-    local -A snapper_subvols
+    # Set default values for "global" configuration variables
+    local config_file=/etc/snapraid.conf
+    local my_{snapper=snapper,snapraid=snapraid}
     local snapper_userdata="snapraid-btrfs=created"
-    local -A use_snapshot
-    local use_snapshot_all_option
-    local use_snapshot_option
     local verbose=0
+    # Declare "global" variables without initial values
+    local awk_script interactive pool_dir
+    local snapper_{cleanup,description} use_snapshot{,_all}_option
+    local -a snapper_configs pre_post_configs {no_,}pre_post
+    local -A snapper_subvols use_snapshot pre_snapshots
     read_awk_script
     parse_arguments "$@"
 }
 
 # set snapraid-btrfs userdata key to $1
 modify_userdata() {
-    local ret=0
-    local snapper_ret
-    local i
+    local ret=0 snapper_ret i
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" modify -u "snapraid-btrfs=$1" \
                       "${use_snapshot[$i]}" && true
@@ -449,8 +431,7 @@ option_requires_argument() {
 }
 
 parse_arguments() {
-    local opt_str length
-    local i
+    local opt_str length i
     while [[ $# -ge 1 ]] ; do
         case $1 in
             # matching any command means option processing is complete
@@ -769,12 +750,10 @@ snapper_ls_all() {
 # Run snapper undochange in each snapper config to revert to the state at the
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_revert() {
-    local ret=0
-    local snapper_ret
+    local ret=0 snapper_ret i
     create_pre_post_snapshots 'revert'
     trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
-    local undochange_opts=()
-    local undochange_files=()
+    local -a undochange_opts undochange_files
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
     while [[ $# -ge 1 ]] ; do
@@ -796,7 +775,6 @@ snapper_revert() {
         esac
     done
     undochange_files+=( "$@" )
-    local i
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" undochange "${undochange_opts[@]}" \
                       "${use_snapshot[$i]}..0" "${undochange_files[@]}" && true
@@ -808,8 +786,7 @@ snapper_revert() {
 
 # Run snapper rollback in each snapper config
 snapper_rollback() {
-    local ret=0
-    local snapper_ret
+    local ret=0 snapper_ret i
     local snapper_rollback_opts=( "-u" "$snapper_userdata" )
     [[ "${snapper_cleanup:-}" ]] ||
         snapper_rollback_opts+=( "-c" "$snapper_cleanup" )
@@ -818,7 +795,6 @@ snapper_rollback() {
     else
         snapper_rollback_opts+=( "-d" "snapraid-btrfs rollback" )
     fi
-    local i
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" rollback "${snapper_rollback_opts[@]}" \
                       "${use_snapshot[$i]}" && true
@@ -941,8 +917,7 @@ _EOF_
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
 use_snapper_userdata() {
-    local i
-    local key value
+    local key value i
     local args=()
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
