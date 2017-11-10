@@ -72,7 +72,7 @@ check_config() {
     # We don't want to snapshot the content files. So, check the directories of
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
-    local f1 f2 content_dir content_mount i
+    local f1 f2 content_{dir,mount} i
     while IFS=$' \t' read -r f1 f2 ; do
         if [[ "$f1" = content ]] ; then
             content_dir="$(dirname "$f2")"
@@ -392,7 +392,7 @@ main() {
     # Declare "global" variables without initial values
     local awk_script interactive pool_dir
     local snapper_{cleanup,description} use_snapshot{,_all}_option
-    local -a snapper_configs pre_post_configs
+    local -a {snapper,pre_post}_configs
     local -A snapper_subvols use_snapshot pre_snapshots
     read_awk_script
     parse_arguments "$@"
@@ -758,7 +758,7 @@ snapper_revert() {
     local ret=0 snapper_ret i
     create_pre_post_snapshots revert
     trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
-    local -a undochange_opts undochange_files
+    local -a undochange_{opts,files}
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
     while [[ $# -ge 1 ]] ; do
