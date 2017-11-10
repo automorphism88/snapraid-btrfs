@@ -103,16 +103,13 @@ It is recommended that you use ext4 for the parity drives, since the metadata
 overhead is extremely small with the right mkfs settings (minimum possible
 number of inodes, minimum journal size (or journaling disabled), and no space
 reserved for root - see `man mke2fs` for more details), and because for the
-parity filesystems, there is no real use for any of the features which btrfs
+parity drives, there is no real use for any of the features which btrfs
 offers over ext4.
 
 ### Q: What about the snapraid "content" files?
 A: Just like the parity files, these do not need to be snapshotted. If they are
 stored on the data drives, they should be in a dedicated subvolume, separate
-from the one where the data is stored. You don't need to worry about COW causing
-fragmentation the way it ordinarily does for database files, since when updating
-these, snapraid writes entirely new files before renaming them over the old
-ones.
+from the one where the data is stored.
 
 ### Q: What about the space consumed by the snapshots?
 A: Running out of parity space is not an issue (at least, no more of an issue
