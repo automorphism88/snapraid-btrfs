@@ -165,13 +165,10 @@ argument).
 
 **To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
-snapraid-btrfs in your snapper configurations.** Note that you will have to
-perform some operation using the snapper CLI (`snapper -c example_config ls`
-will do, and can be run for all detected configurations at once using
-`snapraid-btrfs snapper-ls`) after setting these options in order for them to
-take effect. You may wish to make a snapper template with the options you want
-to use for your snapraid drive configurations and set these variables at that
-level. For further details, see the snapper documentation.
+snapraid-btrfs in your snapper configurations.** You may wish to make a snapper
+template with the options you want to use for your snapraid drive configurations
+and set these variables at that level. For further details, see the snapper
+documentation.
 
 ### Q: What about my snapraid.conf file? Do I need to do anything there?  
 A: Snapraid-btrfs is designed to work with your existing snapraid configuration

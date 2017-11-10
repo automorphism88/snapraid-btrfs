@@ -90,7 +90,10 @@ check_config() {
     done < "$config_file"
     # Check to make sure the user has permission to access snapshots
     for i in "${snapper_configs[@]}" ; do
-        if ! [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; then
+        # Try a snapper ls first, in case SYNC_ACL has just been set
+	if ! { "$my_snapper" -c "$i" ls > /dev/null &&
+		   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
+	then
            printf '%s: Could not read %s - is SYNC_ACL set?\n' "$0" \
                   "${snapper_subvols[$i]}/.snapshots" >&2
            exit $EXIT_NO_PERMISSIONS
