@@ -223,7 +223,7 @@ err_trap() {
 escape_stderr() {
     local sed_escape_pipe
     sed_escape_pipe="$(mktemp -u)"
-    mkfifo -- "$sed_escape_pipe"
+    mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
     # shellcheck disable=SC2064
