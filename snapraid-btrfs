@@ -402,7 +402,7 @@ main() {
     local -A snapper_subvols
     local snapper_userdata="snapraid-btrfs=created"
     local -A use_snapshot
-    local use_snapshot_all=""
+    local use_snapshot_all_option=""
     local use_snapshot_option=""
     local verbose=0
     read_awk_script
@@ -699,7 +699,7 @@ set_option() {
         '-q'|'--quiet')
             ((--verbose)) ;;
         '-u'|'--use-snapshot-all')
-            use_snapshot_all="$2" ;;
+            use_snapshot_all_option="$2" ;;
         '-U'|'--use-snapshot')
             use_snapshot_option="$2" ;;
         '-v'|'--verbose')
@@ -740,10 +740,10 @@ setup_config() {
         apply_use_snapshot_option "$use_snapshot_option"
     local i
     # Set -u argument for any configurations not specified by -U
-    if [[ -n "$use_snapshot_all" ]] ; then
+    if [[ -n "$use_snapshot_all_option" ]] ; then
         for i in "${snapper_configs[@]}" ; do
             [[ "${use_snapshot[$i]:-}" ]] ||
-                use_snapshot[$i]="$use_snapshot_all"
+                use_snapshot[$i]="$use_snapshot_all_option"
         done
     fi
     apply_pre_post_options
