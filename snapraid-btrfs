@@ -158,11 +158,11 @@ cleanup_snapshots() {
                 fi
                 "${snapper_cmd[@]}" && true
                 snapper_ret=$?
-                [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
+                [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
             fi
         done
     done
-    return "$ret"
+    return $ret
 }
 
 # Check that the user didn't specify a nonexistent snapper config by ensuring
@@ -406,9 +406,9 @@ modify_userdata() {
         "$my_snapper" -c "$i" modify -u "snapraid-btrfs=$1" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
-        [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
+        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
     done
-    return "$ret"
+    return $ret
 }
 
 # argument should be a directory, otherwise exit
@@ -785,9 +785,9 @@ snapper_revert() {
         "$my_snapper" -c "$i" undochange "${undochange_opts[@]}" \
                       "${use_snapshot[$i]}..0" "${undochange_files[@]}" && true
         snapper_ret=$?
-        [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
+        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
     done
-    return "$ret"
+    return $ret
 }
 
 # Run snapper rollback in each snapper config
@@ -805,9 +805,9 @@ snapper_rollback() {
         "$my_snapper" -c "$i" rollback "${snapper_rollback_opts[@]}" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
-        [[ "$snapper_ret" -eq 0 ]] || ret="$snapper_ret"
+        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
     done
-    return "$ret"
+    return $ret
 }
 
 usage() {
