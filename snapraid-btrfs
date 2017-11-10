@@ -387,12 +387,13 @@ main() {
     local my_{snapper=snapper,snapraid=snapraid}
     local no_pre_post_option=()
     local pre_post_option=()
+    local snapper_configs=()
     local snapper_userdata='snapraid-btrfs=created'
     local verbose=0
     # Declare "global" variables without initial values
     local awk_script interactive pool_dir
     local snapper_{cleanup,description} use_snapshot{,_all}_option
-    local -a {snapper,pre_post}_configs
+    local -a pre_post_configs
     local -A snapper_subvols use_snapshot pre_snapshots
     read_awk_script
     parse_arguments "$@"
