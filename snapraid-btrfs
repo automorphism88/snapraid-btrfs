@@ -120,7 +120,7 @@ check_dependencies() {
 check_snapraid_arguments() {
     while [[ $# -gt 0 ]] ; do
         case $1 in
-            '-c'|'--conf')
+            -c|--conf)
                 printf '%s: The -c option may not be passed through - ' "$0" >&2
                 printf 'place the -c option before the command instead.\n' >&2
                 printf 'Use %s --help for help.\n' "$0" >&2
@@ -286,22 +286,22 @@ find_snapshots() {
     local i
     for i in "${snapper_configs[@]}" ; do
         case ${use_snapshot[$i]} in
-            'diff')
+            diff)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls 'snapraid-btrfs' 'diff' |
                     tail -n 1)" ;;
-            'last')
+            last)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls 'snapraid-btrfs' |
                     tail -n 1)" ;;
-            'new')
+            new)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")" ;;
-            'res')
+            res)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls 'snapraid-btrfs' 'syncing' |
                     tail -n 1)" ;;
-            'sync')
+            sync)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls 'snapraid-btrfs' 'synced' |
                     tail -n 1)" ;;
@@ -357,9 +357,9 @@ interactive_ask() {
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
-            'y'|'Y')
+            y|Y)
                 break ;;
-            'n'|'N')
+            n|N)
                 exit $EXIT_INTERACTIVE_NO ;;
             *)
                 printf 'Invalid choice! Please enter y or n.\n' ;;
@@ -577,21 +577,21 @@ _EOF_
 run_command() {
     case $1 in
         # commands that don't invoke snapraid
-        'cleanup')
+        cleanup)
             use_snapshot_all 'sync'
             find_snapshots "$1" ;;&
-        'cleanup-all')
+        cleanup-all)
             use_snapshot_all '0' ;;&
         cleanup?(-all))
             cleanup_snapshots
             exit ;;
-        'config')
+        config)
             use_snapshot_default 'last'
             find_snapshots "$1"
             use_snapshot_check
             generate_temp_snapraid_conf
             exit ;;
-        'create')
+        create)
             use_snapshot_default 'new'
             find_snapshots "$1"
             use_snapshot_check
@@ -600,15 +600,15 @@ run_command() {
             shift
             snapper_ls_all "$@"
             exit ;;
-        'revert'|'rollback')
+        revert|rollback)
             use_snapshot_default 'sync'
             find_snapshots "$1"
             use_snapshot_check ;;&
-        'revert')
+        revert)
             shift
             snapper_revert "$@"
             exit ;;
-        'rollback')
+        rollback)
             snapper_rollback
             exit ;;
         # commands that invoke snapraid
@@ -621,15 +621,15 @@ run_command() {
             interactive=1
             run_snapraid 'sync' "$@" && true
             exit ;;
-        'check'|'dup'|'list'|'pool'|'scrub'|'status')
+        check|dup|list|pool|scrub|status)
             use_snapshot_default 'sync'
             find_snapshots "$1"
             use_snapshot_check ;;&
-        'diff'|'sync')
+        diff|sync)
             use_snapshot_default 'new'
             find_snapshots "$1"
             use_snapshot_check ;;&
-        'fix'|'touch')
+        fix|touch)
             use_snapshot_all '0' ;;&
         *)
             run_snapraid "$@" && true
@@ -656,7 +656,7 @@ run_snapraid() {
     fi
     # Create pre/post snapshots if applicable
     case $1 in
-        'fix'|'touch')
+        fix|touch)
             create_pre_post_snapshots "$1"
             # shellcheck disable=SC2064
             trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
@@ -668,9 +668,9 @@ run_snapraid() {
     ret=$?
     # Update snapper userdata key to reflect completion
     case $1 in
-        'diff')
+        diff)
             modify_userdata "$1" ;;
-        'sync')
+        sync)
             [[ $ret -eq 0 ]] && modify_userdata 'synced' ;;
     esac
     return $ret
@@ -685,42 +685,42 @@ set_option() {
         --@(use-snapshot?(-all)|?(no-)pre-post)) ;&
         -[cCduU])
             option_requires_argument "$@" ;;&
-        '-c'|'--conf')
+        -c|--conf)
             config_file="$2" ;;
-        '-C'|'--cleanup-algorithm')
+        -C|--cleanup-algorithm)
             snapper_cleanup="$2" ;;
-        '-d'|'--description')
+        -d|--description)
             snapper_description="$2" ;;
-        '-h'|'--help')
+        -h|--help)
             usage
             exit ;;
-        '-i'|'--interactive')
+        -i|--interactive)
             interactive=1 ;;
-        '-q'|'--quiet')
+        -q|--quiet)
             ((--verbose)) ;;
-        '-u'|'--use-snapshot-all')
+        -u|--use-snapshot-all)
             use_snapshot_all_option="$2" ;;
-        '-U'|'--use-snapshot')
+        -U|--use-snapshot)
             use_snapshot_option="$2" ;;
-        '-v'|'--verbose')
+        -v|--verbose)
             ((++verbose)) ;;
-        '-x'|'--debug')
+        -x|--debug)
             escape_stderr
             PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME:+$FUNCNAME(): }'
             set -x ;;
-        '--no-pre-post')
+        --no-pre-post)
             IFS=',' read -r -a no_pre_post <<< "$2" ;;
-        '--pool-dir')
+        --pool-dir)
             must_be_directory "$2"
             pool_dir="$2" ;;
-        '--pre-post')
+        --pre-post)
             IFS=',' read -r -a pre_post <<< "$2" ;;
-        '--snapper-path')
+        --snapper-path)
             must_be_executable "$2"
             my_snapper="$2" ;;
-        '--snapper-userdata')
+        --snapper-userdata)
             use_snapper_userdata "$2" ;;
-        '--snapraid-path')
+        --snapraid-path)
             must_be_executable "$2"
             my_snapraid="$2" ;;
         *)
@@ -779,10 +779,10 @@ snapper_revert() {
     # and any other arguments specified (except --) appear after snapshots
     while [[ $# -ge 1 ]] ; do
         case $1 in
-            '--')
+            --)
                 shift
                 break ;;
-            '-i'|'--input')
+            -i|--input)
                 if [[ $# -ge 2 ]] ; then
                     undochange_opts+=( "$1" "$2" )
                     shift 2
