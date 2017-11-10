@@ -601,13 +601,21 @@ run_command() {
         # commands that invoke snapraid
         @(d|diff-)sync)
             shift
+            local diff_ret
             use_snapshot_default new
             find_snapshots "$1"
             use_snapshot_check
             run_snapraid diff "$@" && true
-            interactive=1
-            run_snapraid sync "$@" && true
-            exit ;;
+            diff_ret=$?
+            # snapraid diff returns 2 if a sync is required
+            if [[ $diff_ret -eq 2 ]] ; then
+                interactive=1
+                run_snapraid sync "$@" && true
+                exit
+            elif [[ $diff_ret -eq 0 ]] && [[ $verbose -gt 0 ]] ; then
+                printf 'No difference, exiting\n'
+            fi
+            exit $diff_ret ;;
         check|dup|list|pool|scrub|status)
             use_snapshot_default sync
             find_snapshots "$1"
