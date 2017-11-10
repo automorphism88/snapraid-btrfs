@@ -140,7 +140,7 @@ check_snapraid_arguments() {
 # before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local ret=0 snapper_ret snaps_to_consider i j
-    local snapper_cmd=()
+    local -a snapper_cmd
     for i in "${snapper_configs[@]}" ; do
         [[ -z "${use_snapshot[$i]}" ]] && break
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
@@ -176,7 +176,7 @@ config_must_exist() {
 
 # Calling once creates pre snapshots, calling again creates corresponding post
 create_pre_post_snapshots() {
-    local snapper_cmd=()
+    local -a snapper_cmd
     local i
     for i in "${pre_post_configs[@]}" ; do
         snapper_cmd=( "$my_snapper" -c "$i" create )
@@ -196,7 +196,7 @@ create_pre_post_snapshots() {
         else
             # We haven't created pre snapshots yet, so create them and store the
             # snapshot numbers from snapper -p option in ${pre_snapshots[@]}
-            if [[ -n "$snapper_description" ]] ; then
+            if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
                 snapper_cmd+=( -d "snapraid-btrfs pre-$1" )
