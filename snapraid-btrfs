@@ -402,6 +402,31 @@ main() {
     parse_arguments "$@"
 }
 
+# Use awk to remove comments and redundant whitespace from heredoc,
+# reducing size of $awk_script variable by ~79%
+# NB: This isn't safe to run on input containing # characters
+# used for anything other than comments (e.g., within quotes)
+# as it considers anything between # and \n to be a comment
+minify_awk_script() {
+    awk '
+    # Use \f as RS because \0 is a GNU extension, similar to sed -z
+    BEGIN { FS="" ; RS="\f" }
+    {
+        # remove comments
+        gsub(/[ \t]*#[^\n]*\n/,"\n")
+        # remove leading and trailing spaces and tabs
+        gsub(/[ \t]*\n[ \t]*/,"\n")
+        # remove padding whitespace around brackets
+        gsub(/[ \t\n]*{[ \t\n]*/,"{")
+        gsub(/[ \t\n]*}[ \t\n]*/,"}")
+        # remove whitespace before open parentheses
+        gsub(/[ \t]*\(/,"(")
+        # remove blank lines
+        gsub(/[\n]+/,"\n")
+    }
+    1'
+}
+
 # set snapraid-btrfs userdata key to $1
 modify_userdata() {
     local ret=0 snapper_ret i
@@ -516,29 +541,7 @@ parse_snapper_ls() {
 # Read awk script from heredoc once here, to avoid the overhead of doing it
 # every time awk is called in a loop - output to stdout
 read_awk_script() {
-    # Use awk to remove comments and redundant whitespace from heredoc,
-    # reducing size of $awk_script variable by more than 75%
-    # NB: This isn't safe to run on input containing # characters
-    # used for anything other than comments (e.g., within quotes)
-    # as it considers anything between # and \n to be a comment
-    awk '
-# Use \f as RS because \0 is a GNU extension, similar to sed -z
-BEGIN { FS="" ; RS="\f" }
-{
-    # remove comments
-    gsub(/[ \t]*#[^\n]*\n/,"\n")
-    # remove leading and trailing spaces and tabs
-    gsub(/[ \t]*\n[ \t]*/,"\n")
-    # remove padding whitespace around brackets
-    gsub(/[ \t\n]*{[ \t\n]*/,"{")
-    gsub(/[ \t\n]*}[ \t\n]*/,"}")
-    # remove whitespace before open parentheses
-    gsub(/[ \t]*\(/,"(")
-    # remove blank lines
-    gsub(/[\n]+/,"\n")
-}
-1
-' <<'_EOF_'
+    minify_awk_script <<'_EOF_'
 BEGIN { FS="|" } # snapper separates columns with '|' characters
 NR<=2 { next } # first 2 lines are the header
 {
