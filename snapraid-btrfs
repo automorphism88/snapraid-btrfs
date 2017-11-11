@@ -398,7 +398,7 @@ main() {
     local snapper_{cleanup,description} use_snapshot{,_all}_option
     local -a pre_post_configs
     local -A snapper_subvols use_snapshot pre_snapshots
-    read_awk_script
+    awk_script="$(read_awk_script)"
     parse_arguments "$@"
 }
 
@@ -513,10 +513,30 @@ parse_snapper_ls() {
     awk -v key="${1:-}" -v value="${2:-}" "$awk_script"
 }
 
-# Read awk script from heredoc into variable once here to reduce overhead
-# when awk is called in a loop
+# Read awk script from heredoc once here, to avoid the overhead of doing it
+# every time awk is called in a loop - output to stdout
 read_awk_script() {
-    read -r -d '' awk_script <<'_EOF_' || true
+    # Use awk to remove comments and redundant whitespace from heredoc,
+    # reducing size of $awk_script variable by more than 75%
+    # NB: This isn't safe to run on input containing # characters
+    # used for anything other than comments (e.g., within quotes)
+    # as it considers anything between # and \n to be a comment
+    awk '
+# Use \f as RS because \0 is a GNU extension, similar to sed -z
+BEGIN { FS="" ; RS="\f" }
+{
+    # remove comments
+    gsub(/[ \t]*#[^\n]*\n/,"\n")
+    # remove leading and trailing spaces and tabs
+    gsub(/[ \t]*\n[ \t]*/,"\n")
+    # remove padding whitespace around brackets
+    gsub(/[ \t\n]*{[ \t\n]*/,"{")
+    gsub(/[ \t\n]*}[ \t\n]*/,"}")
+    # Remove blank lines
+    gsub(/[\n]+/,"\n")
+}
+1
+' <<'_EOF_'
 BEGIN { FS="|" } # snapper separates columns with '|' characters
 NR<=2 { next } # first 2 lines are the header
 {
