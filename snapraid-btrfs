@@ -222,7 +222,7 @@ err_trap() {
 # preserve readability - ambiguity should be minimal
 escape_stderr() {
     local sed_escape_pipe
-    sed_escape_pipe="$(mktemp -u)"
+    sed_escape_pipe="$(mktemp -u -t snapraid-btrfs.XXXXXX)"
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
