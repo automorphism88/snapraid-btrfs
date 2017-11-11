@@ -641,7 +641,7 @@ run_command() {
             if [[ $diff_ret -eq 2 ]] ; then
                 interactive=1
                 run_snapraid sync "$@" && true
-            elif [[ $diff_ret -eq 0 ]] && [[ $verbose -gt 0 ]] ; then
+            elif [[ $diff_ret -eq 0 ]] && [[ $verbose -ge 1 ]] ; then
                 printf 'No difference, exiting\n'
             else
                 exit $diff_ret
