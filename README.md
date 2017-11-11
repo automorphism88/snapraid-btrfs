@@ -45,7 +45,31 @@ matching data drives in your snapraid configuration file. If you are satisfied
 that it has found them all, you are ready to run your first
 `snapraid-btrfs sync` which will, by default, create new snapshots and use them
 for the sync. For more details on using snapraid-btrfs, see the output of
-`snapraid-btrfs --help`. Bash version 4.1+ is required.
+`snapraid-btrfs --help`.
+
+## Dependencies
+
+- snapraid and snapper (recent versions recommended)
+- bash (version 4.1+)
+- awk, sed, grep, and coreutils (should all be installed by default in any
+  modern distro, and any POSIX-compliant versions should work, as nonportable
+  features are avoided)
+
+All dependencies are checked on startup, and if any of them are not found,
+snapraid-btrfs will display an error message and exit. Note that by default,
+snapraid-btrfs will search for snapraid and snapper in the user's `$PATH`, but
+alternatively, the `--snapper-path` and/or `--snapraid-path` command line
+options can be specified. This is intended to allow another script to be run
+"in-between", providing a sort of "hook" functionality.
+
+`#!/bin/bash` is used as the shebang (as the `#!/usr/bin/env bash` trick has
+disadvantages), so if a compatible version of bash cannot be found there, one of
+the following workarounds must be used:
+- Create a symlink. This is generally already done on distros that have done the
+  `/usr` merge and install bash in `/usr/bin` instead of `/bin`.
+- Run snapraid-btrfs using `/path/to/right/bash /path/to/snapraid-btrfs`,
+  possibly by creating a wrapper script or shell alias
+- Manually edit the first line of the script to point to the correct location
 
 ## FAQ
 
