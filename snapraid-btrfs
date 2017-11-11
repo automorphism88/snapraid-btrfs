@@ -409,23 +409,26 @@ main() {
 # used for anything other than comments (e.g., within quotes)
 # as it considers anything between # and \n to be a comment
 minify_awk_script() {
-    awk '
-    # Use \f as RS because \0 is a GNU extension, similar to sed -z
-    BEGIN { FS="" ; RS="\f" }
-    {
-        # remove comments
-        gsub(/[ \t]*#[^\n]*\n/,"\n")
-        # remove leading and trailing spaces and tabs
-        gsub(/[ \t]*\n[ \t]*/,"\n")
-        # remove padding whitespace around brackets
-        gsub(/[ \t\n]*{[ \t\n]*/,"{")
-        gsub(/[ \t\n]*}[ \t\n]*/,"}")
-        # remove whitespace before open parentheses
-        gsub(/[ \t]*\(/,"(")
-        # remove blank lines
-        gsub(/[\n]+/,"\n")
-    }
-    1'
+    local doc
+    read -r -d '' doc <<'_EOF_' || true
+# Use \f as RS because \0 is a GNU extension, similar to sed -z
+BEGIN { FS="" ; RS="\f" }
+{
+    # remove comments
+    gsub(/[ \t]*#[^\n]*\n/,"\n")
+    # remove leading and trailing spaces and tabs
+    gsub(/[ \t]*\n[ \t]*/,"\n")
+    # remove padding whitespace around brackets
+    gsub(/[ \t\n]*{[ \t\n]*/,"{")
+    gsub(/[ \t\n]*}[ \t\n]*/,"}")
+    # remove whitespace before open parentheses
+    gsub(/[ \t]*\(/,"(")
+    # remove blank lines
+    gsub(/[\n]+/,"\n")
+}
+1
+_EOF_
+    awk "$doc"
 }
 
 # set snapraid-btrfs userdata key to $1
