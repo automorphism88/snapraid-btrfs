@@ -532,7 +532,7 @@ BEGIN { FS="" ; RS="\f" }
     # remove padding whitespace around brackets
     gsub(/[ \t\n]*{[ \t\n]*/,"{")
     gsub(/[ \t\n]*}[ \t\n]*/,"}")
-    # Remove blank lines
+    # remove blank lines
     gsub(/[\n]+/,"\n")
 }
 1
