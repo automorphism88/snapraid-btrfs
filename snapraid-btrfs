@@ -101,13 +101,10 @@ check_config() {
     done
 }
 
-# Make sure all external binaries we need can be found in $PATH
-# doesn't include those only used if -x option is enabled
+# Make sure all external binaries in $@ can be found in $PATH
 check_dependencies() {
-    local deps=( "$my_snapraid" "$my_snapper"
-                 awk dirname grep sed stat tail tr )
     local i
-    for i in "${deps[@]}" ; do
+    for i in "$@" ; do
         if ! type "$i" &> /dev/null ; then
             # shellcheck disable=SC2016
             printf '%s: Could not find %s in $PATH\n' "$0" "$i" >&2
@@ -221,6 +218,7 @@ err_trap() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 escape_stderr() {
+    check_dependencies mkfifo mktemp rm
     local sed_escape_pipe
     sed_escape_pipe="$(mktemp -u -t snapraid-btrfs.XXXXXX)"
     mkfifo -m 0600 -- "$sed_escape_pipe"
@@ -382,6 +380,7 @@ main() {
         exit $EXIT_INTERNAL_ERROR
     fi
     trap 'err_trap ${LINENO} $?' ERR
+    check_dependencies awk dirname grep sed stat tail tr
     # Set default values for "global" configuration variables
     local config_file=/etc/snapraid.conf
     local my_{snapper=snapper,snapraid=snapraid}
@@ -705,9 +704,11 @@ set_option() {
 # Call immediately after all command line options have been parsed to
 # initialize ${snapper_configs[@]} and related arrays
 setup_config() {
-    check_dependencies
+    # Check for snapraid and snapper now that option processing is complete
+    check_dependencies "$my_snapper" "$my_snapraid"
+    # Populate arrays
     find_configs
-    # Do some sanity checks of snapraid/snapper configuration
+    # Do some sanity checks of the configuration we just read
     check_config
     # Apply -U option
     [[ "${use_snapshot_option:-}" ]] &&
