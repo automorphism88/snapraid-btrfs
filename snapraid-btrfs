@@ -378,18 +378,18 @@ generate_temp_snapraid_conf() {
 
 interactive_ask() {
     local choice
-    printf 'About to run the command:\n'
-    printf '%s ' "$@"
-    printf '\n'
+    printf 'About to run the command:\n' >&2
+    printf '%s ' "$@" >&2
+    printf '\n' >&2
     while true ; do
-        read -r -p 'Do it [Y/N]? ' choice
+        read -r -p 'Do it [Y/N]? ' choice >&2
         case $choice in
             y|Y)
                 break ;;
             n|N)
                 exit $EXIT_INTERACTIVE_NO ;;
             *)
-                printf 'Invalid choice! Please enter y or n.\n' ;;
+                printf 'Invalid choice! Please enter y or n.\n' >&2 ;;
         esac
     done
 }
@@ -637,7 +637,7 @@ run_snapraid() {
         generate_temp_snapraid_conf
     fi
     if [[ "${interactive:-}" ]] ; then
-        interactive_ask "${cmd[@]}" >&2
+        interactive_ask "${cmd[@]}"
     elif [[ $verbose -ge 0 ]] ; then
         printf '%s ' "${cmd[@]}"
         printf '\n'
@@ -792,7 +792,7 @@ snapper_revert() {
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         if [[ ${interactive:-} ]] ; then
-            interactive_ask "${snapper_cmd[@]}" >&2
+            interactive_ask "${snapper_cmd[@]}"
         elif [[ $verbose -gt 0 ]] ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
@@ -820,7 +820,7 @@ snapper_rollback() {
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
         if [[ "${interactive:-}" ]] ; then
-            interactive_ask "${snapper_cmd[@]}" >&2
+            interactive_ask "${snapper_cmd[@]}"
         elif [[ $verbose -gt 0 ]] ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
