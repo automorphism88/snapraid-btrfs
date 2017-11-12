@@ -324,7 +324,8 @@ find_snapshots() {
                     parse_snapper_ls snapraid-btrfs synced |
                     tail -n 1)" ;;
             *)
-                "$my_snapper" -c "$i" ls | parse_snapper_ls |
+                "$my_snapper" -c "$i" ls |
+                    parse_snapper_ls |
                     grep -F "${use_snapshot[$i]}" > /dev/null ||
                     use_snapshot[$i]= ;;
         esac
