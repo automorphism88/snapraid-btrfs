@@ -248,14 +248,17 @@ need to use another solution such as mdadm or btrfs RAID that operates at
 the filesystem or block device level.
 
 ### Q: What is the 'dsync' command and what is it for?
-A: Short for 'diff-sync', this command creates a set of read-only snapshots,
+A: Short for `diff-sync`, this command creates a set of read-only snapshots,
 runs a `snapraid diff`, and then asks for confirmation before running a
 `snapraid sync` with the same snapshots. Since snapraid can only restore the
 array to the state it was in at the time of the last sync, syncing is a
 destructive action, and the `dsync` command allows the user to make sure the new
 snapshots are okay before continuing with the sync. The behavior of this command
 is equivalent to running `snapraid-btrfs diff` followed by
-`snapraid-btrfs -i -u diff sync`.
+`snapraid-btrfs --use-snapshot-all diff --interactive sync`, except that
+`snapraid-btrfs dsync` will only run the sync if `snapraid diff` indicates that
+there have been changes since the last sync. Otherwise, `snapraid-btrfs dsync`
+will simply exit after the diff.
 
 ### Q: What about pooling?
 A: If you run `snapraid-btrfs pool` the symlinks created in your pool directory
