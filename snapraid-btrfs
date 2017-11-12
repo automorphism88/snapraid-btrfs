@@ -230,9 +230,12 @@ create_pre_post_snapshots() {
 err_trap() {
     printf '%s: %s: %s failed with exit status %s\n' "$0" "$1" \
            "$BASH_COMMAND" "$2" >&2
-    printf 'Traceback:\n' >&2
-    local i=0
-    while caller "$i" ; do ((++i)) ; done
+    printf 'Stack trace:\n' >&2
+    local line func script
+    local frame=0
+    while read -r line func script; do
+        printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
+    done < <(while caller $frame ; do ((++frame)) ; done)
     exit "$2"
 }
 
