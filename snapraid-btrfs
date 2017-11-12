@@ -162,6 +162,7 @@ cleanup_snapshots() {
     local ret=0 snapper_ret snaps_to_consider i j
     local -a snapper_cmd
     for i in "${snapper_configs[@]}" ; do
+        # break if we couldn't find a synced snapshot for this config
         [[ -z "${use_snapshot[$i]}" ]] && break
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
             parse_snapper_ls snapraid-btrfs)"
