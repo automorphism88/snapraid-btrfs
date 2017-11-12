@@ -237,8 +237,7 @@ err_trap() {
     printf '%s: %s: %s failed with exit status %s\n' "$0" "$1" \
            "$BASH_COMMAND" "$2" >&2
     printf 'Stack trace:\n' >&2
-    local line func script
-    local frame=0
+    local frame=0 func line script
     while read -r line func script; do
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
     done < <(while caller $frame ; do ((++frame)) ; done)
