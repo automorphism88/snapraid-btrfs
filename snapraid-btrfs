@@ -775,7 +775,8 @@ snapper_ls_all() {
         if [[ $# -ge 1 ]] ; then
             printf 'Snapshots with userdata key snapraid-btrfs=%s:\n' "$*"
             "$my_snapper" -c "$i" ls |
-                parse_snapper_ls snapraid-btrfs "$*" | tr '\n' ' '
+                parse_snapper_ls snapraid-btrfs "$*" |
+                tr '\n' ' '
             printf '\n'
         fi
     done
