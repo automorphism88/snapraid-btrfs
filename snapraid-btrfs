@@ -790,7 +790,7 @@ snapper_revert() {
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
-                      "${use_snapshot[$i]}..0" "${undochange_files[@]}" )
+                      "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         if [[ ${interactive:-} ]] ; then
             interactive_ask "${snapper_cmd[@]}" >&2
         elif [[ $verbose -gt 0 ]] ; then
