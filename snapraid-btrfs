@@ -759,7 +759,8 @@ snapper_revert() {
     local -a snapper_cmd
     create_pre_post_snapshots revert
     trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
-    local -a undochange_{files,opts}
+    local undochange_files=()
+    local undochange_opts=()
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
     while [[ $# -ge 1 ]] ; do
