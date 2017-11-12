@@ -837,7 +837,6 @@ usage() {
     printf 'Usage: %s [options] <command> [arguments]\n' "$0"
     local doc
     read -r -d '' doc <<'_EOF_' || true
-
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
 snapraid-btrfs:
@@ -942,7 +941,7 @@ allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
 is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
 _EOF_
-    printf '%s\n\n' "$doc"
+    printf '\n%s\n\n' "$doc"
 }
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
