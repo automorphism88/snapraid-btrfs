@@ -462,8 +462,9 @@ parse_arguments() {
     while [[ $# -ge 1 ]] ; do
         case $1 in
             # matching any command means option processing is complete
-            check|diff|dup|list|pool|scrub|status|fix|touch|config|create) ;&
-            cleanup?(-all)|snapper-l@(s|ist)|?(diff-|d)sync|revert|rollback)
+            check|diff|dup|list|pool|scrub|status|fix|touch) ;&
+            cleanup?(-all)|snapper-l@(s|ist)|?(diff-|d)sync) ;&
+            config|create|rollback|undochange)
                 setup_config
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
@@ -583,7 +584,7 @@ run_command() {
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
-        check|dup|list|pool|revert|rollback|scrub|status)
+        check|dup|list|pool|rollback|scrub|status|undochange)
             use_snapshot_default sync ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
@@ -599,11 +600,11 @@ run_command() {
         snapper-l@(s|ist))
             shift
             snapper_ls_all "$@" ;;
-        revert)
-            shift
-            snapper_revert "$@" ;;
         rollback)
             snapper_rollback ;;
+        undochange)
+            shift
+            snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
         check|diff|dup|fix|list|pool|scrub|status|sync|touch)
             run_snapraid "$@" && true ;;
@@ -758,13 +759,41 @@ snapper_ls_all() {
     printf '\n'
 }
 
-# Run snapper undochange in each snapper config to revert to the state at the
-# time ${use_snapshot[$i]} was created, creating before and after snapshots
-snapper_revert() {
+# Run snapper rollback in each snapper config
+snapper_rollback() {
     local ret=0 snapper_ret i
     local -a snapper_cmd
-    create_pre_post_snapshots revert
-    trap 'create_pre_post_snapshots revert && trap - RETURN' RETURN
+    local snapper_rollback_opts=( -u "$snapper_userdata" )
+    [[ "${snapper_cleanup:-}" ]] ||
+        snapper_rollback_opts+=( -c "$snapper_cleanup" )
+    if [[ "${snapper_description:-}" ]] ; then
+        snapper_rollback_opts+=( -d "$snapper_description" )
+    else
+        snapper_rollback_opts+=( -d "snapraid-btrfs rollback" )
+    fi
+    for i in "${snapper_configs[@]}" ; do
+        snapper_cmd=( "$my_snapper" -c "$i" rollback
+                      "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
+        if [[ "${interactive:-}" ]] ; then
+            interactive_ask "${snapper_cmd[@]}"
+        elif [[ $verbose -gt 0 ]] ; then
+            printf '%s ' "${snapper_cmd[@]}"
+            printf '\n'
+        fi
+        "${snapper_cmd[@]}" && true
+        snapper_ret=$?
+        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
+    done
+    return $ret
+}
+
+# Run snapper undochange in each snapper config to revert to the state at the
+# time ${use_snapshot[$i]} was created, creating before and after snapshots
+snapper_undochange() {
+    local ret=0 snapper_ret i
+    local -a snapper_cmd
+    create_pre_post_snapshots undochange
+    trap 'create_pre_post_snapshots undochange && trap - RETURN' RETURN
     local undochange_files=()
     local undochange_opts=()
     # ensure that -i option, if specified, appears before snapshots
@@ -804,34 +833,6 @@ snapper_revert() {
     return $ret
 }
 
-# Run snapper rollback in each snapper config
-snapper_rollback() {
-    local ret=0 snapper_ret i
-    local -a snapper_cmd
-    local snapper_rollback_opts=( -u "$snapper_userdata" )
-    [[ "${snapper_cleanup:-}" ]] ||
-        snapper_rollback_opts+=( -c "$snapper_cleanup" )
-    if [[ "${snapper_description:-}" ]] ; then
-        snapper_rollback_opts+=( -d "$snapper_description" )
-    else
-        snapper_rollback_opts+=( -d "snapraid-btrfs rollback" )
-    fi
-    for i in "${snapper_configs[@]}" ; do
-        snapper_cmd=( "$my_snapper" -c "$i" rollback
-                      "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
-        if [[ "${interactive:-}" ]] ; then
-            interactive_ask "${snapper_cmd[@]}"
-        elif [[ $verbose -gt 0 ]] ; then
-            printf '%s ' "${snapper_cmd[@]}"
-            printf '\n'
-        fi
-        "${snapper_cmd[@]}" && true
-        snapper_ret=$?
-        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
-    done
-    return $ret
-}
-
 usage() {
     printf 'Usage: %s [options] <command> [arguments]\n' "$0"
     local doc
@@ -850,7 +851,7 @@ snapraid-btrfs:
                                 snapshots created
 -i, --interactive               Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
-                                cleanup(-all), revert, or rollback commands)
+                                cleanup(-all), rollback, or undochange commands)
 -q, --quiet                     Only show snapraid/snapper output and errors
 -u, --use-snapshot-all STR      Use one of the following arguments:
                                     diff - Use last snapshot a diff was
@@ -918,23 +919,23 @@ or one of the following snapraid-btrfs specific commands:
         Create a new snapshot for all snapper configs found in snapraid config
         file, do a snapraid diff, then sync. Implies --interactive option for
         the sync operation.
-'revert':
-        Use snapper undochange to revert the array to the state it was in at
-        the time of the last successful sync (or another snapshot if the -u or
-        -U option is specified), creating pre/post snapshots. Arguments are
-        passed through to snapper undochange, including the snapper undochange
-        -i option.
 'rollback':
         Run snapper rollback in all snapper configs using the snapshots from
         the last successful sync (or another snapshot if the -u or -U option
         is specified). WARNING: Do not use this command unless you are familiar
         with the snapper rollback command and its effects. Instead consider
-        using the revert command.
+        using the undochange command.
 'snapper-list'|'snapper-ls':
         Run snapper ls for all snapper configs found in snapraid config file.
         If an argument is given, also list which snapshots in each config were
         identified as having snapper userdata key snapraid-btrfs equal to the
         argument (useful for testing purposes).
+'undochange':
+        Use snapper undochange to revert the array to the state it was in at
+        the time of the last successful sync (or another snapshot if the -u or
+        -U option is specified), creating pre/post snapshots. Arguments are
+        passed through to snapper undochange, including the snapper undochange
+        -i option.
 
 NOTE: The snapraid '-c' option will not work unless placed before the command,
 allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
