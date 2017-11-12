@@ -114,10 +114,11 @@ check_config() {
     # Check to make sure the user has permission to access snapshots
     for i in "${snapper_configs[@]}" ; do
         # Try a snapper ls first, in case SYNC_ACL has just been set
-	if ! { "$my_snapper" -c "$i" ls > /dev/null &&
-		   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
-	then
-           printf '%s: Could not read %s - is SYNC_ACL set?\n' "$0" \
+        if ! { "$my_snapper" -c "$i" ls > /dev/null &&
+                   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] &&
+                   [[ -d "${snapper_subvols[$i]}/.snapshots" ]] ; }
+        then
+           printf '%s: Could not read directory %s - is SYNC_ACL set?\n' "$0" \
                   "${snapper_subvols[$i]}/.snapshots" >&2
            exit $EXIT_NO_PERMISSIONS
         fi
@@ -356,7 +357,7 @@ generate_temp_snapraid_conf() {
         if [[ "${use_snapshot[$i]}" -ne 0 ]] ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
-            if [[ -r "$new_path" ]] ; then
+            if [[ -r "$new_path" ]] && [[ -d "$new_path" ]] ; then
                 # use bash builtins to escape slashes in paths for sed
                 sed_find="${snapper_subvols[$i]//\//\\\/}"
                 sed_replace="${new_path//\//\\\/}"
