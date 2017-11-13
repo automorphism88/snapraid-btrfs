@@ -874,8 +874,7 @@ snapper_undochange() {
 }
 
 usage() {
-    local doc
-    read -r -d '' doc <<_EOF_ || true
+    cat - <<_EOF_
 Usage: $my_name [options] <command> [arguments]
 
 Arguments appearing after the command are passed through to snapraid, while
@@ -984,8 +983,8 @@ is specified using the $my_name -c option (/etc/snapraid.conf by default)
 The SNAPRAID_USERDATA_KEY environment variable can be set to control the snapper
 userdata key that is used to track snapshots. If unset, it defaults to the name
 of the script - currently $my_name.
+
 _EOF_
-    printf '%s\n\n' "$doc"
 }
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is
