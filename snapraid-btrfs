@@ -116,7 +116,7 @@ check_config() {
     done < "$config_file"
     # Check to make sure the user has permission to access snapshots
     for i in "${snapper_configs[@]}" ; do
-        # Try a snapper ls first, in case SYNC_ACL has just been set
+        # Try a snapper ls first, in case ACLs need to be refreshed
         if ! { "$my_snapper" -c "$i" ls > /dev/null &&
                    [[ -r "${snapper_subvols[$i]}/.snapshots" ]] &&
                    is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; }
