@@ -234,15 +234,19 @@ create_pre_post_snapshots() {
     done
 }
 
+# Intended to be called by ERR trap. Accepts the following arguments:
+# $1 - Line number where ERR condition occurred
+# $2 - Command that caused the ERR condition
+# $3 - Exit status that caused the ERR condition
 err_trap() {
-    printf '%s: %s: %s failed with exit status %s\n' "$0" "$1" \
-           "$BASH_COMMAND" "$2" >&2
+    printf '%s: %s: %s failed with exit status %s\n' "$0" "${1:-?}" \
+           "${2:-unknown command}" "${3:-unknown}" >&2
     printf 'Stack trace:\n' >&2
     local frame=0 func line script
     while read -r line func script; do
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
     done < <(while caller $frame ; do ((++frame)) ; done)
-    exit "$2"
+    exit "${3:-$EXIT_INTERNAL_ERROR}"
 }
 
 # Replace literal \t and \r characters in stderr with escapes
@@ -402,7 +406,7 @@ invalid_argument() {
 
 main() {
     bash_version_check
-    trap 'err_trap $LINENO $?' ERR
+    trap 'err_trap $LINENO $BASH_COMMAND $?' ERR
     check_dependencies awk dirname grep sed stat tail tr
     # Set default values for "global" configuration variables
     local config_file=/etc/snapraid.conf
