@@ -868,12 +868,13 @@ snapper_undochange() {
 }
 
 usage() {
-    printf 'Usage: %s [options] <command> [arguments]\n' "$my_name"
     local doc
-    read -r -d '' doc <<'_EOF_' || true
+    read -r -d '' doc <<_EOF_ || true
+Usage: $my_name [options] <command> [arguments]
+
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
-snapraid-btrfs:
+$my_name:
 
 -h, --help                      Show this help
 -c, --conf FILE                 Specify location of snapraid config file
@@ -917,16 +918,16 @@ snapraid-btrfs:
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
 --snapper-path PATH             Path to the snapper executable (defaults to
-                                first found in $PATH)
+                                first found in \$PATH)
 --snapper-userdata STR          Specify snapper userdata to set for any
                                 snapshots created in addition to the
-                                "snapraid-btrfs" attribute, which is set by
+                                $my_name attribute, which is set by
                                 default and cannot be changed. Argument should
                                 be in key=value format accepted by snapper,
                                 with multiple keys separated by commas (e.g.
                                 key1=value1,key2=value2)
 --snapraid-path PATH            Path to the snapraid executable (defaults to
-                                first found in $PATH)
+                                first found in \$PATH)
 
 Commands are either one of the following snapraid commands:
 'check'|'diff'|'dup'|'list'|'pool'|'scrub'|'status'|'sync':
@@ -936,7 +937,7 @@ Commands are either one of the following snapraid commands:
         Run the snapraid command given, creating a set of pre/post snapshots
         before and after.
 
-or one of the following snapraid-btrfs specific commands:
+or one of the following $my_name specific commands:
 'config':
         Show the modified snapraid config file that would be used, but don't
         actually run snapraid.
@@ -944,10 +945,10 @@ or one of the following snapraid-btrfs specific commands:
         Create a new snapshot for all snapper configs corresponding to data
         drives found in snapraid config file.
 'cleanup':
-        Delete all snapshots created by snapraid-btrfs before the last one a
+        Delete all snapshots created by $my_name before the last one a
         successful sync has been completed with.
 'cleanup-all':
-        Delete all snapshots created by snapraid-btrfs.
+        Delete all snapshots created by $my_name.
 'dsync'|'diff-sync':
         Create a new snapshot for all snapper configs found in snapraid config
         file, do a snapraid diff, then sync. Implies --interactive option for
@@ -961,8 +962,7 @@ or one of the following snapraid-btrfs specific commands:
 'snapper-list'|'snapper-ls':
         Run snapper ls for all snapper configs found in snapraid config file.
         If an argument is given, also list which snapshots in each config were
-        identified as having snapper userdata key snapraid-btrfs equal to the
-        argument (useful for testing purposes).
+        identified as having snapper userdata key equal to the argument.
 'undochange':
         Use snapper undochange to revert the array to the state it was in at
         the time of the last successful sync (or another snapshot if the -u or
@@ -971,11 +971,11 @@ or one of the following snapraid-btrfs specific commands:
         -i option.
 
 NOTE: The snapraid '-c' option will not work unless placed before the command,
-allowing it to be interpreted as a snapraid-btrfs option. Snapraid will be run
+allowing it to be interpreted as a $my_name option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
-is specified using the snapraid-btrfs -c option (/etc/snapraid.conf by default)
+is specified using the $my_name -c option (/etc/snapraid.conf by default)
 _EOF_
-    printf '\n%s\n\n' "$doc"
+    printf '%s\n\n' "$doc"
 }
 
 # Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
