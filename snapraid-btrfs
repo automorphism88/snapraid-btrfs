@@ -116,9 +116,9 @@ check_config() {
         # Try a snapper ls first, in case SYNC_ACL has just been set
         if ! { "$my_snapper" -c "$i" ls > /dev/null &&
                    [[ -r "${snapper_subvols[$i]}/.snapshots" ]] &&
-                   [[ -d "${snapper_subvols[$i]}/.snapshots" ]] ; }
+                   is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; }
         then
-           printf '%s: Could not read directory %s - is SYNC_ACL set?\n' "$0" \
+           printf '%s: Could not read subvolume %s - is SYNC_ACL set?\n' "$0" \
                   "${snapper_subvols[$i]}/.snapshots" >&2
            exit $EXIT_NO_PERMISSIONS
         fi
@@ -361,7 +361,7 @@ generate_temp_snapraid_conf() {
         if [[ "${use_snapshot[$i]}" -ne 0 ]] ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
-            if [[ -r "$new_path" ]] && [[ -d "$new_path" ]] ; then
+            if [[ -r "$new_path" ]] && is_btrfs_subvolume "$new_path" ; then
                 # use bash builtins to escape slashes in paths for sed
                 sed_find="${snapper_subvols[$i]//\//\\\/}"
                 sed_replace="${new_path//\//\\\/}"
@@ -372,7 +372,7 @@ generate_temp_snapraid_conf() {
                 match_line="${match_line/data/disk}"
                 sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
             else
-                printf '%s: Could not read directory %s\n' "$0" "$new_path" >&2
+                printf '%s: Could not read subvolume %s\n' "$0" "$new_path" >&2
                 exit $EXIT_NO_PERMISSIONS
             fi
         fi
@@ -402,6 +402,28 @@ invalid_argument() {
     printf '%s: Invalid argument %s!\n' "$0" "$1" >&2
     printf 'Use %s -h to see options.\n' "$0" >&2
     exit $EXIT_INVALID_ARGUMENT
+}
+
+# Returns:
+# 0 if $1 is a btrfs subvolume
+# 1 if $1 is an "empty subvolume" inside a snapshot
+# 2 if $1 is an ordinary directory
+# 3 if $1 is not a directory
+# 4 if we couldn't determine the inode number with stat
+is_btrfs_subvolume() {
+    [[ -d "$1" ]] || return 3
+    local inode
+    inode="$(stat --format=%i -- "$1")"
+    case $inode in
+        256)
+            return 0 ;;
+        2)
+            return 1 ;;
+        '')
+            return 4 ;;
+        *)
+            return 2 ;;
+    esac
 }
 
 main() {
