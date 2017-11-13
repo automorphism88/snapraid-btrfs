@@ -260,7 +260,7 @@ err_trap() {
 escape_stderr() {
     check_dependencies mkfifo mktemp rm
     local sed_escape_pipe
-    sed_escape_pipe="$(mktemp -u -t snapraid-btrfs.XXXXXX)"
+    sed_escape_pipe="$(mktemp -u -t "${my_name}.XXXXXX")"
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
