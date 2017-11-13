@@ -287,6 +287,7 @@ find_configs() {
     fi
     # Find snapper configs with paths in snapraid config file
     local config subvol
+    # grep ERE matching data line up to the point where the path starts
     local data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
     while IFS='|' read -r config subvol ; do
         # Remove leading and trailing spaces
@@ -294,6 +295,7 @@ find_configs() {
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
+        # allow trailing slash and/or \r character
         if grep -Ex "${data_line}${subvol}"$'[/]?[\r]?' \
                 "$config_file" > /dev/null
         then
