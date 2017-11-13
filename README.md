@@ -118,10 +118,10 @@ will always correspond with the read-only snapshots they were created from. If a
 sync is interrupted, different sets of snapshots will correspond with different
 portions of the parity file(s), and both sets of snapshots should be retained
 until a sync is completed, at which point all previous snapshots can be safely
-cleaned up. The snapraid-btrfs userdata key in snapper is used to keep track of
-whether a `snapraid sync` run on a set of snapshots completes successfully
-(i.e., returns exit status 0) to ensure that `snapraid-btrfs cleanup` can handle
-this situation properly.
+cleaned up. A snapper userdata key is used to keep track of whether a
+`snapraid sync` run on a set of snapshots completes successfully (i.e., returns
+exit status 0) to ensure that `snapraid-btrfs cleanup` can handle this situation
+properly.
 
 It is recommended that you use ext4 for the parity drives, since the metadata
 overhead is extremely small with the right mkfs settings (minimum possible
@@ -224,16 +224,23 @@ The snapraid "content" files should be stored in a separate subvolume to prevent
 them from being snapshotted.
 
 ### Q: Can I also manage snapshots manually with snapper?
-A: Yes. Snapraid-btrfs keeps track of its own snapshots using the snapraid-btrfs
-userdata key in snapper, and will ignore any snapshots without that userdata key
-defined. If you delete snapraid-btrfs snapshots using snapper, parity protection
-may be lost, so it is recommended that you use the `snapraid-btrfs cleanup`
-command instead, which will only delete snapshots when it is safe to do so (and
-will ignore any snapshots without the snapraid-btrfs userdata key). If you need
-to free up space by deleting old snapshots, it is recommended that you complete
-a new sync with a fresh set of snapshots (which will initially require no space
-since they will be identical to the live filesystem), then run the
+A: Yes. `snapraid-btrfs` keeps track of its own snapshots using a snapper
+userdata key, and will ignore any snapshots without that userdata key defined.
+If you delete `snapraid-btrfs` snapshots using snapper, parity protection may
+be lost, so it is recommended that you use the `snapraid-btrfs cleanup` command
+instead, which will only delete snapshots when it is safe to do so (and will
+ignore any snapshots without that userdata key specified). If you need to free
+up space by deleting old snapshots, it is recommended that you complete a new
+sync with a fresh set of snapshots (which will initially require no space since
+they will be identical to the live filesystem), then run the
 `snapraid-btrfs cleanup` command to delete the old ones.
+
+### Q: Can I change the snapper userdata key that is used to track snapshots?
+A: Yes. If the `SNAPRAID_USERDATA_KEY` environment variable is set,
+`snapraid-btrfs` will use that as its userdata key. Otherwise, it will default
+to using the name of the script. Beware that if you change this, snapshots
+created before the change will no longer be identified as having been created
+by `snapraid-btrfs`.
 
 ### Q: Can I restore a previous snapshot?
 A: Just like with "vanilla" snapraid, a fix can only restore the array to the

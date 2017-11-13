@@ -161,8 +161,8 @@ check_snapraid_arguments() {
     done
 }
 
-# In each config, delete snapshots with userdata key snapraid-btrfs created
-# before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+# In each config, delete snapshots with userdata key $snapper_userdata_key
+# created before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local ret=0 snapper_ret snaps_to_consider i j
     local -a snapper_cmd
@@ -175,7 +175,7 @@ cleanup_snapshots() {
             break
         fi
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
-            parse_snapper_ls snapraid-btrfs)"
+            parse_snapper_ls "$snapper_userdata_key")"
         for j in $snaps_to_consider ; do
             if [[ "${use_snapshot[$i]}" -eq 0 ]] ||
                    [[ "${use_snapshot[$i]}" -gt "$j" ]]
@@ -323,22 +323,22 @@ find_snapshots() {
         case ${use_snapshot[$i]} in
             diff)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls snapraid-btrfs diff |
+                    parse_snapper_ls "$snapper_userdata_key" diff |
                     tail -n 1)" ;;
             last)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls snapraid-btrfs |
+                    parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")" ;;
             res)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls snapraid-btrfs syncing |
+                    parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
             sync)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
-                    parse_snapper_ls snapraid-btrfs synced |
+                    parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             *)
                 "$my_snapper" -c "$i" ls |
@@ -437,7 +437,8 @@ main() {
     check_dependencies awk {base,dir}name grep sed stat tail tr
     # Declare "global" variables without initial values
     local my_name interactive pool_dir
-    local snapper_{cleanup,description} use_snapshot{,_all}_option
+    local snapper_{cleanup,description,userdata{,_key}}
+    local use_snapshot{,_all}_option
     local -a pre_post_configs
     local -A snapper_subvols use_snapshot pre_snapshots
     # Set default values for "global" configuration variables
@@ -446,17 +447,18 @@ main() {
     local no_pre_post_option=()
     local pre_post_option=()
     local snapper_configs=()
-    local snapper_userdata='snapraid-btrfs=created'
     local verbose=0
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
+    snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$my_name}"
+    snapper_userdata="${snapper_userdata_key}=created"
     parse_arguments "$@"
 }
 
-# set snapraid-btrfs userdata key to $1
+# set $snapper_userdata_key userdata key to $1
 modify_userdata() {
     local ret=0 snapper_ret i
     for i in "${snapper_configs[@]}" ; do
-        "$my_snapper" -c "$i" modify -u "snapraid-btrfs=$1" \
+        "$my_snapper" -c "$i" modify -u "${snapper_userdata_key}=$1" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
         [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
@@ -774,16 +776,17 @@ setup_config() {
 }
 
 # Do a snapper ls in all configs, and if argument is specified, additionally
-# identify which snapshots we found with userdata snapraid-btrfs=$*
+# identify which snapshots we found with userdata ${snapper_userdata_key}=$*
 snapper_ls() {
     local i
     for i in "${snapper_configs[@]}" ; do
         printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
         "$my_snapper" -c "$i" ls
         if [[ $# -ge 1 ]] ; then
-            printf 'Snapshots with userdata key snapraid-btrfs=%s:\n' "$*"
+            printf 'Snapshots with userdata key %s=%s:\n' \
+                   "$snapper_userdata_key" "$*"
             "$my_snapper" -c "$i" ls |
-                parse_snapper_ls snapraid-btrfs "$*" |
+                parse_snapper_ls "$snapper_userdata_key" "$*" |
                 tr '\n' ' '
             printf '\n'
         fi
@@ -974,11 +977,16 @@ NOTE: The snapraid '-c' option will not work unless placed before the command,
 allowing it to be interpreted as a $my_name option. Snapraid will be run
 with a temporary configuration file, generated using whatever snapraid.conf file
 is specified using the $my_name -c option (/etc/snapraid.conf by default)
+
+The SNAPRAID_USERDATA_KEY environment variable can be set to control the snapper
+userdata key that is used to track snapshots. If unset, it defaults to the name
+of the script - currently $my_name.
 _EOF_
     printf '%s\n\n' "$doc"
 }
 
-# Add key/value pairs from $1 to snapper_userdata, unless key is snapraid-btrfs
+# Add key/value pairs from $1 to snapper_userdata, unless key is
+# $snapper_userdata_key
 use_snapper_userdata() {
     local key value i
     local -a args
@@ -987,7 +995,7 @@ use_snapper_userdata() {
         key=
         value=
         IFS='=' read -r key value <<< "$i"
-        [[ "$key" = snapraid-btrfs ]] ||
+        [[ "$key" = "$snapper_userdata_key" ]] ||
             snapper_userdata+=",${key}=${value}"
     done
 }
