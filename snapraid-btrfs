@@ -433,7 +433,7 @@ is_btrfs_subvolume() {
 
 main() {
     bash_version_check
-    trap 'err_trap $LINENO $BASH_COMMAND $?' ERR
+    trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     check_dependencies awk {base,dir}name grep sed stat tail tr
     # Declare "global" variables without initial values
     local my_name interactive pool_dir
