@@ -628,7 +628,7 @@ run_command() {
             generate_temp_snapraid_conf ;;
         snapper-l@(s|ist))
             shift
-            snapper_ls_all "$@" ;;
+            snapper_ls "$@" ;;
         rollback)
             snapper_rollback ;;
         undochange)
@@ -772,7 +772,7 @@ setup_config() {
 
 # Do a snapper ls in all configs, and if argument is specified, additionally
 # identify which snapshots we found with userdata snapraid-btrfs=$*
-snapper_ls_all() {
+snapper_ls() {
     local i
     for i in "${snapper_configs[@]}" ; do
         printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
