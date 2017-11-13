@@ -85,6 +85,9 @@ bash_version_check() {
 }
 
 # Sanity check snapper configuration
+# shellcheck disable=SC2154
+# This warning doesn't understand the brace expansion field{1,2}
+# see https://github.com/koalaman/shellcheck/issues/1045
 check_config() {
     # Make sure we found some configs
     if [[ "${#snapper_configs[@]}" -eq 0 ]] ; then
