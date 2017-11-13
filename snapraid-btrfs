@@ -134,6 +134,7 @@ check_dependencies() {
     for i in "$@" ; do
         if ! type "$i" &> /dev/null ; then
             # shellcheck disable=SC2016
+            # we really do want to print the literal string $PATH
             printf '%s: Could not find %s in $PATH\n' "$my_name" "$i" >&2
             exit $EXIT_INTERNAL_ERROR
         fi
@@ -265,6 +266,7 @@ escape_stderr() {
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
     # shellcheck disable=SC2064
+    # double quoted since we want $! evaluated now
     trap "kill -TERM $!" EXIT
     sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
     exec 2> "$sed_escape_pipe"
@@ -357,6 +359,7 @@ generate_temp_snapraid_conf() {
     local sed_exps=()
     local new_path sed_{find,replace} match_line i
     # shellcheck disable=SC2016
+    # $a is a sed command, not part of a bash variable, so is single quoted
     [[ "${pool_dir:-}" ]] &&
         sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
@@ -685,6 +688,7 @@ run_snapraid() {
         fix|touch)
             create_pre_post_snapshots "$1"
             # shellcheck disable=SC2064
+            # double quoted since we want $1 evaluated now
             trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
     esac
     # If starting sync, update snapper userdata key
