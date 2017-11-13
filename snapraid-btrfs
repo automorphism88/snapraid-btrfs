@@ -220,7 +220,7 @@ create_pre_post_snapshots() {
             if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
-                snapper_cmd+=( -d "snapraid-btrfs post-$1" )
+                snapper_cmd+=( -d "$my_name post-$1" )
             fi
             snapper_cmd+=( -t post --pre-number "${pre_snapshots[$i]}" )
             "${snapper_cmd[@]}" || true
@@ -230,7 +230,7 @@ create_pre_post_snapshots() {
             if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
-                snapper_cmd+=( -d "snapraid-btrfs pre-$1" )
+                snapper_cmd+=( -d "$my_name pre-$1" )
             fi
             snapper_cmd+=( -t pre -p )
             pre_snapshots[$i]="$("${snapper_cmd[@]}")"
@@ -316,7 +316,7 @@ find_snapshots() {
     if [[ "${snapper_description:-}" ]] ; then
         snapper_create_opts+=( -d "$snapper_description" )
     else
-        snapper_create_opts+=( -d "snapraid-btrfs $1" )
+        snapper_create_opts+=( -d "$my_name $1" )
     fi
     local i
     for i in "${snapper_configs[@]}" ; do
@@ -801,7 +801,7 @@ snapper_rollback() {
     if [[ "${snapper_description:-}" ]] ; then
         snapper_rollback_opts+=( -d "$snapper_description" )
     else
-        snapper_rollback_opts+=( -d "snapraid-btrfs rollback" )
+        snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" -eq 0 ]] && break
