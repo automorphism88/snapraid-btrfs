@@ -356,7 +356,7 @@ generate_temp_snapraid_conf() {
     local data_line=$'^[ \t]\{0,\}data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     # no-op to ensure at least one expression is passed to sed
     local sed_exps=( 's/^//' )
-    local new_path sed_find sed_replace match_line i
+    local new_path sed_{find,replace} match_line i
     # shellcheck disable=SC2016
     [[ "${pool_dir:-}" ]] &&
         sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
