@@ -95,8 +95,8 @@ check_config() {
     # We don't want to snapshot the content files. So, check the directories of
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
-    local field1 field2 content_{dir,mount} i
-    while IFS=$' \t' read -r field1 field2 ; do
+    local field{1,2} content_{dir,mount} i
+    while IFS=$' \t' read -r field{1,2} ; do
         if [[ "$field1" = content ]] ; then
             content_dir="$(dirname "$field2")"
             content_mount="$(stat --format=%m "$content_dir")"
