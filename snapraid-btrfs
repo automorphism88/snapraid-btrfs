@@ -54,12 +54,12 @@ apply_pre_post_options() {
 # Set use_snapshot from comma-separated key=value pairs specified in $1
 apply_use_snapshot_option() {
     local -a args
-    local config config_using i
+    local config{,_using} i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
         config=
         config_using=
-        IFS='=' read -r config config_using <<< "$i"
+        IFS='=' read -r config{,_using} <<< "$i"
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
     done
