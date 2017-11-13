@@ -247,6 +247,12 @@ fix operation. If you want multiple snapshots protected by parity, you'll
 need to use another solution such as mdadm or btrfs RAID that operates at
 the filesystem or block device level.
 
+The above only refers to what is possible with `snapraid fix` (whether or not
+invoked via `snapraid-btrfs fix`). Of course, you can still revert individual
+data disks, or the entire array, to a previous state, just as with any btrfs
+filesystem. You just won't be able to make use of the parity to reconstruct data
+in older snapshots if a disk fails.
+
 ### Q: What is the 'dsync' command and what is it for?
 A: Short for `diff-sync`, this command creates a set of read-only snapshots,
 runs a `snapraid diff`, and then asks for confirmation before running a
