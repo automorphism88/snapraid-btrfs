@@ -380,7 +380,7 @@ generate_temp_snapraid_conf() {
             fi
         fi
     done
-    sed -f <(printf '%s\n' "${sed_exps[@]}") "$config_file"
+    sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
 }
 
 interactive_ask() {
