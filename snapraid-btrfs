@@ -259,19 +259,26 @@ err_trap() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 escape_stderr() {
-    check_dependencies mkfifo mktemp rm
+    check_dependencies mkfifo
     local sed_escape_pipe
     sed_escape_pipe="$(mktemp -u -t "${my_name}.XXXXXX")"
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
-    # shellcheck disable=SC2064
-    # double quoted since we want $! evaluated now
-    trap "kill -TERM $!" EXIT
+    kill_on_exit+=( $! )
     sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
     exec 2> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
     rm -f -- "$sed_escape_pipe"
+}
+
+# Intended to be called by EXIT trap
+# Deletes files in rm_on_exit and sends SIGTERM to processes in kill_on_exit
+exit_trap() {
+    [[ "${#rm_on_exit[@]}" -gt 0 ]] && rm -f -- "${rm_on_exit[@]}"
+    [[ "${#kill_on_exit[@]}" -gt 0 ]] && kill -TERM "${kill_on_exit[@]}"
+    # Don't trigger ERR trap
+    return 0
 }
 
 # compare output of snapper list-configs with snapraid.conf
@@ -442,7 +449,8 @@ is_btrfs_subvolume() {
 main() {
     bash_version_check
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
-    check_dependencies awk {base,dir}name cat grep sed stat tail tr
+    trap 'exit_trap' EXIT
+    check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables without initial values
     local my_name interactive pool_dir
     local snapper_{cleanup,description,userdata{,_key}}
@@ -451,9 +459,11 @@ main() {
     local -A snapper_subvols use_snapshot pre_snapshots
     # Set default values for "global" configuration variables
     local config_file=/etc/snapraid.conf
+    local kill_on_exit=()
     local my_{snapper=snapper,snapraid=snapraid}
     local no_pre_post_option=()
     local pre_post_option=()
+    local rm_on_exit=()
     local snapper_configs=()
     local verbose=0
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
@@ -672,17 +682,19 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local ret
-    # Just for display purposes with -v and -i options, not actually used
-    local cmd=( "$my_snapraid" "-c" "<(generate_temp_snapraid_conf)" "$@" )
+    local ret temp_config_file
+    temp_config_file="$(mktemp -t "${my_name}.XXXXXX")"
+    rm_on_exit+=( "$temp_config_file" )
+    generate_temp_snapraid_conf > "$temp_config_file"
+    local snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if [[ $verbose -ge 0 ]] ; then
         printf 'Using snapraid config file:\n'
-        generate_temp_snapraid_conf
+        cat -- "$temp_config_file"
     fi
     if [[ "${interactive:-}" ]] ; then
-        interactive_ask "${cmd[@]}"
+        interactive_ask "${snapraid_cmd[@]}"
     elif [[ $verbose -ge 0 ]] ; then
-        printf '%s ' "${cmd[@]}"
+        printf '%s ' "${snapraid_cmd[@]}"
         printf '\n'
     fi
     # Create pre/post snapshots if applicable
@@ -696,7 +708,7 @@ run_snapraid() {
     # If starting sync, update snapper userdata key
     [[ "$1" = sync ]] && modify_userdata syncing
     # Run snapraid
-    "$my_snapraid" -c <(generate_temp_snapraid_conf) "$@" && true
+    "${snapraid_cmd[@]}" && true
     ret=$?
     # Update snapper userdata key to reflect completion
     case $1 in
