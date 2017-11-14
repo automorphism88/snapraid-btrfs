@@ -261,7 +261,7 @@ err_trap() {
 escape_stderr() {
     check_dependencies mkfifo
     local sed_escape_pipe
-    sed_escape_pipe="$(mktemp -u -t "${my_name}.XXXXXX")"
+    sed_escape_pipe="$(mktemp -u -- "${TMPDIR:-/tmp}/${my_name}.XXXXXX")"
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
@@ -683,7 +683,7 @@ run_command() {
 run_snapraid() {
     check_snapraid_arguments "$@"
     local ret temp_config_file
-    temp_config_file="$(mktemp -t "${my_name}.XXXXXX")"
+    temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/${my_name}.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
     local snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
