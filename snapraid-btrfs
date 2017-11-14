@@ -751,7 +751,8 @@ set_option() {
             ((++verbose)) ;;
         -x|--debug)
             escape_stderr
-            PS4='+($BASH_SOURCE[0]:$LINENO): $FUNCNAME[0]:+$FUNCNAME[0](): }'
+            PS4='+(${BASH_SOURCE[0]}:$LINENO): '
+            PS4+='${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
             set -x ;;
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
