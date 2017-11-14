@@ -1,6 +1,6 @@
 # snapraid-btrfs
 
-Snapraid-btrfs is a script for using [snapraid](http://www.snapraid.it/) with
+`snapraid-btrfs` is a script for using [snapraid](http://www.snapraid.it/) with
 data drives which are formatted with btrfs. It allows snapraid operations such
 as `sync` or `scrub` which do not write to the data drives to be done using
 read-only snapshots, and when doing snapraid operations which do write to the
@@ -11,22 +11,23 @@ snapraid configuration file where the data paths are replaced with those of
 corresponding read-only snapshots, then running snapraid using the temporary
 configuration file.
 
-Options appearing before the command control the behavior of snapraid-btrfs,
+Options appearing before the command control the behavior of `snapraid-btrfs`,
 while options appearing after the command are passed through to snapraid (with
 the exception of `-c`, which must be specified before the command so that it can
-be processed by snapraid-btrfs when creating the temporary snapraid config
+be processed by `snapraid-btrfs` when creating the temporary snapraid config
 file). Snapraid-btrfs also adds additional commands, such as `cleanup`, for
 managing its snapshots.
 
 ## Setup instructions
 
-To start using snapraid-btrfs, you need to set up [snapper](http://snapper.io/)
-configurations for each data drive that you want snapraid-btrfs to make
-snapshots of. At runtime, snapraid-btrfs will compare the output of
-`snapper list-configs` with the snapraid configuration file, and will ignore any
-data drives which do not have corresponding snapper configurations (in other
-words, the live filesystem will be used for all operations and no snapshots will
-be created). Just like snapraid, snapraid-btrfs will use `/etc/snapraid.conf` by
+To start using `snapraid-btrfs`, you need to set up
+[snapper](http://snapper.io/) configurations for each data drive that you want
+`snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will compare
+the output of `snapper list-configs` with the snapraid configuration file, and
+will ignore any data drives which do not have corresponding snapper
+configurations (in other words, the live filesystem will be used for all
+operations and no snapshots will be created). Just like snapraid,
+`snapraid-btrfs` will use `/etc/snapraid.conf` by
 default, but another configuration file can be specified using the `-c` option.
 
 All files on the data drives which are not excluded by the snapraid
@@ -44,7 +45,7 @@ correctly, you can use the `snapraid-btrfs snapper-ls` command, which will run
 matching data drives in your snapraid configuration file. If you are satisfied
 that it has found them all, you are ready to run your first
 `snapraid-btrfs sync` which will, by default, create new snapshots and use them
-for the sync. For more details on using snapraid-btrfs, see the output of
+for the sync. For more details on using `snapraid-btrfs`, see the output of
 `snapraid-btrfs --help`.
 
 ## Dependencies
@@ -56,8 +57,8 @@ for the sync. For more details on using snapraid-btrfs, see the output of
   features are avoided)
 
 All dependencies are checked on startup, and if any of them are not found,
-snapraid-btrfs will display an error message and exit. Note that by default,
-snapraid-btrfs will search for snapraid and snapper in the user's `$PATH`, but
+`snapraid-btrfs` will display an error message and exit. Note that by default,
+`snapraid-btrfs` will search for snapraid and snapper in the user's `$PATH`, but
 alternatively, the `--snapper-path` and/or `--snapraid-path` command line
 options can be specified. This is intended to allow another script to be run
 "in-between", providing a sort of "hook" functionality.
@@ -67,7 +68,7 @@ disadvantages), so if a compatible version of bash cannot be found there, one of
 the following workarounds must be used:
 - Create a symlink. This is generally already done on distros that have done the
   `/usr` merge and install bash in `/usr/bin` instead of `/bin`.
-- Run snapraid-btrfs using `/path/to/right/bash /path/to/snapraid-btrfs`,
+- Run `snapraid-btrfs` using `/path/to/right/bash /path/to/snapraid-btrfs`,
   possibly by creating a wrapper script or shell alias
 - Manually edit the first line of the script to point to the correct location
 
@@ -100,15 +101,15 @@ caused by writes to the live filesystem during the backup.
 ### Q: Are all snapraid commands supported?
 A: Only the ones which either read from or write to the data drives, since for
 the others (e.g. `snapraid smart`), there is no benefit to using btrfs
-snapshots. Note that snapraid-btrfs does not interfere with the ability to
+snapshots. Note that `snapraid-btrfs` does not interfere with the ability to
 invoke snapraid directly, allowing you to use these commands, or any other
-snapraid command, with snapraid-btrfs temporarily disabled.
+snapraid command, with `snapraid-btrfs` temporarily disabled.
 
 ### Q: Do I need to use btrfs for all of the data drives?
 A: No. Any drives that don't have a corresponding snapper configuration will be
 ignored (meaning that the live filesystem will be used). This allows you to
 format data drives with any filesystem supported by snapraid. However, the
-protection offered by snapraid-btrfs will not be available for writes made to
+protection offered by `snapraid-btrfs` will not be available for writes made to
 any data drives that it does not manage.
 
 ### Q: What about the parity drives?
@@ -153,19 +154,19 @@ which a second sync operation would be required to add them to the parity.
 
 If you have enough space to spare, you can add the new data before the initial
 sync instead of waiting until after the post-sync cleanup, in which case the
-speed of syncing is no different than without snapraid-btrfs. And you can reduce
-the amount of free space required to avoid the worst-case behavior by syncing
-more frequently, before the live filesystem diverges too much from the
+speed of syncing is no different than without `snapraid-btrfs`. And you can
+reduce the amount of free space required to avoid the worst-case behavior by
+syncing more frequently, before the live filesystem diverges too much from the
 snapshots, and always running `snapraid-btrfs cleanup` after each successful
 sync.
 
-This is an unavoidable limitation of the protection provided by snapraid-btrfs,
-and the same price would be paid for any solution to the problem snapraid-btrfs
-aims to solve - e.g. moving files to a directory which is excluded in the
-snapraid config file before deleting them. To preserve the ability to restore
-the array to the state it was in at the time of the last sync even if files are
-modified or deleted, those files must be saved somewhere until the parity has
-been brought up to date.
+This is an unavoidable limitation of the protection provided by
+`snapraid-btrfs`, and the same price would be paid for any solution to the
+problem `snapraid-btrfs` aims to solve - e.g. moving files to a directory which
+is excluded in the snapraid config file before deleting them. To preserve the
+ability to restore the array to the state it was in at the time of the last sync
+even if files are modified or deleted, those files must be saved somewhere until
+the parity has been brought up to date.
 
 ### Q: Does snapraid-btrfs need to be run as root?
 A: No, and it is recommended that you do not do so, just as you should not run
@@ -192,17 +193,17 @@ and set these variables at that level. For further details, see the snapper
 documentation.
 
 ### Q: What about my snapraid.conf file? Do I need to do anything there?
-A: Snapraid-btrfs is designed to work with your existing snapraid configuration
-without requiring further changes. However, you may wish to add the line
-`exclude /.snapshots/` to your config file. If you ever plan to sync your
-snapraid configuration without using snapraid-btrfs (or disable it for specific
-drives using the command-line options), this will ensure that only one snapshot
-is synced at a time, preventing you from running out of parity space. Also, if
-you want to run `snapraid diff` (as opposed to `snapraid-btrfs diff`), this will
-prevent snapraid from thinking all the snapshots are new files.
+A: `snapraid-btrfs` is designed to work with your existing snapraid
+configuration without requiring further changes. However, you may wish to add
+the line `exclude /.snapshots/` to your config file. If you ever plan to sync
+your snapraid configuration without using `snapraid-btrfs` (or disable it for
+specific drives using the command-line options), this will ensure that only one
+snapshot is synced at a time, preventing you from running out of parity space.
+Also, if you want to run `snapraid diff` (as opposed to `snapraid-btrfs diff`),
+this will prevent snapraid from thinking all the snapshots are new files.
 
-When using snapraid-btrfs to sync, the `.snapshots` subvolume will appear as an
-empty directory in the read-only snapshots, so excluding it in the snapraid
+When using `snapraid-btrfs` to sync, the `.snapshots` subvolume will appear as
+an empty directory in the read-only snapshots, so excluding it in the snapraid
 config file is unnecessary, but harmless. (The `.snapshots` directory is
 excluded relative to the root of the data drives, so if your data drive is
 mounted at `/foo/bar` then if using snapshot n it will exclude
@@ -210,7 +211,7 @@ mounted at `/foo/bar` then if using snapshot n it will exclude
 exclude `/foo/bar/.snapshots`.)
 
 ### Q: Can I have multiple subvolumes on a single data drive?
-A: Snapraid-btrfs only uses one subvolume per data drive, which should contain
+A: `snapraid-btrfs` only uses one subvolume per data drive, which should contain
 all the data which is to be protected by snapraid, and should have a snapper
 config with the `SUBVOLUME` variable matching the path in the snapraid config
 file. **Any files stored in other subvolumes on the data drives will NOT be
@@ -248,7 +249,7 @@ state that it was in at the time of the last sync. This is because the parity
 files can only correspond to one snapshot at a time, and is a fundamental
 limitation of snapraid due to its file-based nature.
 
-The purpose of snapraid-btrfs is simply to ensure that modifying the array
+The purpose of `snapraid-btrfs` is simply to ensure that modifying the array
 after a sync doesn't delete any of the data that would be required for the
 fix operation. If you want multiple snapshots protected by parity, you'll
 need to use another solution such as mdadm or btrfs RAID that operates at
@@ -308,9 +309,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ## Known issues
 * Snapraid won't be able to properly detect the UUID when using a snapshot, so
 it won't be able to use inodes to detect move operations. As a workaround, you
-can temporarily disable snapraid-btrfs, either globally by doing a regular
+can temporarily disable `snapraid-btrfs`, either globally by doing a regular
 `snapraid sync`, or for specific drives by doing a `snapraid-btrfs sync` using
 the `-U` option to select snapshot 0 (i.e., the live filesystem, in snapper
 terminology) for the drives in question, moving the files, doing another sync
-with snapraid-btrfs disabled, and then reenabling snapraid-btrfs by doing a
+with `snapraid-btrfs` disabled, and then reenabling snapraid-btrfs by doing a
 normal `snapraid-btrfs sync`.
