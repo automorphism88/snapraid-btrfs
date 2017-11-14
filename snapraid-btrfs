@@ -275,6 +275,9 @@ escape_stderr() {
 # Intended to be called by EXIT trap
 # Deletes files in rm_on_exit and sends SIGTERM to processes in kill_on_exit
 exit_trap() {
+    # Finish cleaning up even if an error occurs
+    set +e
+    trap - ERR
     [[ "${#rm_on_exit[@]}" -gt 0 ]] && rm -f -- "${rm_on_exit[@]}"
     [[ "${#kill_on_exit[@]}" -gt 0 ]] && kill -TERM "${kill_on_exit[@]}"
     # Don't trigger ERR trap
