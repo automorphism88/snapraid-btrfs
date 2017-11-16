@@ -714,7 +714,7 @@ run_snapraid() {
             create_pre_post_snapshots "$1"
             # shellcheck disable=SC2064
             # double quoted since we want $1 evaluated now
-            trap "create_pre_post_snapshots $1 && trap - RETURN" RETURN ;;
+            trap "create_pre_post_snapshots $1 ; trap - RETURN" RETURN ;;
     esac
     # If starting sync, update snapper userdata key
     [[ "$1" = sync ]] && modify_userdata syncing
@@ -866,7 +866,7 @@ snapper_undochange() {
     undochange_files=()
     undochange_opts=()
     create_pre_post_snapshots undochange
-    trap 'create_pre_post_snapshots undochange && trap - RETURN' RETURN
+    trap 'create_pre_post_snapshots undochange ; trap - RETURN' RETURN
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
     while [[ $# -ge 1 ]] ; do
