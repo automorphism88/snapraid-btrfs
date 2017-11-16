@@ -99,6 +99,8 @@ check_config() {
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
     local field{1,2} content_{dir,mount} i
+    # No need for an if [[ -r "$config_file" ]] here,
+    # since this is our second pass
     while IFS=$' \t' read -r field{1,2} ; do
         if [[ "$field1" = content ]] ; then
             content_dir="$(dirname -- "$field2")"
