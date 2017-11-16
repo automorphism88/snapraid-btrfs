@@ -69,9 +69,9 @@ bash_version_check() {
     # bash version 4+ required for associative arrays and
     # ;& and ;;& terminators in case statements
     # 4.1+ required for ACL support
-    if ! { [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ||
-               { [[ "${BASH_VERSINFO[0]}" -eq 4 ]] &&
-                     [[ "${BASH_VERSINFO[1]}" -ge 1 ]] ; } ; }
+    if ! { { [[ "${BASH_VERSINFO[0]}" -eq 4 ]] &&
+                 [[ "${BASH_VERSINFO[1]}" -ge 1 ]] ; } ||
+               [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ; }
     then
         printf '%s: bash version 4.1 or greater is required' "$my_name" >&2
         printf ' to use this script\n' >&2
@@ -79,8 +79,8 @@ bash_version_check() {
     fi
     # we don't depend on the behavior either way, but lastpipe is faster,
     # so use it if available (bash version 4.2+)
-    { [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ||
-          [[ "${BASH_VERSINFO[1]}" -ge 2 ]] ; } &&
+    { [[ "${BASH_VERSINFO[1]}" -ge 2 ]] ||
+          [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ; } &&
         shopt -s lastpipe
 }
 
