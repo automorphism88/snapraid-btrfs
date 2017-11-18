@@ -841,7 +841,7 @@ snapper_rollback() {
         snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" -eq 0 ]] && break
+        [[ "${use_snapshot[$i]}" -eq 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
         if [[ "${interactive:-}" ]] ; then
@@ -889,7 +889,7 @@ snapper_undochange() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" -eq 0 ]] && break
+        [[ "${use_snapshot[$i]}" -eq 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         if [[ ${interactive:-} ]] ; then
