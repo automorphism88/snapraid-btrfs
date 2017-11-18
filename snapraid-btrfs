@@ -171,12 +171,12 @@ cleanup_snapshots() {
     ret=0
     local -a snapper_cmd
     for i in "${snapper_configs[@]}" ; do
-        # break if we couldn't find a synced snapshot for this config
+        # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
             [[ $verbose -ge 0 ]] &&
                 printf 'No synced snapshot found for config %s, skipping\n' \
                        "$i" >&2
-            break
+            continue
         fi
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
             parse_snapper_ls "$snapper_userdata_key")"
