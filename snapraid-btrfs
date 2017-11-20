@@ -30,7 +30,7 @@ readonly EXIT_INTERACTIVE_NO=69
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
     local i j
-    if [[ "${#pre_post_option[@]}" -gt 0 ]] ; then
+    if ((${#pre_post_option[@]} > 0)) ; then
         for i in "${pre_post_option[@]}" ; do
             config_must_exist "$i"
         done
@@ -38,7 +38,7 @@ apply_pre_post_options() {
     else
         pre_post_configs=( "${snapper_configs[@]}" )
     fi
-    if [[ "${#no_pre_post_option[@]}" -gt 0 ]] ; then
+    if ((${#no_pre_post_option[@]} > 0)) ; then
         local -a temp_array
         for i in "${no_pre_post_option[@]}" ; do
             config_must_exist "$i"
@@ -69,9 +69,8 @@ bash_version_check() {
     # bash version 4+ required for associative arrays and
     # ;& and ;;& terminators in case statements
     # 4.1+ required for ACL support
-    if ! { { [[ "${BASH_VERSINFO[0]}" -eq 4 ]] &&
-                 [[ "${BASH_VERSINFO[1]}" -ge 1 ]] ; } ||
-               [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ; }
+    if ! { { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ||
+               ((BASH_VERSINFO[0] > 4)) ; }
     then
         printf '%s: bash version 4.1 or greater is required' "$my_name" >&2
         printf ' to use this script\n' >&2
@@ -79,8 +78,7 @@ bash_version_check() {
     fi
     # we don't depend on the behavior either way, but lastpipe is faster,
     # so use it if available (bash version 4.2+)
-    { [[ "${BASH_VERSINFO[1]}" -ge 2 ]] ||
-          [[ "${BASH_VERSINFO[0]}" -gt 4 ]] ; } &&
+    { ((BASH_VERSINFO[1] >= 2)) || ((BASH_VERSINFO[0] > 4)) ; } &&
         shopt -s lastpipe
 }
 
@@ -90,7 +88,7 @@ bash_version_check() {
 # see https://github.com/koalaman/shellcheck/issues/1045
 check_config() {
     # Make sure we found some configs
-    if [[ "${#snapper_configs[@]}" -eq 0 ]] ; then
+    if ((${#snapper_configs[@]} == 0)) ; then
         printf '%s: No snapper configs found for any data ' "$my_name" >&2
         printf 'drives in snapraid config file\n' >&2
         exit $EXIT_INVALID_CONFIG
@@ -145,7 +143,7 @@ check_dependencies() {
 
 # Make sure the user hasn't tried to pass through the -c option to snapraid
 check_snapraid_arguments() {
-    while [[ $# -gt 0 ]] ; do
+    while (($# > 0)) ; do
         case $1 in
             -c|--conf)
                 printf '%s: The -c option may not be passed through - ' \
@@ -167,13 +165,14 @@ check_snapraid_arguments() {
 # In each config, delete snapshots with userdata key $snapper_userdata_key
 # created before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
-    local {snapper_,}ret snaps_to_consider i j
-    ret=0
+    local snaps_to_consider i j
+    local -i {snapper_,}ret
     local -a snapper_cmd
+    ret=0
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            [[ $verbose -ge 0 ]] &&
+            ((verbose >= 0)) &&
                 printf 'No synced snapshot found for config %s, skipping\n' \
                        "$i" >&2
             continue
@@ -181,19 +180,17 @@ cleanup_snapshots() {
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
             parse_snapper_ls "$snapper_userdata_key")"
         for j in $snaps_to_consider ; do
-            if [[ "${use_snapshot[$i]}" -eq 0 ]] ||
-                   [[ "${use_snapshot[$i]}" -gt "$j" ]]
-            then
+            if ((use_snapshot[\$i] == 0)) || ((use_snapshot[\$i] > j)) ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
-                if [[ "${interactive:-}" ]] ; then
+                if ((interactive > 0)) ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
-                elif [[ $verbose -ge 1 ]] ; then
+                elif ((verbose >= 1)) ; then
                     printf '%s ' "${snapper_cmd[@]}"
                     printf '\n'
                 fi
                 "${snapper_cmd[@]}" && true
                 snapper_ret=$?
-                [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
+                ((snapper_ret == 0)) || ret=$snapper_ret
             fi
         done
     done
@@ -250,7 +247,8 @@ err_trap() {
     printf '%s: %s: %s failed with exit status %s\n' "$my_name" "${1:-?}" \
            "${2:-unknown command}" "${3:-unknown}" >&2
     printf 'Stack trace:\n' >&2
-    local frame func line script
+    local func line script
+    local -i frame
     frame=0
     while IFS=$' \t' read -r line func script; do
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
@@ -282,8 +280,8 @@ exit_trap() {
     # Finish cleaning up even if an error occurs
     set +e
     trap - ERR
-    [[ "${#rm_on_exit[@]}" -gt 0 ]] && rm -f -- "${rm_on_exit[@]}"
-    [[ "${#kill_on_exit[@]}" -gt 0 ]] && kill -TERM "${kill_on_exit[@]}"
+    ((${#rm_on_exit[@]} > 0)) && rm -f -- "${rm_on_exit[@]}"
+    ((${#kill_on_exit[@]} > 0)) && kill -TERM "${kill_on_exit[@]}"
     # Don't trigger ERR trap
     return 0
 }
@@ -296,11 +294,11 @@ find_configs() {
                "$config_file" >&2
         printf 'Please specify a valid snapraid config file with -c\n' >&2
         exit $EXIT_INVALID_ARGUMENT
-    elif [[ $verbose -ge 1 ]] ; then
+    elif ((verbose >= 1)) ; then
         printf 'Using snapraid config file %s\n' "$config_file"
     fi
     # Find snapper configs with paths in snapraid config file
-    local config data_line subvol
+    local config data_line subvol i
     # grep ERE matching data line up to the point where the path starts
     data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
     while IFS='|' read -r config subvol ; do
@@ -317,7 +315,7 @@ find_configs() {
             snapper_subvols[$config]="$subvol"
         fi
     done < <("$my_snapper" list-configs | tail -n +3)
-    if [[ $verbose -ge 0 ]] ; then
+    if ((verbose >= 0)) ; then
         printf 'Snapper configs found matching snapraid config file:\n'
         for i in "${snapper_configs[@]}" ; do
             printf '%s %s\n' "$i" "${snapper_subvols[$i]}"
@@ -382,7 +380,7 @@ generate_temp_snapraid_conf() {
         sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
     for i in "${snapper_configs[@]}" ; do
-        if [[ "${use_snapshot[$i]}" -ne 0 ]] ; then
+        if ((use_snapshot[\$i] != 0)) ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
             if [[ -r "$new_path" ]] && is_btrfs_subvolume "$new_path" ; then
@@ -402,7 +400,7 @@ generate_temp_snapraid_conf() {
             fi
         fi
     done
-    if [[ "${#sed_exps[@]}" -eq 0 ]] ; then
+    if ((${#sed_exps[@]} == 0)) ; then
         cat -- "$config_file"
     else
         sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
@@ -441,7 +439,7 @@ invalid_argument() {
 # 4 if we couldn't determine the inode number with stat
 is_btrfs_subvolume() {
     [[ -d "$1" ]] || return 3
-    local inode
+    local -i inode
     inode="$(stat --format=%i -- "$1")"
     case $inode in
         256)
@@ -461,13 +459,15 @@ main() {
     trap 'exit_trap' EXIT
     check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables
-    local config_file interactive my_{name,snap{per,raid}} pool_dir \
+    local config_file my_{name,snap{per,raid}} pool_dir \
           snapper_{cleanup,description,userdata{,_key}} \
-          use_snapshot{,_all}_option verbose
+          use_snapshot{,_all}_option
+    local -i interactive verbose
     local -a {kill,rm}_on_exit {no_,}pre_post_option {pre_post,snapper}_configs
     local -A snapper_subvols use_snapshot pre_snapshots
     # Set fixed default values for "global" variables
     config_file=/etc/snapraid.conf
+    interactive=0
     kill_on_exit=()
     my_snapper=snapper
     my_snapraid=snapraid
@@ -485,13 +485,14 @@ main() {
 
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
-    local {snapper_,}ret i
+    local i
+    local -i {snapper_,}ret
     ret=0
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" modify -u "${snapper_userdata_key}=$1" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
-        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
+        ((snapper_ret == 0)) || ret=$snapper_ret
     done
     return $ret
 }
@@ -522,8 +523,9 @@ option_requires_argument() {
 }
 
 parse_arguments() {
-    local opt_str length i
-    while [[ $# -ge 1 ]] ; do
+    local opt_str
+    local -i length i
+    while (($# > 0)) ; do
         case $1 in
             # matching any command means option processing is complete
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
@@ -560,11 +562,10 @@ parse_arguments() {
                         # short options that don't take arguments
                         [hiqvx])
                             set_option "-${opt_str:$i:1}"
-                            [[ $((length-1-i)) -eq 0 ]] &&
-                                shift ;;
+                            ((i == length-1)) && shift ;;
                         # short options that require arguments
                         [cCduU])
-                            if [[ $((length-1-i)) -eq 0 ]] ; then
+                            if ((i == length-1)) ; then
                                 set_option "-${opt_str:$i:1}" "${2:-}"
                                 shift 2 || shift
                             else
@@ -674,14 +675,14 @@ run_command() {
             run_snapraid "$@" && true ;;
         @(d|diff-)sync)
             shift
-            local diff_ret
+            local -i diff_ret
             run_snapraid diff "$@" && true
             diff_ret=$?
             # snapraid diff returns 2 if a sync is required
-            if [[ $diff_ret -eq 2 ]] ; then
-                interactive=1
+            if ((diff_ret == 2)) ; then
+                ((++interactive))
                 run_snapraid sync "$@" && true
-            elif [[ $diff_ret -eq 0 ]] && [[ $verbose -ge 0 ]] ; then
+            elif ((diff_ret == 0)) && ((verbose >= 0)) ; then
                 printf 'No difference, exiting\n'
             else
                 exit $diff_ret
@@ -694,19 +695,20 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local ret temp_config_file
+    local temp_config_file
+    local -i ret
     local -a snapraid_cmd
     temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/${my_name}.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
-    if [[ $verbose -ge 0 ]] ; then
+    if ((verbose >= 0)) ; then
         printf 'Using snapraid config file:\n'
         cat -- "$temp_config_file"
     fi
-    if [[ "${interactive:-}" ]] ; then
+    if ((interactive > 0)) ; then
         interactive_ask "${snapraid_cmd[@]}"
-    elif [[ $verbose -ge 0 ]] ; then
+    elif ((verbose >= 0)) ; then
         printf '%s ' "${snapraid_cmd[@]}"
         printf '\n'
     fi
@@ -725,10 +727,10 @@ run_snapraid() {
     case $1 in
         diff)
             # snapraid diff returns 0 if no changes, 2 if sync needed
-            { [[ $ret -eq 0 ]] || [[ $ret -eq 2 ]] ; } &&
+            { ((ret == 0)) || ((ret == 2)) ; } &&
                 modify_userdata "$1" ;;
         sync)
-            [[ $ret -eq 0 ]] && modify_userdata synced ;;
+            ((ret == 0)) && modify_userdata synced ;;
     esac
     return $ret
 }
@@ -751,7 +753,7 @@ set_option() {
             usage
             exit ;;
         -i|--interactive)
-            interactive=1 ;;
+            ((++interactive)) ;;
         -q|--quiet)
             ((--verbose)) ;;
         -u|--use-snapshot-all)
@@ -815,7 +817,7 @@ snapper_ls() {
     for i in "${snapper_configs[@]}" ; do
         printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
         "$my_snapper" -c "$i" ls
-        if [[ $# -ge 1 ]] ; then
+        if (($# > 0)) ; then
             printf 'Snapshots with userdata key %s=%s:\n' \
                    "$snapper_userdata_key" "$*"
             "$my_snapper" -c "$i" ls |
@@ -829,7 +831,8 @@ snapper_ls() {
 
 # Run snapper rollback in each snapper config
 snapper_rollback() {
-    local {snapper_,}ret i
+    local i
+    local -i {snapper_,}ret
     local -a snapper_{cmd,rollback_opts}
     ret=0
     snapper_rollback_opts=( -u "$snapper_userdata" )
@@ -841,18 +844,18 @@ snapper_rollback() {
         snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" -eq 0 ]] && continue
+        ((use_snapshot[\$i] == 0)) && continue
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
-        if [[ "${interactive:-}" ]] ; then
+        if ((interactive > 0)) ; then
             interactive_ask "${snapper_cmd[@]}"
-        elif [[ $verbose -gt 0 ]] ; then
+        elif ((verbose > 0)) ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
         fi
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
-        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
+        ((snapper_ret == 0)) || ret=$snapper_ret
     done
     return $ret
 }
@@ -860,7 +863,8 @@ snapper_rollback() {
 # Run snapper undochange in each snapper config to revert to the state at the
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_undochange() {
-    local {snapper_,}ret i
+    local i
+    local -i {snapper_,}ret
     local -a snapper_cmd undochange_{files,opts}
     ret=0
     undochange_files=()
@@ -869,13 +873,13 @@ snapper_undochange() {
     trap 'create_pre_post_snapshots undochange ; trap - RETURN' RETURN
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
-    while [[ $# -ge 1 ]] ; do
+    while (($# > 0)) ; do
         case $1 in
             --)
                 shift
                 break ;;
             -i|--input)
-                if [[ $# -ge 2 ]] ; then
+                if (($# > 1)) ; then
                     undochange_opts+=( "$1" "$2" )
                     shift 2
                 else
@@ -889,18 +893,18 @@ snapper_undochange() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" -eq 0 ]] && continue
+        ((use_snapshot[\$i] == 0)) && continue
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
-        if [[ ${interactive:-} ]] ; then
+        if ((interactive > 0)) ; then
             interactive_ask "${snapper_cmd[@]}"
-        elif [[ $verbose -gt 0 ]] ; then
+        elif ((verbose > 0)) ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
         fi
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
-        [[ $snapper_ret -eq 0 ]] || ret=$snapper_ret
+        ((snapper_ret == 0)) || ret=$snapper_ret
     done
     return $ret
 }
