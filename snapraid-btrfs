@@ -581,8 +581,8 @@ parse_arguments() {
                 invalid_argument "$1" ;;
         esac
     done
-    printf '%s: You must specify a command (or you did not ' "$my_name" >&2
-    printf 'specify an argument to an option that requires one)\n' >&2
+    printf '%s: You must specify a command, or you did not ' "$my_name" >&2
+    printf 'specify an argument to an option that requires one\n' >&2
     printf 'Use %s -h to see options.\n' "$my_name" >&2
     exit $EXIT_INVALID_ARGUMENT
 }
