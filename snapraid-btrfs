@@ -372,12 +372,12 @@ generate_temp_snapraid_conf() {
     local {data,match}_line new_path sed_{find,replace} i
     local -a sed_exps
     # regex matching data line up to the point where the path starts
-    data_line=$'^[ \t]\{0,\}data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
+    data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
     # shellcheck disable=SC2016
     # $a is a sed command, not part of a bash variable, so is single quoted
     [[ "${pool_dir:-}" ]] &&
-        sed_exps+=( $'/^[ \t]\{0,\}pool[ \t]\{1,\}/d'
+        sed_exps+=( $'/^[ \t]*pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
     for i in "${snapper_configs[@]}" ; do
         if ((use_snapshot[\$i] != 0)) ; then
