@@ -263,7 +263,7 @@ err_trap() {
 escape_stderr() {
     check_dependencies mkfifo
     local sed_escape_pipe
-    sed_escape_pipe="$(mktemp -u -- "${TMPDIR:-/tmp}/${my_name}.XXXXXX")"
+    sed_escape_pipe="$(mktemp -u -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
@@ -308,7 +308,7 @@ find_configs() {
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
         # allow trailing slash and/or \r character
-        if grep -Ex "${data_line}${subvol}"$'[/]?[\r]?' \
+        if grep -Ex "$data_line$subvol"$'[/]?[\r]?' \
                 "$config_file" > /dev/null
         then
             snapper_configs+=( "$config" )
@@ -479,7 +479,7 @@ main() {
     # Set other "global" variables
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$my_name}"
-    snapper_userdata="${snapper_userdata_key}=created"
+    snapper_userdata="$snapper_userdata_key=created"
     parse_arguments "$@"
 }
 
@@ -489,7 +489,7 @@ modify_userdata() {
     local -i {snapper_,}ret
     ret=0
     for i in "${snapper_configs[@]}" ; do
-        "$my_snapper" -c "$i" modify -u "${snapper_userdata_key}=$1" \
+        "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
         ((snapper_ret == 0)) || ret=$snapper_ret
@@ -548,7 +548,7 @@ parse_arguments() {
                     set_option "$opt_str" "${2:-}"
                     shift 2 || shift
                 else
-                    set_option "$opt_str" "${1#${opt_str}=}"
+                    set_option "$opt_str" "${1#$opt_str=}"
                     shift
                 fi ;;
             --*)
@@ -698,7 +698,7 @@ run_snapraid() {
     local temp_config_file
     local -i ret
     local -a snapraid_cmd
-    temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/${my_name}.XXXXXX")"
+    temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
@@ -811,7 +811,7 @@ setup_config() {
 }
 
 # Do a snapper ls in all configs, and if argument is specified, additionally
-# identify which snapshots we found with userdata ${snapper_userdata_key}=$*
+# identify which snapshots we found with userdata $snapper_userdata_key=$*
 snapper_ls() {
     local i
     for i in "${snapper_configs[@]}" ; do
@@ -1034,7 +1034,7 @@ use_snapper_userdata() {
         value=
         IFS='=' read -r key value <<< "$i"
         [[ "$key" = "$snapper_userdata_key" ]] ||
-            snapper_userdata+=",${key}=${value}"
+            snapper_userdata+=",$key=$value"
     done
 }
 
