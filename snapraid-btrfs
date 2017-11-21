@@ -216,25 +216,25 @@ create_pre_post_snapshots() {
             snapper_cmd+=( -c "$snapper_cleanup" )
         snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
-        if [[ "${pre_snapshots[$i]:-}" ]] ; then
+        if [[ "${pre_snapshot[$i]:-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
             if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
                 snapper_cmd+=( -d "$my_name post-$1" )
             fi
-            snapper_cmd+=( -t post --pre-number "${pre_snapshots[$i]}" )
+            snapper_cmd+=( -t post --pre-number "${pre_snapshot[$i]}" )
             "${snapper_cmd[@]}" || true
         else
             # We haven't created pre snapshots yet, so create them and store the
-            # snapshot numbers from snapper -p option in ${pre_snapshots[@]}
+            # snapshot numbers from snapper -p option in ${pre_snapshot[@]}
             if [[ "${snapper_description:-}" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
                 snapper_cmd+=( -d "$my_name pre-$1" )
             fi
             snapper_cmd+=( -t pre -p )
-            pre_snapshots[$i]="$("${snapper_cmd[@]}")"
+            pre_snapshot[$i]="$("${snapper_cmd[@]}")"
         fi
     done
 }
@@ -464,7 +464,7 @@ main() {
           use_snapshot{,_all}_option
     local -i interactive verbose
     local -a {kill,rm}_on_exit {no_,}pre_post_option {pre_post,snapper}_configs
-    local -A snapper_subvols use_snapshot pre_snapshots
+    local -A snapper_subvols {pr,us}e_snapshot
     # Set fixed default values for "global" variables
     config_file=/etc/snapraid.conf
     interactive=0
