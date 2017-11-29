@@ -266,7 +266,7 @@ escape_stderr() {
     mkfifo -m 0600 -- "$sed_escape_pipe"
     # Keep pipe open indefinitely
     tail -f /dev/null > "$sed_escape_pipe" &
-    kill_on_exit+=( $! )
+    kill_on_exit=$!
     sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
     exec 2> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
@@ -274,14 +274,13 @@ escape_stderr() {
 }
 
 # Intended to be called by EXIT trap
-# Deletes files in rm_on_exit and sends SIGTERM to processes in kill_on_exit
+# Removes $rm_on_exit if nonempty and kills $kill_on_exit if nonempty
 exit_trap() {
     # Finish cleaning up even if an error occurs
     set +e
     trap - ERR
-    ((${#rm_on_exit[@]} > 0)) && rm -f -- "${rm_on_exit[@]}"
-    ((${#kill_on_exit[@]} > 0)) && kill -TERM "${kill_on_exit[@]}"
-    # Don't trigger ERR trap
+    [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit"
+    [[ "${kill_on_exit:-}" ]] && kill -TERM "$kill_on_exit"
     return 0
 }
 
@@ -465,21 +464,19 @@ main() {
     trap 'exit_trap' EXIT
     check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables
-    local config_file my_{name,snap{per,raid}} pool_dir \
-          snapper_{cleanup,description,userdata{,_key}} \
+    local config_file {kill,rm}_on_exit my_{name,snap{per,raid}} \
+          pool_dir snapper_{cleanup,description,userdata{,_key}} \
           use_snapshot{,_all}_option
     local -i interactive verbose
-    local -a {kill,rm}_on_exit {no_,}pre_post_option {pre_post,snapper}_configs
+    local -a {no_,}pre_post_option {pre_post,snapper}_configs
     local -A snapper_subvols {pr,us}e_snapshot
     # Set fixed default values for "global" variables
     config_file=/etc/snapraid.conf
     interactive=0
-    kill_on_exit=()
     my_snapper=snapper
     my_snapraid=snapraid
     no_pre_post_option=()
     pre_post_option=()
-    rm_on_exit=()
     snapper_configs=()
     verbose=0
     # Set other "global" variables
@@ -704,7 +701,7 @@ run_snapraid() {
     local -i ret
     local -a snapraid_cmd
     temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
-    rm_on_exit+=( "$temp_config_file" )
+    rm_on_exit="$temp_config_file"
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
