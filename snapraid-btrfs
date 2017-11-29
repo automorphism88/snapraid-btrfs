@@ -149,8 +149,7 @@ check_snapraid_arguments() {
                 printf '%s: The -c option may not be passed through - ' \
                        "$my_name" >&2
                 printf 'place the -c option before the command instead.\n' >&2
-                printf 'Use %s --help for help.\n' "$my_name" >&2
-                exit $EXIT_INVALID_ARGUMENT ;;
+                invalid_argument_exit ;;
             # snapraid options that take arguments, meaning we should shift 2
             --@(filter?(-disk)|import|plan|older-than|log|start|count)) ;&
             --@(error-limit|gen-conf)) ;&
@@ -202,7 +201,7 @@ cleanup_snapshots() {
 config_must_exist() {
     if ! [[ "${snapper_subvols[$1]:-}" ]] ; then
         printf '%s: Invalid snapper configuration %s!\n' "$my_name" "$1" >&2
-        exit $EXIT_INVALID_ARGUMENT
+        invalid_argument_exit
     fi
 }
 
@@ -292,8 +291,7 @@ find_configs() {
     if ! [[ -r "$config_file" ]] ; then
         printf '%s: Could not read snapraid config file at %s\n' "$my_name" \
                "$config_file" >&2
-        printf 'Please specify a valid snapraid config file with -c\n' >&2
-        exit $EXIT_INVALID_ARGUMENT
+        invalid_argument_exit
     elif ((verbose >= 1)) ; then
         printf 'Using snapraid config file %s\n' "$config_file"
     fi
@@ -365,8 +363,7 @@ find_snapshots() {
             *)
                 printf '%s: Could not understand snapshot selection %s%s%s\n' \
                        "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
-                printf 'Use %s -h for help.\n' "$my_name" >&2
-                exit $EXIT_INVALID_ARGUMENT ;;
+                invalid_argument_exit ;;
         esac
     done
 }
@@ -432,7 +429,11 @@ interactive_ask() {
 
 invalid_argument() {
     printf '%s: Invalid argument %s!\n' "$my_name" "$1" >&2
-    printf 'Use %s -h to see options.\n' "$my_name" >&2
+    invalid_argument_exit
+}
+
+invalid_argument_exit() {
+    printf 'Use %s -h for help.\n' "$my_name" >&2
     exit $EXIT_INVALID_ARGUMENT
 }
 
@@ -506,7 +507,7 @@ modify_userdata() {
 must_be_directory() {
     if ! [[ -d "$1" ]] ; then
         printf '%s: %s is not a valid directory\n' "$my_name" "$1" >&2
-        exit $EXIT_INVALID_ARGUMENT
+        invalid_argument_exit
     fi
 }
 
@@ -514,7 +515,7 @@ must_be_directory() {
 must_be_executable() {
     if ! [[ -x "$1" ]] ; then
         printf '%s: %s is not an executable file\n' "$my_name" "$1" >&2
-        exit $EXIT_INVALID_ARGUMENT
+        invalid_argument_exit
     fi
 }
 
@@ -522,8 +523,7 @@ must_be_executable() {
 option_requires_argument() {
     if [[ -z "${2:-}" ]] ; then
         printf '%s: Option %s requires an argument!\n' "$my_name" "$1" >&2
-        printf 'Use %s -h for help.\n' "$my_name" >&2
-        exit $EXIT_INVALID_ARGUMENT
+        invalid_argument_exit
     fi
 }
 
@@ -589,8 +589,7 @@ parse_arguments() {
     done
     printf '%s: You must specify a command, or you did not ' "$my_name" >&2
     printf 'specify an argument to an option that requires one\n' >&2
-    printf 'Use %s -h to see options.\n' "$my_name" >&2
-    exit $EXIT_INVALID_ARGUMENT
+    invalid_argument_exit
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
