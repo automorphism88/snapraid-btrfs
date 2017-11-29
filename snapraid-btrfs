@@ -613,6 +613,7 @@ NR<=2 { next } # first 2 lines are the header
         split($8,u,",")
         # construct a new array v where the keys are the values from u
         for (i in u) {
+            # remove padding spaces
             gsub(/^[ ]+/,"",u[i])
             gsub(/[ ]+$/,"",u[i])
             if (value == "") {
