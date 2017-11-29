@@ -385,9 +385,11 @@ generate_temp_snapraid_conf() {
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
             if [[ -r "$new_path" ]] && is_btrfs_subvolume "$new_path" ; then
-                # use bash builtins to escape slashes in paths for sed
-                sed_find="${snapper_subvols[$i]//\//\\\/}"
-                sed_replace="${new_path//\//\\\/}"
+                # Escape special characters in paths so that they can be
+                # passed to sed as literal strings
+                sed_find="$(sed 's/[].*$^/\[]/\\&/g' \
+                                <<< "${snapper_subvols[$i]}")"
+                sed_replace="$(sed 's/[&/\]/\\&/g' <<< "$new_path")"
                 match_line="$data_line""$sed_find"$'[\/]\{0,1\}[\r]\{0,1\}$'
                 sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
                 # also match the deprecated token 'disk' using separate sed
