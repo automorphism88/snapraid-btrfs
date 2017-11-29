@@ -66,7 +66,7 @@ apply_use_snapshot_option() {
 }
 
 bash_version_check() {
-    # bash version 4+ required for associative arrays and
+    # bash version 4+ required for associative arrays, coprocesses, and
     # ;& and ;;& terminators in case statements
     # 4.1+ required for ACL support
     if ! { { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ||
@@ -264,23 +264,19 @@ escape_stderr() {
     local sed_escape_pipe
     sed_escape_pipe="$(mktemp -u -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
     mkfifo -m 0600 -- "$sed_escape_pipe"
-    # Keep pipe open indefinitely
-    tail -f /dev/null > "$sed_escape_pipe" &
-    kill_on_exit=$!
-    sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&2 &
+    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&4
     exec 2> "$sed_escape_pipe"
     # works, since we won't need to open any new handles to the pipe
     rm -f -- "$sed_escape_pipe"
 }
 
 # Intended to be called by EXIT trap
-# Removes $rm_on_exit if nonempty and kills $kill_on_exit if nonempty
+# Removes $rm_on_exit if nonempty and waits for coprocess if necessary
 exit_trap() {
-    # Finish cleaning up even if an error occurs
-    set +e
-    trap - ERR
-    [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit"
-    [[ "${kill_on_exit:-}" ]] && kill -TERM "$kill_on_exit"
+    [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
+    # Restore original stderr
+    exec 2>&4
+    [[ "${COPROC_PID:-}" ]] && wait "$COPROC_PID"
     return 0
 }
 
@@ -462,12 +458,14 @@ is_btrfs_subvolume() {
 
 main() {
     bash_version_check
+    # Save original stderr to restore on exit
+    exec 4>&2
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
     check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables
-    local config_file {kill,rm}_on_exit my_{name,snap{per,raid}} \
-          pool_dir snapper_{cleanup,description,userdata{,_key}} \
+    local config_file my_{name,snap{per,raid}} pool_dir rm_on_exit \
+          snapper_{cleanup,description,userdata{,_key}} \
           use_snapshot{,_all}_option
     local -i interactive verbose
     local -a {no_,}pre_post_option {pre_post,snapper}_configs
