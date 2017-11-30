@@ -260,14 +260,8 @@ err_trap() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 escape_stderr() {
-    check_dependencies mkfifo
-    local sed_escape_pipe
-    sed_escape_pipe="$(mktemp -u -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
-    mkfifo -m 0600 -- "$sed_escape_pipe"
-    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' < "$sed_escape_pipe" >&4
-    exec 2> "$sed_escape_pipe"
-    # works, since we won't need to open any new handles to the pipe
-    rm -f -- "$sed_escape_pipe"
+    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' >&4
+    exec 2>&"${COPROC[1]}"
 }
 
 # Intended to be called by EXIT trap
@@ -276,6 +270,7 @@ exit_trap() {
     [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
     # Restore original stderr
     exec 2>&4
+    [[ "${COPROC[1]:-}" ]] && eval "exec ${COPROC[1]}>&-"
     [[ "${COPROC_PID:-}" ]] && wait "$COPROC_PID"
     return 0
 }
