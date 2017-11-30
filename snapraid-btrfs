@@ -71,7 +71,7 @@ apply_use_snapshot_option() {
 bash_version_check() {
     # bash version 4+ required for associative arrays, coprocesses, and
     # ;& and ;;& terminators in case statements
-    # 4.1+ required for ACL support
+    # 4.1+ required for ACL support and BASH_XTRACEFD
     if ! { { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ||
                ((BASH_VERSINFO[0] > 4)) ; }
     then
@@ -242,10 +242,11 @@ create_pre_post_snapshots() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 enable_debug_mode() {
-    coproc sed_escape_stderr {
+    original_BASH_XTRACEFD="${BASH_XTRACEFD:-2}"
+    coproc sed_escape_xtrace {
         sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g'
-    } >&"$original_stderr"
-    exec 2>&"${sed_escape_stderr[1]}"
+    } >&"$original_BASH_XTRACEFD"
+    BASH_XTRACEFD=${sed_escape_xtrace[1]}
     PS4='+(${BASH_SOURCE[0]}:$LINENO): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
     set -x
 }
@@ -268,12 +269,14 @@ err_trap() {
 }
 
 # Intended to be called by EXIT trap
-# Removes $rm_on_exit if nonempty and waits for coprocess if necessary
+# Removes $rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
     [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
-    exec 2>&"$original_stderr"
-    [[ "${sed_escape_stderr[1]:-}" ]] && eval "exec ${sed_escape_stderr[1]}>&-"
-    [[ "${sed_escape_stderr_PID:-}" ]] && wait "$sed_escape_stderr_PID"
+    if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
+        BASH_XTRACEFD="$original_BASH_XTRACEFD"
+        eval "exec ${sed_escape_xtrace[1]}>&-"
+        wait $sed_escape_xtrace_PID
+    fi
     return 0
 }
 
@@ -460,10 +463,9 @@ main() {
     local config_file my_{name,snap{per,raid}} pool_dir rm_on_exit \
           snapper_{cleanup,description,userdata{,_key}} \
           use_snapshot{,_all}_option
-    local -i interactive original_stderr verbose
+    local -i interactive original_BASH_XTRACEFD verbose
     local -a {no_,}pre_post_option {pre_post,snapper}_configs
     local -A snapper_subvols {pr,us}e_snapshot
-    exec {original_stderr}>&2
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
     config_file=/etc/snapraid.conf
