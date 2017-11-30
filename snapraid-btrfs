@@ -242,7 +242,7 @@ create_pre_post_snapshots() {
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 enable_debug_mode() {
-    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' >&4
+    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' >&"$original_stderr"
     exec 2>&"${COPROC[1]}"
     PS4='+(${BASH_SOURCE[0]}:$LINENO): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
     set -x
@@ -269,8 +269,7 @@ err_trap() {
 # Removes $rm_on_exit if nonempty and waits for coprocess if necessary
 exit_trap() {
     [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
-    # Restore original stderr
-    exec 2>&4
+    exec 2>&"$original_stderr"
     [[ "${COPROC[1]:-}" ]] && eval "exec ${COPROC[1]}>&-"
     [[ "${COPROC_PID:-}" ]] && wait "$COPROC_PID"
     return 0
@@ -454,18 +453,17 @@ is_btrfs_subvolume() {
 
 main() {
     bash_version_check
-    # Save original stderr to restore on exit
-    exec 4>&2
-    trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
-    trap 'exit_trap' EXIT
     check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables
     local config_file my_{name,snap{per,raid}} pool_dir rm_on_exit \
           snapper_{cleanup,description,userdata{,_key}} \
           use_snapshot{,_all}_option
-    local -i interactive verbose
+    local -i interactive original_stderr verbose
     local -a {no_,}pre_post_option {pre_post,snapper}_configs
     local -A snapper_subvols {pr,us}e_snapshot
+    exec {original_stderr}>&2
+    trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
+    trap 'exit_trap' EXIT
     # Set fixed default values for "global" variables
     config_file=/etc/snapraid.conf
     interactive=0
