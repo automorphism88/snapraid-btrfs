@@ -464,19 +464,17 @@ main() {
     exec {original_stderr}>&2
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    # Set fixed default values for "global" variables
     config_file=/etc/snapraid.conf
     interactive=0
+    my_name="$(basename -- "${BASH_SOURCE[0]}")"
     my_snapper=snapper
     my_snapraid=snapraid
     no_pre_post_option=()
     pre_post_option=()
     snapper_configs=()
-    verbose=0
-    # Set other "global" variables
-    my_name="$(basename -- "${BASH_SOURCE[0]}")"
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$my_name}"
     snapper_userdata="$snapper_userdata_key=created"
+    verbose=0
     parse_arguments "$@"
 }
 
