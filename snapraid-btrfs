@@ -238,6 +238,17 @@ create_pre_post_snapshots() {
     done
 }
 
+# Enable xtrace with a useful $PS4 setting and replace literal tab and CR
+# characters in xtrace with escape sequences \t and \r
+# Literal \t and \r sequences are not replaced by \\t and \\r in order to
+# preserve readability - ambiguity should be minimal
+enable_debug_mode() {
+    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' >&4
+    exec 2>&"${COPROC[1]}"
+    PS4='+(${BASH_SOURCE[0]}:$LINENO): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+    set -x
+}
+
 # Intended to be called by ERR trap. Accepts the following arguments:
 # $1 - Line number where ERR condition occurred
 # $2 - Command that caused the ERR condition
@@ -253,15 +264,6 @@ err_trap() {
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
     done < <(while caller $frame ; do ((++frame)) ; done)
     exit "${3:-$EXIT_INTERNAL_ERROR}"
-}
-
-# Replace literal \t and \r characters in stderr with escapes
-# used when -x is specified to avoid clobbering output with \r
-# Literal \t and \r sequences are not replaced by \\t and \\r in order to
-# preserve readability - ambiguity should be minimal
-escape_stderr() {
-    coproc sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g' >&4
-    exec 2>&"${COPROC[1]}"
 }
 
 # Intended to be called by EXIT trap
@@ -760,10 +762,7 @@ set_option() {
         -v|--verbose)
             ((++verbose)) ;;
         -x|--debug)
-            escape_stderr
-            PS4='+(${BASH_SOURCE[0]}:$LINENO): '
-            PS4+='${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-            set -x ;;
+            enable_debug_mode ;;
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
         --pool-dir)
