@@ -19,6 +19,9 @@
 
 set -eEuo pipefail
 shopt -s extglob
+# Use lastpipe if available (bash 4.2+) since it's faster,
+# but we don't need the behavior
+shopt -s lastpipe &> /dev/null || true
 
 readonly EXIT_INTERNAL_ERROR=64
 readonly EXIT_INVALID_ARGUMENT=65
@@ -76,10 +79,6 @@ bash_version_check() {
         printf ' to use this script\n' >&2
         exit $EXIT_INTERNAL_ERROR
     fi
-    # we don't depend on the behavior either way, but lastpipe is faster,
-    # so use it if available (bash version 4.2+)
-    { ((BASH_VERSINFO[1] >= 2)) || ((BASH_VERSINFO[0] > 4)) ; } &&
-        shopt -s lastpipe
 }
 
 # Sanity check snapper configuration
