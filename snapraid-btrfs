@@ -275,6 +275,9 @@ exit_trap() {
     if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
         BASH_XTRACEFD="$original_BASH_XTRACEFD"
         eval "exec ${sed_escape_xtrace[1]}>&-"
+        # shellcheck disable=SC2086,SC2154
+        # Shellcheck doesn't understand named coprocesses
+        # See https://github.com/koalaman/shellcheck/issues/1066
         wait $sed_escape_xtrace_PID
     fi
     return 0
