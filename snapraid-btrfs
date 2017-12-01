@@ -17,7 +17,7 @@
 # These warnings don't take ;;& terminators in case statements into account
 # see https://github.com/koalaman/shellcheck/issues/1044
 
-set -euBCEo pipefail
+set -euBCEo pipefail +fo posix
 shopt -s extglob
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
