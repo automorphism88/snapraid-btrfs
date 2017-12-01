@@ -409,21 +409,21 @@ generate_temp_snapraid_conf() {
 
 interactive_ask() {
     local choice
-    printf 'About to run the command:\n' >&2
-    printf '%s ' "$@" >&2
-    printf '\n' >&2
+    printf 'About to run the command:\n'
+    printf '%s ' "$@"
+    printf '\n'
     while true ; do
-        read -r -p 'Do it [Y/N]? ' choice >&2
+        read -r -p 'Do it [Y/N]? ' choice
         case $choice in
             y|Y)
                 break ;;
             n|N)
                 exit $EXIT_INTERACTIVE_NO ;;
             *)
-                printf 'Invalid choice. Please enter y or n.\n' >&2 ;;
+                printf 'Invalid choice. Please enter y or n.\n' ;;
         esac
     done
-}
+} >&2
 
 invalid_argument() {
     printf '%s: Invalid argument %s\n' "$my_name" "$1" >&2
