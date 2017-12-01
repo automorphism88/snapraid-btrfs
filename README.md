@@ -239,9 +239,9 @@ they will be identical to the live filesystem), then run the
 ### Q: Can I change the snapper userdata key that is used to track snapshots?
 A: Yes. If the `SNAPRAID_USERDATA_KEY` environment variable is set,
 `snapraid-btrfs` will use that as its userdata key. Otherwise, it will default
-to using the name of the script. Beware that if you change this, snapshots
-created before the change will no longer be identified as having been created
-by `snapraid-btrfs`.
+to `snapraid-btrfs`. Beware that if you change this, snapshots created before
+the change will no longer be identified as having been created by
+`snapraid-btrfs`.
 
 ### Q: Can I restore a previous snapshot?
 A: Just like with "vanilla" snapraid, a fix can only restore the array to the
