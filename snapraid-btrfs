@@ -47,6 +47,7 @@ apply_pre_post_options() {
         for i in "${no_pre_post_option[@]}" ; do
             config_must_exist "$i"
             temp_array=()
+            j=
             for j in "${pre_post_configs[@]}" ; do
                 [[ "$j" = "$i" ]] || temp_array+=( "$j" )
             done
@@ -175,6 +176,7 @@ cleanup_snapshots() {
         fi
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
             parse_snapper_ls "$snapper_userdata_key")"
+        j=
         for j in $snaps_to_consider ; do
             if ((use_snapshot[\$i] == 0)) || ((use_snapshot[\$i] > j)) ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
