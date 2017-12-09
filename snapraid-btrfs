@@ -712,19 +712,21 @@ run_snapraid() {
         printf '%s ' "${snapraid_cmd[@]}"
         printf '\n'
     fi
-    # Create pre/post snapshots if applicable
     case $1 in
+        # Create pre/post snapshots if applicable
         fix|touch)
-            create_pre_post_snapshots "$1"
-            trap 'create_pre_post_snapshots "$1" ; trap - RETURN' RETURN ;;
+            create_pre_post_snapshots "$1" ;;
+        # If starting sync, update snapper userdata key
+        sync)
+            modify_userdata syncing ;;
     esac
-    # If starting sync, update snapper userdata key
-    [[ "$1" = sync ]] && modify_userdata syncing
     # Run snapraid
     "${snapraid_cmd[@]}" && true
     ret=$?
     # Update snapper userdata key to reflect completion
     case $1 in
+        fix|touch)
+            create_pre_post_snapshots "$1" ;;
         diff)
             # snapraid diff returns 0 if no changes, 2 if sync needed
             { ((ret == 0)) || ((ret == 2)) ; } &&
@@ -867,7 +869,6 @@ snapper_undochange() {
     undochange_files=()
     undochange_opts=()
     create_pre_post_snapshots undochange
-    trap 'create_pre_post_snapshots undochange ; trap - RETURN' RETURN
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
     while (($# > 0)) ; do
@@ -903,6 +904,7 @@ snapper_undochange() {
         snapper_ret=$?
         ((snapper_ret == 0)) || ret=$snapper_ret
     done
+    create_pre_post_snapshots undochange
     return $ret
 }
 
