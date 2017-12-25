@@ -25,6 +25,16 @@ readonly EXIT_NO_PERMISSIONS=67
 readonly EXIT_SNAPSHOT_NOT_FOUND=68
 readonly EXIT_INTERACTIVE_NO=69
 
+# bash version 4+ required for associative arrays, coprocesses, and
+# ;& and ;;& terminators in case statements
+# 4.1+ required for ACL support and BASH_XTRACEFD
+if ! { { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ||
+           ((BASH_VERSINFO[0] > 4)) ; }
+then
+    echo 'bash version 4.1+ is required to use this script' >&2
+    exit 63
+fi
+
 set -euBCEo pipefail +fo posix
 shopt -s extglob
 # Use lastpipe if available (bash 4.2+) since it's faster,
@@ -68,18 +78,6 @@ apply_use_snapshot_option() {
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
     done
-}
-
-bash_version_check() {
-    # bash version 4+ required for associative arrays, coprocesses, and
-    # ;& and ;;& terminators in case statements
-    # 4.1+ required for ACL support and BASH_XTRACEFD
-    if ! { { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ||
-               ((BASH_VERSINFO[0] > 4)) ; }
-    then
-        printf '%s: bash version 4.1 or greater is required\n' "$my_name" >&2
-        exit $EXIT_INTERNAL_ERROR
-    fi
 }
 
 # Sanity check snapper configuration
@@ -460,7 +458,6 @@ is_btrfs_subvolume() {
 }
 
 main() {
-    bash_version_check
     check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
     # Declare "global" variables
     local config_file my_{name,snap{per,raid}} pool_dir rm_on_exit \
