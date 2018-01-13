@@ -35,7 +35,7 @@ then
     exit 63
 fi
 
-set -euBCEo pipefail +fo posix
+set -CEeuo pipefail +fo posix
 shopt -s extglob
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
@@ -69,21 +69,17 @@ apply_pre_post_options() {
 # Set use_snapshot from comma-separated key=value pairs specified in $1
 apply_use_snapshot_option() {
     local -a args
-    local config{,_using} i
+    local config config_using i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
         config=
         config_using=
-        IFS='=' read -r config{,_using} <<< "$i"
+        IFS='=' read -r config config_using <<< "$i"
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
     done
 }
 
-# Sanity check snapper configuration
-# shellcheck disable=SC2154
-# This warning doesn't understand the brace expansion field{1,2}
-# see https://github.com/koalaman/shellcheck/issues/1045
 check_config() {
     # Make sure we found some configs
     if ((${#snapper_configs[@]} == 0)) ; then
@@ -94,10 +90,10 @@ check_config() {
     # We don't want to snapshot the content files. So, check the directories of
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
-    local field{1,2} content_{dir,mount} i
+    local field1 field2 content_dir content_mount i
     # No need for an if [[ -r "$config_file" ]] here,
     # since this is our second pass
-    while IFS=$' \t' read -r field{1,2} ; do
+    while IFS=$' \t' read -r field1 field2 ; do
         if [[ "$field1" = content ]] ; then
             content_dir="$(dirname -- "$field2")"
             content_mount="$(stat --format=%m -- "$content_dir")"
@@ -161,7 +157,7 @@ check_snapraid_arguments() {
 # created before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local snaps_to_consider i j
-    local -i {snapper_,}ret
+    local -i ret snapper_ret
     local -a snapper_cmd
     ret=0
     for i in "${snapper_configs[@]}" ; do
@@ -367,7 +363,7 @@ find_snapshots() {
 # generate sed script to replace subvolume paths with corresponding snapshots
 # (and pool directory, if --pool-dir is specified) and run it on snapraid.conf
 generate_temp_snapraid_conf() {
-    local {data,match}_line new_path sed_{find,replace} i
+    local data_line match_line new_path sed_find sed_replace i
     local -a sed_exps
     # regex matching data line up to the point where the path starts
     data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
@@ -458,14 +454,15 @@ is_btrfs_subvolume() {
 }
 
 main() {
-    check_dependencies awk {base,dir}name cat grep mktemp rm sed stat tail tr
+    check_dependencies awk basename cat dirname grep mktemp rm sed stat tail tr
     # Declare "global" variables
-    local config_file my_{name,snap{per,raid}} pool_dir rm_on_exit \
-          snapper_{cleanup,description,userdata{,_key}} \
-          use_snapshot{,_all}_option
+    local config_file my_name my_snapper my_snapraid pool_dir rm_on_exit \
+          snapper_cleanup snapper_description snapper_userdata \
+          snapper_userdata_key use_snapshot_all_option use_snapshot_option
     local -i interactive original_BASH_XTRACEFD verbose
-    local -a {no_,}pre_post_option {pre_post,snapper}_configs
-    local -A snapper_subvols {pr,us}e_snapshot
+    local -a no_pre_post_option pre_post_configs pre_post_option \
+          snapper_configs
+    local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
     config_file=/etc/snapraid.conf
@@ -486,7 +483,7 @@ main() {
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
     local i
-    local -i {snapper_,}ret
+    local -i ret snapper_ret
     ret=0
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
@@ -829,8 +826,8 @@ snapper_ls() {
 # Run snapper rollback in each snapper config
 snapper_rollback() {
     local i
-    local -i {snapper_,}ret
-    local -a snapper_{cmd,rollback_opts}
+    local -i ret snapper_ret
+    local -a snapper_cmd snapper_rollback_opts
     ret=0
     snapper_rollback_opts=( -u "$snapper_userdata" )
     [[ "${snapper_cleanup:-}" ]] ||
@@ -861,8 +858,8 @@ snapper_rollback() {
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_undochange() {
     local i
-    local -i {snapper_,}ret
-    local -a snapper_cmd undochange_{files,opts}
+    local -i ret snapper_ret
+    local -a snapper_cmd undochange_files undochange_opts
     ret=0
     undochange_files=()
     undochange_opts=()
