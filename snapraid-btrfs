@@ -439,9 +439,7 @@ invalid_argument_exit() {
 # 4 if we couldn't determine the inode number with stat
 is_btrfs_subvolume() {
     [[ -d "$1" ]] || return 3
-    local -i inode
-    inode="$(stat --format=%i -- "$1")"
-    case $inode in
+    case $(stat --format=%i -- "$1") in
         256)
             return 0 ;;
         2)
