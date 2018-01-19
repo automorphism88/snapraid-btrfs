@@ -469,7 +469,6 @@ main() {
     my_snapper=snapper
     my_snapraid=snapraid
     no_pre_post_option=()
-    original_BASH_XTRACEFD=
     pre_post_option=()
     snapper_configs=()
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
