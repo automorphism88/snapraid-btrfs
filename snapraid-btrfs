@@ -177,7 +177,7 @@ cleanup_snapshots() {
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
                 if ((interactive > 0)) ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
-                elif ((verbose >= 1)) ; then
+                elif ((verbose >= 0)) ; then
                     printf '%s ' "${snapper_cmd[@]}"
                     printf '\n'
                 fi
@@ -861,7 +861,7 @@ snapper_rollback() {
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
         if ((interactive > 0)) ; then
             interactive_ask "${snapper_cmd[@]}"
-        elif ((verbose > 0)) ; then
+        elif ((verbose >= 0)) ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
         fi
@@ -913,7 +913,7 @@ snapper_undochange() {
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         if ((interactive > 0)) ; then
             interactive_ask "${snapper_cmd[@]}"
-        elif ((verbose > 0)) ; then
+        elif ((verbose >= 0)) ; then
             printf '%s ' "${snapper_cmd[@]}"
             printf '\n'
         fi
