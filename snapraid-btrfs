@@ -163,9 +163,10 @@ cleanup_snapshots() {
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            ((verbose >= 0)) &&
+            if ((verbose >= 0)) ; then
                 printf 'No synced snapshot found for config %s, skipping\n' \
                        "$i" >&2
+            fi
             continue
         fi
         snaps_to_consider="$("$my_snapper" -c "$i" ls |
@@ -182,7 +183,9 @@ cleanup_snapshots() {
                 fi
                 "${snapper_cmd[@]}" && true
                 snapper_ret=$?
-                ((snapper_ret == 0)) || ret=$snapper_ret
+                if ((snapper_ret != 0)) ; then
+                    ret=$snapper_ret
+                fi
             fi
         done
     done
@@ -337,8 +340,9 @@ find_snapshots() {
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
-                ((verbose > 0)) &&
+                if ((verbose > 0)) ; then
                     printf 'Creating new snapshot for config %s\n' "$i"
+                fi
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")" ;;
             res)
@@ -359,9 +363,10 @@ find_snapshots() {
                        "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
                 invalid_argument_exit ;;
         esac
-        ((verbose > 0)) &&
+        if ((verbose > 0)) ; then
             printf 'Using snapshot %s for config %s\n' \
                    "${use_snapshot[$i]}" "$i"
+        fi
     done
 }
 
@@ -493,7 +498,9 @@ modify_userdata() {
         "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
                       "${use_snapshot[$i]}" && true
         snapper_ret=$?
-        ((snapper_ret == 0)) || ret=$snapper_ret
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
     done
     return $ret
 }
@@ -562,7 +569,9 @@ parse_arguments() {
                         # short options that don't take arguments
                         [hiqvx])
                             set_option "-${opt_str:$i:1}"
-                            ((i == length-1)) && shift ;;
+                            if ((i == length-1)) ; then
+                                shift
+                            fi ;;
                         # short options that require arguments
                         [cCduU])
                             if ((i == length-1)) ; then
@@ -728,10 +737,13 @@ run_snapraid() {
             create_pre_post_snapshots "$1" ;;
         diff)
             # snapraid diff returns 0 if no changes, 2 if sync needed
-            { ((ret == 0)) || ((ret == 2)) ; } &&
-                modify_userdata "$1" ;;
+            if ((ret == 0)) || ((ret == 2)) ; then
+                modify_userdata "$1"
+            fi ;;
         sync)
-            ((ret == 0)) && modify_userdata synced ;;
+            if ((ret == 0)) ; then
+                modify_userdata synced
+            fi ;;
     esac
     return $ret
 }
@@ -842,7 +854,9 @@ snapper_rollback() {
         snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        ((use_snapshot[\$i] == 0)) && continue
+        if ((use_snapshot[\$i] == 0)) ; then
+            continue
+        fi
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
         if ((interactive > 0)) ; then
@@ -853,7 +867,9 @@ snapper_rollback() {
         fi
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
-        ((snapper_ret == 0)) || ret=$snapper_ret
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
     done
     return $ret
 }
@@ -890,7 +906,9 @@ snapper_undochange() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        ((use_snapshot[\$i] == 0)) && continue
+        if ((use_snapshot[\$i] == 0)) ; then
+            continue
+        fi
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         if ((interactive > 0)) ; then
@@ -901,7 +919,9 @@ snapper_undochange() {
         fi
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
-        ((snapper_ret == 0)) || ret=$snapper_ret
+        if ! ((snapper_ret == 0)) ; then
+            ret=$snapper_ret
+        fi
     done
     create_pre_post_snapshots undochange
     return $ret
