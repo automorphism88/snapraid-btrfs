@@ -337,6 +337,8 @@ find_snapshots() {
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
+                ((verbose > 0)) &&
+                    printf 'Creating new snapshot for config %s\n' "$i"
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")" ;;
             res)
@@ -357,6 +359,9 @@ find_snapshots() {
                        "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
                 invalid_argument_exit ;;
         esac
+        ((verbose > 0)) &&
+            printf 'Using snapshot %s for config %s\n' \
+                   "${use_snapshot[$i]}" "$i"
     done
 }
 
