@@ -35,7 +35,7 @@ then
     exit 63
 fi
 
-set -CEeuo pipefail +fo posix
+set -Eeuo pipefail +Cfo posix
 shopt -s extglob
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
