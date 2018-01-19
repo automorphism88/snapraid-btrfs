@@ -454,10 +454,11 @@ is_btrfs_subvolume() {
 main() {
     check_dependencies awk basename cat dirname grep mktemp rm sed stat tail tr
     # Declare "global" variables
-    local config_file my_name my_snapper my_snapraid pool_dir rm_on_exit \
-          snapper_cleanup snapper_description snapper_userdata \
-          snapper_userdata_key use_snapshot_all_option use_snapshot_option
-    local -i interactive original_BASH_XTRACEFD verbose
+    local config_file my_name my_snapper my_snapraid original_BASH_XTRACEFD \
+          pool_dir rm_on_exit snapper_cleanup snapper_description \
+          snapper_userdata snapper_userdata_key use_snapshot_all_option \
+          use_snapshot_option
+    local -i interactive verbose
     local -a no_pre_post_option pre_post_configs pre_post_option \
           snapper_configs
     local -A pre_snapshot snapper_subvols use_snapshot
@@ -469,6 +470,7 @@ main() {
     my_snapper=snapper
     my_snapraid=snapraid
     no_pre_post_option=()
+    original_BASH_XTRACEFD=
     pre_post_option=()
     snapper_configs=()
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
