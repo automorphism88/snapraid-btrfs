@@ -13,10 +13,10 @@ configuration file.
 
 Options appearing before the command control the behavior of `snapraid-btrfs`,
 while options appearing after the command are passed through to snapraid (with
-the exception of `-c`, which must be specified before the command so that it can
-be processed by `snapraid-btrfs` when creating the temporary snapraid config
-file). Snapraid-btrfs also adds additional commands, such as `cleanup`, for
-managing its snapshots.
+the exception of `-c`/`--conf`, which must be specified before the command so
+that it can be processed by `snapraid-btrfs` when creating the temporary
+snapraid config file). Snapraid-btrfs also adds additional commands, such as
+`cleanup`, for managing its snapshots.
 
 ## Setup instructions
 
@@ -28,7 +28,8 @@ will ignore any data drives which do not have corresponding snapper
 configurations (in other words, the live filesystem will be used for all
 operations and no snapshots will be created). Just like snapraid,
 `snapraid-btrfs` will use `/etc/snapraid.conf` by
-default, but another configuration file can be specified using the `-c` option.
+default, but another configuration file can be specified using the `-c`/`--conf`
+option.
 
 All files on the data drives which are not excluded by the snapraid
 configuration file must be in the same subvolume. **If any of the snapraid

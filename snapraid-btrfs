@@ -139,7 +139,7 @@ check_snapraid_arguments() {
     while (($# > 0)) ; do
         case $1 in
             -c|--conf)
-                printf '%s: The -c option may not be passed through\n' \
+                printf '%s: The -c/--conf option may not be passed through\n' \
                        "$my_name" >&2
                 invalid_argument_exit ;;
             # snapraid options that take arguments, meaning we should shift 2
@@ -1029,10 +1029,11 @@ or one of the following $my_name specific commands:
         passed through to snapper undochange, including the snapper undochange
         -i option.
 
-NOTE: The snapraid '-c' option will not work unless placed before the command,
-allowing it to be interpreted as a $my_name option. Snapraid will be run
-with a temporary configuration file, generated using whatever snapraid.conf file
-is specified using the $my_name -c option (/etc/snapraid.conf by default)
+NOTE: The snapraid -c/--conf option will not work unless placed before the
+command, allowing it to be interpreted as a $my_name option. Snapraid will be
+run with a temporary configuration file, generated using whatever snapraid.conf
+file is specified using the $my_name -c/--conf option (/etc/snapraid.conf by
+default)
 
 The SNAPRAID_USERDATA_KEY environment variable can be set to control the snapper
 userdata key that is used to track snapshots. If unset, it defaults to
