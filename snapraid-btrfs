@@ -475,7 +475,7 @@ main() {
     local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    config_file="$DEFAULT_CONFIG_FILE"
+    config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
     interactive=0
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
     my_snapper=snapper
@@ -1036,9 +1036,14 @@ run with a temporary configuration file, generated using whatever snapraid.conf
 file is specified using the $my_name -c/--conf option ($DEFAULT_CONFIG_FILE by
 default)
 
-The SNAPRAID_USERDATA_KEY environment variable can be set to control the snapper
-userdata key that is used to track snapshots. If unset, it defaults to
-$DEFAULT_USERDATA_KEY.
+Environment variables:
+
+SNAPRAID_CONFIG_FILE -
+        Default location of the snapraid.conf file if -c/--conf option is not
+        used. If unset, $DEFAULT_CONFIG_FILE will be used as the default.
+SNAPRAID_USERDATA_KEY -
+        Snapper userdata key that is used to track snapshots. If unset, it
+        defaults to $DEFAULT_USERDATA_KEY.
 
 _EOF_
 }

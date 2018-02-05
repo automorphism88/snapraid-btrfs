@@ -29,7 +29,7 @@ configurations (in other words, the live filesystem will be used for all
 operations and no snapshots will be created). Just like snapraid,
 `snapraid-btrfs` will use `/etc/snapraid.conf` by
 default, but another configuration file can be specified using the `-c`/`--conf`
-option.
+option or by setting the `SNAPRAID_CONFIG_FILE` environment variable.
 
 All files on the data drives which are not excluded by the snapraid
 configuration file must be in the same subvolume. **If any of the snapraid
@@ -184,7 +184,7 @@ snapraid-btrfs for. Snapraid-btrfs will compare the output of
 `snapper list-configs` with the list of data directories found in the snapraid
 config file (as with snapraid, by default, `/etc/snapraid.conf`, but an
 alternate location can be specified with the `-c` or `--conf` command line
-argument).
+argument or by setting the `SNAPRAID_CONFIG_FILE` environment variable).
 
 **To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
