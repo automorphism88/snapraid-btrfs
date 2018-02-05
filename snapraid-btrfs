@@ -17,6 +17,7 @@
 # These warnings don't take ;;& terminators in case statements into account
 # see https://github.com/koalaman/shellcheck/issues/1044
 
+readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
 readonly EXIT_INTERNAL_ERROR=64
 readonly EXIT_INVALID_ARGUMENT=65
@@ -474,7 +475,7 @@ main() {
     local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    config_file=/etc/snapraid.conf
+    config_file="$DEFAULT_CONFIG_FILE"
     interactive=0
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
     my_snapper=snapper
@@ -937,7 +938,7 @@ $my_name:
 
 -h, --help                      Show this help
 -c, --conf FILE                 Specify location of snapraid config file
-                                (default /etc/snapraid.conf)
+                                (default $DEFAULT_CONFIG_FILE)
 -C, --cleanup STR               Specify snapper cleanup algorithm to set for any
                                 snapshots created (default none)
 -d, --description STR           Specify snapper description to set for any
@@ -1032,7 +1033,7 @@ or one of the following $my_name specific commands:
 NOTE: The snapraid -c/--conf option will not work unless placed before the
 command, allowing it to be interpreted as a $my_name option. Snapraid will be
 run with a temporary configuration file, generated using whatever snapraid.conf
-file is specified using the $my_name -c/--conf option (/etc/snapraid.conf by
+file is specified using the $my_name -c/--conf option ($DEFAULT_CONFIG_FILE by
 default)
 
 The SNAPRAID_USERDATA_KEY environment variable can be set to control the snapper
