@@ -992,6 +992,12 @@ $my_name:
   --snapraid-path PATH          Path to the snapraid executable (defaults to
                                 first found in \$PATH)
 
+  NOTE: The snapraid -c/--conf option will not work unless placed before the
+  command, allowing it to be interpreted as a $my_name option. Snapraid will be
+  run with a temporary configuration file, generated using whatever
+  snapraid.conf file is specified using the $my_name -c/--conf option
+  ($DEFAULT_CONFIG_FILE by default)
+
 Commands are either one of the following snapraid commands:
   'check'|'diff'|'dup'|'list'|'pool'|'scrub'|'status'|'sync':
         Run the snapraid command given, replacing data drives in snapraid config
@@ -1032,12 +1038,6 @@ or one of the following $my_name specific commands:
         -U option is specified), creating pre/post snapshots. Arguments are
         passed through to snapper undochange, including the snapper undochange
         -i option.
-
-NOTE: The snapraid -c/--conf option will not work unless placed before the
-command, allowing it to be interpreted as a $my_name option. Snapraid will be
-run with a temporary configuration file, generated using whatever snapraid.conf
-file is specified using the $my_name -c/--conf option ($DEFAULT_CONFIG_FILE by
-default)
 
 Environment variables:
 
