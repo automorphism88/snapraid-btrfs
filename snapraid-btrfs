@@ -236,13 +236,13 @@ create_pre_post_snapshots() {
 }
 
 # Enable xtrace with a useful $PS4 setting and replace literal tab and CR
-# characters in xtrace with escape sequences \t and \r
+# characters in xtrace with escape sequences \t and \r in reversed color
 # Literal \t and \r sequences are not replaced by \\t and \\r in order to
 # preserve readability - ambiguity should be minimal
 enable_debug_mode() {
     original_BASH_XTRACEFD="${BASH_XTRACEFD:-2}"
     coproc sed_escape_xtrace {
-        sed -e $'s/\r/\\\\r/g' -e $'s/\t/\\\\t/g'
+        sed -e $'s/\r/\e[7m\\\\r\e[0m/g' -e $'s/\t/\e[7m\\\\t\e[0m/g'
     } >&"$original_BASH_XTRACEFD"
     BASH_XTRACEFD=${sed_escape_xtrace[1]}
     PS4='+(${BASH_SOURCE[0]}:$LINENO): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
