@@ -17,7 +17,6 @@
 # These warnings don't take ;;& terminators in case statements into account
 # see https://github.com/koalaman/shellcheck/issues/1044
 
-readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
 readonly EXIT_INTERNAL_ERROR=64
 readonly EXIT_INVALID_ARGUMENT=65
@@ -478,7 +477,17 @@ main() {
     local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
+    # if SNAPRAID_CONFIG_FILE is set, use it as default config file location if
+    # the -c/--conf option is unset, otherwise follow snapraid behavior of
+    # using /usr/local/etc/snapraid.conf as the default if it exists, and
+    # /etc/snapraid.conf otherwise
+    if [[ "${SNAPRAID_CONFIG_FILE:-}" ]] ; then
+        config_file="$SNAPRAID_CONFIG_FILE"
+    elif [[ -f /usr/local/etc/snapraid.conf ]] ; then
+        config_file=/usr/local/etc/snapraid.conf
+    else
+        config_file=/etc/snapraid.conf
+    fi
     interactive=0
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
     my_snapper=snapper
@@ -941,7 +950,8 @@ $my_name:
 
   -h, --help                    Show this help
   -c, --conf FILE               Specify location of snapraid config file
-                                (default $DEFAULT_CONFIG_FILE)
+                                (default /usr/local/etc/snapraid.conf if it
+                                exists, otherwise /etc/snapraid.conf)
   -C, --cleanup STR             Specify snapper cleanup algorithm to set for any
                                 snapshots created (default none)
   -d, --description STR         Specify snapper description to set for any
@@ -995,8 +1005,7 @@ $my_name:
   NOTE: The snapraid -c/--conf option will not work unless placed before the
   command, allowing it to be interpreted as a $my_name option. Snapraid will be
   run with a temporary configuration file, generated using whatever
-  snapraid.conf file is specified using the $my_name -c/--conf option
-  ($DEFAULT_CONFIG_FILE by default)
+  snapraid.conf file is specified using the $my_name -c/--conf option.
 
 Commands are either one of the following snapraid commands:
   'check'|'diff'|'dup'|'list'|'pool'|'scrub'|'status'|'sync':
@@ -1043,7 +1052,9 @@ Environment variables:
 
   SNAPRAID_CONFIG_FILE -
         Default location of the snapraid.conf file if -c/--conf option is not
-        used. If unset, $DEFAULT_CONFIG_FILE will be used as the default.
+        used. If unset, the default location is the same as with vanilla
+        snapraid (/usr/local/etc/snapraid.conf if it exists, otherwise
+        /etc/snapraid.conf).
   SNAPRAID_USERDATA_KEY -
         Snapper userdata key that is used to track snapshots. If unset, it
         defaults to $DEFAULT_USERDATA_KEY.
