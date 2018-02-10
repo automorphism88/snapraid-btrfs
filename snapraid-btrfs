@@ -24,6 +24,9 @@ readonly EXIT_INVALID_CONFIG=66
 readonly EXIT_NO_PERMISSIONS=67
 readonly EXIT_SNAPSHOT_NOT_FOUND=68
 readonly EXIT_INTERACTIVE_NO=69
+# snapraid short options, sorted by whether or not they accept arguments
+readonly SNAPRAID_OPTS_ARG=BCLScdfilop
+readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
 
 # bash version 4+ required for associative arrays, coprocesses, and
 # ;& and ;;& terminators in case statements
@@ -138,14 +141,14 @@ check_dependencies() {
 check_snapraid_arguments() {
     while (($# > 0)) ; do
         case $1 in
-            --conf|-*([DEFHLNRUVZaehmqv])c*)
+            --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
                 printf '%s: The -c/--conf option may not be passed through\n' \
                        "$my_name" >&2
                 invalid_argument_exit ;;
             # snapraid options that take arguments, meaning we should shift 2
             --@(filter?(-disk)|import|plan|older-than|log|start|count)) ;&
             --@(error-limit|gen-conf)) ;&
-            -[fdipolSBLC])
+            -["$SNAPRAID_OPTS_ARG"])
                 shift 2 || shift ;;
             *)
                 shift ;;
@@ -1150,7 +1153,7 @@ use_snapshot_fix() {
             --filter-disk=*)
                 disk="${1#--filter-disk=}"
                 shift ;;
-            --filter-disk|-*([DEFHLNRUVZaehmqv])d)
+            --filter-disk|-*(["$SNAPRAID_OPTS_NOARG"])d)
                 option_requires_argument "$@"
                 disk="$2"
                 shift 2 ;;
@@ -1162,7 +1165,7 @@ use_snapshot_fix() {
                         d)
                             disk="${opt_str:$((i+1))}"
                             break ;;
-                        [BCLScfilop])
+                        ["$SNAPRAID_OPTS_ARG"])
                             break ;;
                     esac
                 done ;;&
