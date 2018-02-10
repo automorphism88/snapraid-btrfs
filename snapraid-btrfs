@@ -40,6 +40,7 @@ fi
 
 set -Eeuo pipefail +Cfo posix
 shopt -s extglob
+shopt -u nocasematch
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
