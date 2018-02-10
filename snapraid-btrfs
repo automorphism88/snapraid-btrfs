@@ -265,7 +265,7 @@ err_trap() {
     local func line script
     local -i frame
     frame=0
-    while IFS=$' \t' read -r line func script ; do
+    while IFS=' ' read -r line func script ; do
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
     done < <(while caller $frame ; do ((++frame)) ; done)
     exit "${3:-$EXIT_INTERNAL_ERROR}"
