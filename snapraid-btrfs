@@ -138,7 +138,7 @@ check_dependencies() {
 check_snapraid_arguments() {
     while (($# > 0)) ; do
         case $1 in
-            --conf|-*([DEFHLNRUVZaehmqv])c)
+            --conf|-*([DEFHLNRUVZaehmqv])c*)
                 printf '%s: The -c/--conf option may not be passed through\n' \
                        "$my_name" >&2
                 invalid_argument_exit ;;
