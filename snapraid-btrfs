@@ -298,7 +298,7 @@ find_configs() {
     # Find snapper configs with paths in snapraid config file
     local config data_line subvol i
     # grep ERE matching data line up to the point where the path starts
-    data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
+    readonly data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
     while IFS='|' read -r config subvol ; do
         # Remove leading and trailing spaces
         config="${config##*( )}"
@@ -383,7 +383,7 @@ generate_temp_snapraid_conf() {
     local data_line match_line new_path sed_find sed_replace i
     local -a sed_exps
     # regex matching data line up to the point where the path starts
-    data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
+    readonly data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
     # shellcheck disable=SC2016
     # $a is a sed command, not part of a bash variable, so is single quoted
