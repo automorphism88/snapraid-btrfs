@@ -206,6 +206,8 @@ create_pre_post_snapshots() {
     local -a snapper_cmd
     local i
     for i in "${pre_post_configs[@]}" ; do
+        # skip configs where we're using a readonly snapshot
+        [[ "${use_snapshot[$i]}" = 0 ]] || continue
         snapper_cmd=( "$my_snapper" -c "$i" create )
         [[ "${snapper_cleanup:-}" ]] &&
             snapper_cmd+=( -c "$snapper_cleanup" )
@@ -356,6 +358,8 @@ find_snapshots() {
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
+            0)
+                continue ;;
             +([[:digit:]]))
                 "$my_snapper" -c "$i" ls |
                     parse_snapper_ls |
@@ -414,6 +418,29 @@ generate_temp_snapraid_conf() {
     else
         sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
     fi
+}
+
+# given the snapraid.conf name for a disk (e.g. d1 in disk d1 /foo/bar),
+# find the corresponding snapper config name, if any
+get_snapper_config_name() {
+    local field1 field2 field3 subvol i
+    subvol=
+    while IFS=$' \t' read -r field1 field2 field3 ; do
+        case $field1 in
+            data|disk)
+                if [[ "$field2" = "$1" ]] ; then
+                    subvol="$field3"
+                    break
+                fi ;;
+        esac
+    done < "$config_file"
+    [[ "${subvol:-}" ]] || return
+    for i in "${snapper_configs[@]}" ; do
+        if [[ "${snapper_subvols[$i]}" = "$subvol" ]] ; then
+            printf '%s\n' "$i"
+            break
+        fi
+    done
 }
 
 interactive_ask() {
@@ -666,7 +693,7 @@ run_command() {
         # Setup ${use_snapshot[@]}
         cleanup)
             use_snapshot_all sync ;;&
-        cleanup-all|fix|touch)
+        cleanup-all|touch)
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
@@ -674,9 +701,11 @@ run_command() {
             use_snapshot_default sync ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
-        !(cleanup-all|snapper-l@(s|ist)|fix|touch))
+        fix)
+            use_snapshot_fix "$@" ;;&
+        !(cleanup-all|snapper-l@(s|ist)|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|snapper-l@(s|ist)|fix|touch))
+        !(cleanup?(-all)|snapper-l@(s|ist)|touch))
             use_snapshot_check ;;&
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
@@ -1013,7 +1042,9 @@ Commands are either one of the following snapraid commands:
         file that have corresponding snapper configs with read-only snapshots.
   'fix'|'touch':
         Run the snapraid command given, creating a set of pre/post snapshots
-        before and after.
+        before and after (for fix, if the snapraid -d/--filter-disk option is
+        specified, create pre/post snapshots only for the specified disk(s),
+        and use the last-synced snapshot for the rest).
 
 or one of the following $my_name specific commands:
   'config':
@@ -1105,6 +1136,53 @@ use_snapshot_default() {
         [[ "${use_snapshot[$i]:-}" ]] ||
             use_snapshot[$i]="$1"
     done
+}
+
+# When running a fix operation, parse the -d/--filter-disk snapraid option if
+# specified, and set ${use_snapshot[@]} accordingly
+use_snapshot_fix() {
+    local disk opt_str snapper_config_name
+    local -i configs_found length i
+    configs_found=0
+    while (($# > 0)) ; do
+        disk=
+        case $1 in
+            --filter-disk=*)
+                disk="${1#--filter-disk=}"
+                shift ;;
+            --filter-disk|-*([DEFHLNRUVZaehmqv])d)
+                option_requires_argument "$@"
+                disk="$2"
+                shift 2 ;;
+            -*)
+                opt_str="${1#-}"
+                length="${#opt_str}"
+                for ((i=0;i<length;i++)) ; do
+                    case ${opt_str:$i:1} in
+                        d)
+                            disk="${opt_str:$((i+1))}"
+                            break ;;
+                        [BCLScfilop])
+                            break ;;
+                    esac
+                done ;;&
+            *)
+                shift ;;
+        esac
+        if [[ "$disk" ]] ; then
+            snapper_config_name="$(get_snapper_config_name "$disk")"
+            if [[ "$snapper_config_name" ]] ; then
+                ((++configs_found))
+                [[ "${use_snapshot[$snapper_config_name]:-}" ]] ||
+                    use_snapshot[$snapper_config_name]=0
+            fi
+        fi
+    done
+    if ((configs_found > 0)) ; then
+        use_snapshot_default sync
+    else
+        use_snapshot_default 0
+    fi
 }
 
 main "$@"
