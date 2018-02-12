@@ -653,8 +653,10 @@ parse_arguments() {
 # else match all snapshots
 parse_snapper_ls() {
     awk -v key="${1:-}" -v value="${2:-}" -f /dev/fd/3 3<<'_EOF_'
-BEGIN { FS="|" } # snapper separates columns with '|' characters
-NR<=2 { next } # first 2 lines are the header
+# snapper separates columns with '|' characters
+BEGIN { FS="|" }
+# first 2 lines are the header
+NR<=2 { next }
 {
     # remove spaces used to pad column width
     gsub(/[ ]+/,"",$2)
@@ -692,7 +694,8 @@ NR<=2 { next } # first 2 lines are the header
             }
         }
         # Wipe v so one match doesn't result in matching all subsequent lines
-        split("",v," ") # delete v only works in gawk
+        # delete v only works in gawk
+        split("",v," ")
     }
 }
 _EOF_
