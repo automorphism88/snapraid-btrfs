@@ -588,7 +588,7 @@ parse_arguments() {
             # matching any command means option processing is complete
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
             cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
-            config|create|rollback|undochange)
+            config|create|resume|rollback|undochange)
                 setup_config
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
@@ -717,6 +717,8 @@ run_command() {
             use_snapshot_default new ;;&
         fix)
             use_snapshot_fix "$@" ;;&
+        resume)
+            use_snapshot_default res ;;&
         !(cleanup-all|l@(s|ist)|touch))
             find_snapshots "$1" ;;&
         !(cleanup?(-all)|l@(s|ist)|touch))
@@ -736,6 +738,9 @@ run_command() {
         # Implementation of commands that invoke snapraid
         check|diff|dup|fix|pool|scrub|status|sync|touch)
             run_snapraid "$@" && true ;;
+        resume)
+            shift
+            run_snapraid sync "$@" && true ;;
         @(d|diff-)sync)
             shift
             local -i diff_ret
@@ -1021,6 +1026,7 @@ $my_name:
                                 Default is:
                                     'new' for diff|dsync|sync
                                     'last' for config
+                                    'res' for resume
                                     'sync' for all other commands
   -U, --use-snapshot STR        Specify snapshots to use for specific snapper
                                 configurations, using the snapper config name
@@ -1084,6 +1090,8 @@ or one of the following $my_name specific commands:
         Run snapper ls for all snapper configs found in snapraid config file.
         If an argument is given, also list which snapshots in each config were
         identified as having snapper userdata key equal to the argument.
+  'resume':
+        Resume an interrupted sync, using the same set of snapshots.
   'rollback':
         Run snapper rollback in all snapper configs using the snapshots from
         the last successful sync (or another snapshot if the -u or -U option
