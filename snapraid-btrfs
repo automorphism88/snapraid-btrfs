@@ -349,11 +349,12 @@ find_snapshots() {
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
-                if ((verbose > 0)) ; then
-                    printf 'Creating new snapshot for config %s\n' "$i"
-                fi
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
-                    "${snapper_create_opts[@]}")" ;;
+                    "${snapper_create_opts[@]}")"
+                if ((verbose > 0)) ; then
+                    printf 'Created new snapshot %s for config %s\n' \
+                           "${use_snapshot[$i]}" "$i"
+                fi ;;
             res)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
