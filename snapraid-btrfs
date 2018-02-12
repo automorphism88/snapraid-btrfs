@@ -550,7 +550,6 @@ modify_userdata() {
     return $ret
 }
 
-# argument should be a directory, otherwise exit
 must_be_directory() {
     if ! [[ -d "$1" ]] ; then
         printf '%s: %s is not a valid directory\n' "$my_name" "$1" >&2
@@ -558,11 +557,18 @@ must_be_directory() {
     fi
 }
 
-# argument should be an executable file, otherwise exit
 must_be_executable() {
     if ! [[ -x "$1" ]] ; then
         printf '%s: %s is not an executable file\n' "$my_name" "$1" >&2
         invalid_argument_exit
+    fi
+}
+
+must_be_writable() {
+    if ! [[ -w "$1" ]] ; then
+        printf '%s: No write permission for %s - %s\n' "$my_name" "$1" \
+               'set the TMPDIR environment variable and try again' >&2
+        exit $EXIT_NO_PERMISSIONS
     fi
 }
 
@@ -749,11 +755,14 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local temp_config_file
+    local temp_dir temp_config_file
     local -i ret
     local -a snapraid_cmd
-    temp_config_file="$(mktemp -- "${TMPDIR:-/tmp}/$my_name.XXXXXX")"
+    temp_dir="${TMPDIR:-/tmp}"
+    must_be_writable "$temp_dir"
+    temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit="$temp_config_file"
+    must_be_writable "$temp_config_file"
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
