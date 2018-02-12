@@ -1185,9 +1185,9 @@ use_snapshot_fix() {
     done
     if ((configs_found > 0)) ; then
         use_snapshot_default sync
-    else
-        use_snapshot_default 0
+        find_snapshots fix
     fi
+    use_snapshot_default 0
 }
 
 main "$@"
