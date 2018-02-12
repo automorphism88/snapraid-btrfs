@@ -210,8 +210,8 @@ an empty directory in the read-only snapshots, so excluding it in the snapraid
 config file is unnecessary, but harmless. (The `.snapshots` directory is
 excluded relative to the root of the data drives, so if your data drive is
 mounted at `/foo/bar` then if using snapshot n it will exclude
-`/foo/bar/.snapshots/n/.snapshots`, and if using the live filesystem it will
-exclude `/foo/bar/.snapshots`.)
+`/foo/bar/.snapshots/n/snapshot/.snapshots`, and if using the live filesystem
+it will exclude `/foo/bar/.snapshots`.)
 
 ### Q: Can I have multiple subvolumes on a single data drive?
 A: `snapraid-btrfs` only uses one subvolume per data drive, which should contain
