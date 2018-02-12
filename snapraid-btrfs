@@ -177,7 +177,7 @@ cleanup_snapshots() {
             parse_snapper_ls "$snapper_userdata_key")"
         j=
         for j in $snaps_to_consider ; do
-            if ((use_snapshot[\$i] == 0)) || ((use_snapshot[\$i] > j)) ; then
+            if ((use_snapshot[\$i] != j)) ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
                 if ((interactive > 0)) ; then
                     interactive_ask "${snapper_cmd[@]}" >&2
@@ -1060,7 +1060,7 @@ or one of the following $my_name specific commands:
         Create a new snapshot for all snapper configs corresponding to data
         drives found in snapraid config file.
   'cleanup':
-        Delete all snapshots created by $my_name before the last one a
+        Delete all snapshots created by $my_name except the last one a
         successful sync has been completed with.
   'cleanup-all':
         Delete all snapshots created by $my_name.
