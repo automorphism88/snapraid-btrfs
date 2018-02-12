@@ -1095,6 +1095,9 @@ Environment variables:
   SNAPRAID_USERDATA_KEY -
         Snapper userdata key that is used to track snapshots. If unset, it
         defaults to $DEFAULT_USERDATA_KEY.
+  TMPDIR -
+        Directory to create temporary snapraid.conf file in. If unset, /tmp
+        is used by default.
 
 _EOF_
 }
