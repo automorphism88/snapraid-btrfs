@@ -580,7 +580,7 @@ parse_arguments() {
         case $1 in
             # matching any command means option processing is complete
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
-            cleanup?(-all)|snapper-l@(s|ist)|?(diff-|d)sync) ;&
+            cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
             config|create|rollback|undochange)
                 setup_config
                 run_command "$@" ;;
@@ -701,22 +701,22 @@ run_command() {
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
-        check|dup|list|pool|rollback|scrub|status|undochange)
+        check|dup|pool|rollback|scrub|status|undochange)
             use_snapshot_default sync ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
         fix)
             use_snapshot_fix "$@" ;;&
-        !(cleanup-all|snapper-l@(s|ist)|touch))
+        !(cleanup-all|l@(s|ist)|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|snapper-l@(s|ist)|touch))
+        !(cleanup?(-all)|l@(s|ist)|touch))
             use_snapshot_check ;;&
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
             cleanup_snapshots ;;
         config)
             generate_temp_snapraid_conf ;;
-        snapper-l@(s|ist))
+        l@(s|ist))
             snapper_ls "$@" ;;
         rollback)
             snapper_rollback ;;
@@ -724,7 +724,7 @@ run_command() {
             shift
             snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
-        check|diff|dup|fix|list|pool|scrub|status|sync|touch)
+        check|diff|dup|fix|pool|scrub|status|sync|touch)
             run_snapraid "$@" && true ;;
         @(d|diff-)sync)
             shift
@@ -1042,7 +1042,7 @@ $my_name:
   snapraid.conf file is specified using the $my_name -c/--conf option.
 
 Commands are either one of the following snapraid commands:
-  'check'|'diff'|'dup'|'list'|'pool'|'scrub'|'status'|'sync':
+  'check'|'diff'|'dup'|'pool'|'scrub'|'status'|'sync':
         Run the snapraid command given, replacing data drives in snapraid config
         file that have corresponding snapper configs with read-only snapshots.
   'fix'|'touch':
@@ -1067,16 +1067,16 @@ or one of the following $my_name specific commands:
         Create a new snapshot for all snapper configs found in snapraid config
         file, do a snapraid diff, then sync. Implies --interactive option for
         the sync operation.
+  'list'|'ls':
+        Run snapper ls for all snapper configs found in snapraid config file.
+        If an argument is given, also list which snapshots in each config were
+        identified as having snapper userdata key equal to the argument.
   'rollback':
         Run snapper rollback in all snapper configs using the snapshots from
         the last successful sync (or another snapshot if the -u or -U option
         is specified). WARNING: Do not use this command unless you are familiar
         with the snapper rollback command and its effects. Instead consider
         using the undochange command.
-  'snapper-list'|'snapper-ls':
-        Run snapper ls for all snapper configs found in snapraid config file.
-        If an argument is given, also list which snapshots in each config were
-        identified as having snapper userdata key equal to the argument.
   'undochange':
         Use snapper undochange to revert the array to the state it was in at
         the time of the last successful sync (or another snapshot if the -u or

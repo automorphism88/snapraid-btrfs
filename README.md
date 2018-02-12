@@ -42,7 +42,7 @@ sync both the live filesystem and the read-only snapshots, causing it to run out
 of parity space.
 
 See the FAQ below for more details. To verify that snapper has been set up
-correctly, you can use the `snapraid-btrfs snapper-ls` command, which will run
+correctly, you can use the `snapraid-btrfs ls` command, which will run
 `snapper ls` for all of the snapper configurations that it recognizes as
 matching data drives in your snapraid configuration file. If you are satisfied
 that it has found them all, you are ready to run your first
