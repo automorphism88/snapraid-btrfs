@@ -717,7 +717,6 @@ run_command() {
         config)
             generate_temp_snapraid_conf ;;
         snapper-l@(s|ist))
-            shift
             snapper_ls "$@" ;;
         rollback)
             snapper_rollback ;;
@@ -869,6 +868,8 @@ setup_config() {
 # Do a snapper ls in all configs, and if argument is specified, additionally
 # identify which snapshots we found with userdata $snapper_userdata_key=$*
 snapper_ls() {
+    # $1 is 'ls' or 'list' - discard
+    shift
     local i
     for i in "${snapper_configs[@]}" ; do
         printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
