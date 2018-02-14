@@ -758,7 +758,7 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local temp_dir temp_config_file
+    local temp_config_file temp_dir
     local -i ret
     local -a snapraid_cmd
     temp_dir="${TMPDIR:-/tmp}"
