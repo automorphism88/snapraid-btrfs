@@ -291,11 +291,13 @@ err_trap() {
 exit_trap() {
     [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
     if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
-        local temp_BASH_XTRACEFD
+        local -i temp_BASH_XTRACEFD
         temp_BASH_XTRACEFD="$BASH_XTRACEFD"
         BASH_XTRACEFD="$original_BASH_XTRACEFD"
-        [[ "$BASH_XTRACEFD" = "$temp_BASH_XTRACEFD" ]] ||
-            eval "exec ${temp_BASH_XTRACEFD}>&-"
+        case $temp_BASH_XTRACEFD in
+            !(2|"$BASH_XTRACEFD"))
+                eval "exec ${temp_BASH_XTRACEFD}>&-" ;;
+        esac
         # shellcheck disable=SC2086,SC2154
         # Shellcheck doesn't understand named coprocesses
         # See https://github.com/koalaman/shellcheck/issues/1066
