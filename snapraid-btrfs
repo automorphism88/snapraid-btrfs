@@ -405,11 +405,12 @@ generate_temp_snapraid_conf() {
     # regex matching data line up to the point where the path starts
     readonly data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
-    # shellcheck disable=SC2016
-    # $a is a sed command, not part of a bash variable, so is single quoted
-    [[ "${pool_dir:-}" ]] &&
+    if [[ "${pool_dir:-}" ]] ; then
+        # shellcheck disable=SC2016
+        # $a is a sed command, not part of a bash variable, so is single quoted
         sed_exps+=( $'/^[ \t]*pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
+    fi
     for i in "${snapper_configs[@]}" ; do
         if ((use_snapshot[\$i] != 0)) ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
