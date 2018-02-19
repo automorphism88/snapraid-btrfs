@@ -255,6 +255,17 @@ create_pre_post_snapshots() {
     done
 }
 
+# run the specified snapper command on each config
+do_snapper() {
+    # $1 is 'snapper' - discard
+    shift
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        [[ "${use_snapshot[$i]}" = 0 ]] && continue
+        "$my_snapper" -c "$i" "$@"
+    done
+}
+
 # Enable xtrace with a useful $PS4 setting and replace literal tab
 # characters in xtrace with the escape sequence \t in reversed color
 # Literal \t sequences are not replaced by \\t in order to preserve
@@ -605,7 +616,7 @@ parse_arguments() {
             # matching any command means option processing is complete
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
             cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
-            config|create|resume|rollback|undochange)
+            config|create|resume|rollback|snapper|undochange)
                 setup_config
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
@@ -741,9 +752,11 @@ run_command() {
             use_snapshot_fix "$@" ;;&
         resume)
             use_snapshot_default res ;;&
-        !(cleanup-all|l@(s|ist)|touch))
+        snapper)
+            use_snapshot_default '' ;;&
+        !(cleanup-all|l@(s|ist)|snapper|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|l@(s|ist)|touch))
+        !(cleanup?(-all)|l@(s|ist)|snapper|touch))
             use_snapshot_check ;;&
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
@@ -754,6 +767,8 @@ run_command() {
             snapper_ls "$@" ;;
         rollback)
             snapper_rollback ;;
+        snapper)
+            do_snapper "$@" ;;
         undochange)
             snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
@@ -1120,6 +1135,14 @@ or one of the following $my_name specific commands:
         is specified). WARNING: Do not use this command unless you are familiar
         with the snapper rollback command and its effects. Instead consider
         using the undochange command.
+  'snapper':
+        Run the given snapper command in all configs, unless they are disabled
+        by --use-snapshot exampleconfig=0 - for example:
+           $my_name -U foo=0 snapper get-config
+        would run
+           snapper -c "\$i" get-config
+        substituting "\$i" for each snapper config matching the snapraid.conf
+        file, except foo.
   'undochange':
         Use snapper undochange to revert the array to the state it was in at
         the time of the last successful sync (or another snapshot if the -u or
