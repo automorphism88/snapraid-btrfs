@@ -755,7 +755,6 @@ run_command() {
         rollback)
             snapper_rollback ;;
         undochange)
-            shift
             snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
         check|diff|dup|fix|pool|scrub|status|sync|touch)
@@ -963,6 +962,8 @@ snapper_rollback() {
 # Run snapper undochange in each snapper config to revert to the state at the
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_undochange() {
+    # $1 is 'undochange' - discard
+    shift
     local i
     local -i ret snapper_ret
     local -a snapper_cmd undochange_files undochange_opts
