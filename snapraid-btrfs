@@ -369,7 +369,7 @@ find_snapshots() {
             +([[:digit:]]))
                 "$my_snapper" -c "$i" ls |
                     parse_snapper_ls |
-                    grep -F "${use_snapshot[$i]}" > /dev/null ||
+                    grep -Fx "${use_snapshot[$i]}" > /dev/null ||
                     use_snapshot[$i]= ;;
             *)
                 printf '%s: Could not understand snapshot selection %s%s%s\n' \
