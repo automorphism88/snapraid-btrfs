@@ -85,6 +85,20 @@ apply_use_snapshot_option() {
     done
 }
 
+# substitute for cat that doesn't invoke any external processes
+cat_builtin() {
+    local buf
+    local -i fd
+    if [[ "${1:-}" ]] ; then
+        exec {fd}<"$1"
+    else
+        exec {fd}<&0
+    fi
+    IFS= read -r -d '' -u "$fd" buf && true
+    eval "exec ${fd}<&-"
+    printf '%s' "$buf"
+}
+
 check_config() {
     # Make sure we found some configs
     if ((${#snapper_configs[@]} == 0)) ; then
@@ -420,7 +434,7 @@ generate_temp_snapraid_conf() {
         fi
     done
     if ((${#sed_exps[@]} == 0)) ; then
-        cat -- "$config_file"
+        cat_builtin "$config_file"
     else
         sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
     fi
@@ -498,7 +512,7 @@ is_btrfs_subvolume() {
 }
 
 main() {
-    check_dependencies awk basename cat dirname grep mktemp rm sed stat tail
+    check_dependencies awk basename dirname grep mktemp rm sed stat tail
     local config_file my_name my_snapper my_snapraid original_BASH_XTRACEFD \
           pool_dir rm_on_exit snapper_cleanup snapper_description \
           snapper_userdata snapper_userdata_key use_snapshot_all_option \
@@ -779,7 +793,7 @@ run_snapraid() {
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
         printf 'Using snapraid config file:\n'
-        cat -- "$temp_config_file"
+        cat_builtin "$temp_config_file"
     fi
     if ((interactive > 0)) ; then
         interactive_ask "${snapraid_cmd[@]}"
@@ -996,7 +1010,7 @@ snapper_undochange() {
 }
 
 usage() {
-    cat - <<_EOF_
+    cat_builtin <<_EOF_
 Usage: $my_name [options] <command> [arguments]
 
 Arguments appearing after the command are passed through to snapraid, while
