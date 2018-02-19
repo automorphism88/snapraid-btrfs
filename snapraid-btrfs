@@ -44,7 +44,7 @@ shopt -s extglob
 shopt -u nocasematch
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
-shopt -s lastpipe &> /dev/null || true
+shopt -s lastpipe &> /dev/null && true
 
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
@@ -226,7 +226,7 @@ create_pre_post_snapshots() {
                 snapper_cmd+=( -d "$my_name post-$1" )
             fi
             snapper_cmd+=( -t post --pre-number "${pre_snapshot[$i]}" )
-            "${snapper_cmd[@]}" || true
+            "${snapper_cmd[@]}" && true
         else
             # We haven't created pre snapshots yet, so create them and store the
             # snapshot numbers from snapper -p option in ${pre_snapshot[@]}
