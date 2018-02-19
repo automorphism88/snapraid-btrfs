@@ -17,6 +17,7 @@
 # These warnings don't take ;;& terminators in case statements into account
 # see https://github.com/koalaman/shellcheck/issues/1044
 
+readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
 readonly EXIT_INTERNAL_ERROR=64
 readonly EXIT_INVALID_ARGUMENT=65
@@ -765,7 +766,7 @@ run_snapraid() {
     local temp_config_file temp_dir
     local -i ret
     local -a snapraid_cmd
-    temp_dir="${TMPDIR:-/tmp}"
+    temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     must_be_writable "$temp_dir"
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit="$temp_config_file"
@@ -1115,8 +1116,8 @@ Environment variables:
         Snapper userdata key that is used to track snapshots. If unset, it
         defaults to $DEFAULT_USERDATA_KEY.
   TMPDIR -
-        Directory to create temporary snapraid.conf file in. If unset, /tmp
-        is used by default.
+        Directory to create temporary snapraid.conf file in. If unset, it
+        defaults to $DEFAULT_TMPDIR.
 
 _EOF_
 }
