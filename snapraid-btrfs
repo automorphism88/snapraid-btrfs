@@ -672,7 +672,7 @@ parse_snapper_ls() {
         -v key="${1:-}" \
         -v value="${2:-}" \
         -v ORS="${3:-$'\n'}" \
-        -f /dev/fd/3 3<<'_EOF_'
+        -f <(cat_builtin <<'_EOF_'
 # first 2 lines are the header
 NR<=2 { next }
 {
@@ -717,6 +717,7 @@ NR<=2 { next }
     }
 }
 _EOF_
+            )
 }
 
 # Run the command given in $1
