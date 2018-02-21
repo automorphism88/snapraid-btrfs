@@ -1018,7 +1018,7 @@ snapper_undochange() {
         fi
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
-        if ! ((snapper_ret == 0)) ; then
+        if ((snapper_ret != 0)) ; then
             ret=$snapper_ret
         fi
     done
