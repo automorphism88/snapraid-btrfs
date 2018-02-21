@@ -322,7 +322,7 @@ find_configs() {
         printf '%s: Could not read snapraid config file at %s\n' "$my_name" \
                "$config_file" >&2
         invalid_argument_exit
-    elif ((verbose >= 1)) ; then
+    elif ((verbose > 0)) ; then
         printf 'Using snapraid config file %s\n' "$config_file"
     fi
     # Find snapper configs with paths in snapraid config file
