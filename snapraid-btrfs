@@ -175,9 +175,9 @@ check_snapraid_arguments() {
 # In each config, delete snapshots with userdata key $snapper_userdata_key
 # created before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
-    local snaps_to_consider i j
+    local i j
     local -i ret snapper_ret
-    local -a snapper_cmd
+    local -a snapper_cmd snapshots_to_consider
     ret=0
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
@@ -188,10 +188,12 @@ cleanup_snapshots() {
             fi
             continue
         fi
-        snaps_to_consider="$("$my_snapper" -c "$i" ls |
-            parse_snapper_ls "$snapper_userdata_key")"
+        snapshots_to_consider=()
+        IFS=' ' read -r -a snapshots_to_consider \
+           < <("$my_snapper" -c "$i" ls |
+                   parse_snapper_ls "$snapper_userdata_key" '' ' ') && true
         j=
-        for j in $snaps_to_consider ; do
+        for j in "${snapshots_to_consider[@]}" ; do
             if ((use_snapshot[\$i] != j)) ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
                 if ((interactive > 0)) ; then
