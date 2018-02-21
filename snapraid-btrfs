@@ -196,12 +196,7 @@ cleanup_snapshots() {
         for j in "${snapshots_to_consider[@]}" ; do
             if ((use_snapshot[\$i] != j)) ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
-                if ((interactive > 0)) ; then
-                    interactive_ask "${snapper_cmd[@]}" >&2
-                elif ((verbose >= 0)) ; then
-                    printf '%s ' "${snapper_cmd[@]}"
-                    printf '\n'
-                fi
+                verbose_command "${snapper_cmd[@]}"
                 "${snapper_cmd[@]}" && true
                 snapper_ret=$?
                 if ((snapper_ret != 0)) ; then
@@ -266,12 +261,7 @@ do_snapper() {
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" "$@" )
-        if ((interactive > 0)) ; then
-            interactive_ask "${snapper_cmd[@]}"
-        elif ((verbose >= 0)) ; then
-            printf '%s ' "${snapper_cmd[@]}"
-            printf '\n'
-        fi
+        verbose_command "${snapper_cmd[@]}"
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
         if ((snapper_ret != 0)) ; then
@@ -508,7 +498,7 @@ interactive_ask() {
                 printf 'Invalid choice. Please enter y or n.\n' ;;
         esac
     done
-} >&2
+}
 
 invalid_argument() {
     printf '%s: Invalid argument %s\n' "$my_name" "$1" >&2
@@ -836,12 +826,7 @@ run_snapraid() {
         printf 'Using snapraid config file:\n'
         cat_builtin "$temp_config_file"
     fi
-    if ((interactive > 0)) ; then
-        interactive_ask "${snapraid_cmd[@]}"
-    elif ((verbose >= 0)) ; then
-        printf '%s ' "${snapraid_cmd[@]}"
-        printf '\n'
-    fi
+    verbose_command "${snapraid_cmd[@]}"
     case $1 in
         # Create pre/post snapshots if applicable
         fix|touch)
@@ -980,12 +965,7 @@ snapper_rollback() {
         fi
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
-        if ((interactive > 0)) ; then
-            interactive_ask "${snapper_cmd[@]}"
-        elif ((verbose >= 0)) ; then
-            printf '%s ' "${snapper_cmd[@]}"
-            printf '\n'
-        fi
+        verbose_command "${snapper_cmd[@]}"
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
         if ((snapper_ret != 0)) ; then
@@ -1032,12 +1012,7 @@ snapper_undochange() {
         fi
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
-        if ((interactive > 0)) ; then
-            interactive_ask "${snapper_cmd[@]}"
-        elif ((verbose >= 0)) ; then
-            printf '%s ' "${snapper_cmd[@]}"
-            printf '\n'
-        fi
+        verbose_command "${snapper_cmd[@]}"
         "${snapper_cmd[@]}" && true
         snapper_ret=$?
         if ((snapper_ret != 0)) ; then
@@ -1276,6 +1251,15 @@ use_snapshot_fix() {
         find_snapshots fix
     fi
     use_snapshot_default 0
+}
+
+verbose_command() {
+    if ((interactive > 0)) ; then
+        interactive_ask "$@" >&2
+    elif ((verbose >= 0)) ; then
+        printf '%s ' "$@"
+        printf '\n'
+    fi
 }
 
 main "$@"
