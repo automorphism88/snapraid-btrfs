@@ -230,13 +230,13 @@ create_pre_post_snapshots() {
         # skip configs where we're using a readonly snapshot
         [[ "${use_snapshot[$i]}" = 0 ]] || continue
         snapper_cmd=( "$my_snapper" -c "$i" create )
-        [[ "${snapper_cleanup:-}" ]] &&
+        [[ "$snapper_cleanup" ]] &&
             snapper_cmd+=( -c "$snapper_cleanup" )
         snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
         if [[ "${pre_snapshot[$i]:-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
-            if [[ "${snapper_description:-}" ]] ; then
+            if [[ "$snapper_description" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
                 snapper_cmd+=( -d "$my_name post-$1" )
@@ -246,7 +246,7 @@ create_pre_post_snapshots() {
         else
             # We haven't created pre snapshots yet, so create them and store the
             # snapshot numbers from snapper -p option in ${pre_snapshot[@]}
-            if [[ "${snapper_description:-}" ]] ; then
+            if [[ "$snapper_description" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
                 snapper_cmd+=( -d "$my_name pre-$1" )
@@ -358,9 +358,9 @@ find_configs() {
 find_snapshots() {
     local -a snapper_create_opts
     snapper_create_opts=( -u "$snapper_userdata" )
-    [[ "${snapper_cleanup:-}" ]] &&
+    [[ "$snapper_cleanup" ]] &&
         snapper_create_opts+=( -c "$snapper_cleanup" )
-    if [[ "${snapper_description:-}" ]] ; then
+    if [[ "$snapper_description" ]] ; then
         snapper_create_opts+=( -d "$snapper_description" )
     else
         snapper_create_opts+=( -d "$my_name $1" )
@@ -418,7 +418,7 @@ generate_temp_snapraid_conf() {
     # regex matching data line up to the point where the path starts
     readonly data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
-    if [[ "${pool_dir:-}" ]] ; then
+    if [[ "$pool_dir" ]] ; then
         # shellcheck disable=SC2016
         # $a is a sed command, not part of a bash variable, so is single quoted
         sed_exps+=( $'/^[ \t]*pool[ \t]\{1,\}/d'
@@ -553,11 +553,16 @@ main() {
     my_snapraid=snapraid
     no_pre_post_option=()
     original_BASH_XTRACEFD=
+    pool_dir=
     pre_post_option=()
     rm_on_exit=()
+    snapper_cleanup=
     snapper_configs=()
+    snapper_description=
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     snapper_userdata="$snapper_userdata_key=created"
+    use_snapshot_all_option=
+    use_snapshot_option=
     verbose=0
     parse_arguments "$@"
 }
@@ -909,11 +914,11 @@ setup_config() {
     # Do some sanity checks of the configuration we just read
     check_config
     # Apply -U option
-    [[ "${use_snapshot_option:-}" ]] &&
+    [[ "$use_snapshot_option" ]] &&
         apply_use_snapshot_option "$use_snapshot_option"
     local i
     # Set -u argument for any configurations not specified by -U
-    if [[ "${use_snapshot_all_option:-}" ]] ; then
+    if [[ "$use_snapshot_all_option" ]] ; then
         for i in "${snapper_configs[@]}" ; do
             [[ "${use_snapshot[$i]:-}" ]] ||
                 use_snapshot[$i]="$use_snapshot_all_option"
@@ -947,9 +952,9 @@ snapper_rollback() {
     local -a snapper_cmd snapper_rollback_opts
     ret=0
     snapper_rollback_opts=( -u "$snapper_userdata" )
-    [[ "${snapper_cleanup:-}" ]] ||
+    [[ "$snapper_cleanup" ]] ||
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
-    if [[ "${snapper_description:-}" ]] ; then
+    if [[ "$snapper_description" ]] ; then
         snapper_rollback_opts+=( -d "$snapper_description" )
     else
         snapper_rollback_opts+=( -d "$my_name rollback" )
