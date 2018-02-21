@@ -256,19 +256,12 @@ create_pre_post_snapshots() {
 do_snapper() {
     local i
     local -a snapper_cmd
-    local -i ret snapper_ret
-    ret=0
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" "$@" )
         verbose_command "${snapper_cmd[@]}"
-        "${snapper_cmd[@]}" && true
-        snapper_ret=$?
-        if ((snapper_ret != 0)) ; then
-            ret=$snapper_ret
-        fi
+        "${snapper_cmd[@]}"
     done
-    return $ret
 }
 
 # Enable xtrace with a useful $PS4 setting and replace literal tab
