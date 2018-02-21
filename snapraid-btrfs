@@ -260,10 +260,25 @@ create_pre_post_snapshots() {
 # run the specified snapper command on each config
 do_snapper() {
     local i
+    local -a snapper_cmd
+    local -i ret snapper_ret
+    ret=0
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        "$my_snapper" -c "$i" "$@"
+        snapper_cmd=( "$my_snapper" -c "$i" "$@" )
+        if ((interactive > 0)) ; then
+            interactive_ask "${snapper_cmd[@]}"
+        elif ((verbose >= 0)) ; then
+            printf '%s ' "${snapper_cmd[@]}"
+            printf '\n'
+        fi
+        "${snapper_cmd[@]}" && true
+        snapper_ret=$?
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
     done
+    return $ret
 }
 
 # Enable xtrace with a useful $PS4 setting and replace literal tab
