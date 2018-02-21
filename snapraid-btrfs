@@ -466,7 +466,7 @@ get_snapper_config_name() {
                 fi ;;
         esac
     done < "$config_file"
-    [[ "${subvol:-}" ]] || return
+    [[ "$subvol" ]] || return
     for i in "${snapper_configs[@]}" ; do
         if [[ "${snapper_subvols[$i]}" = "$subvol" ]] ; then
             printf '%s\n' "$i"
