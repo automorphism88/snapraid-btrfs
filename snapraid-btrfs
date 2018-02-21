@@ -194,7 +194,7 @@ cleanup_snapshots() {
                    parse_snapper_ls "$snapper_userdata_key" '' ' ') && true
         j=
         for j in "${snapshots_to_consider[@]}" ; do
-            if ((use_snapshot[\$i] != j)) ; then
+            if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
                 verbose_command "${snapper_cmd[@]}"
                 "${snapper_cmd[@]}" && true
@@ -423,7 +423,7 @@ generate_temp_snapraid_conf() {
                     '$apool '"$pool_dir" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        if ((use_snapshot[\$i] != 0)) ; then
+        if [[ "${use_snapshot[$i]}" != 0 ]] ; then
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
             if [[ -r "$new_path" ]] && is_btrfs_subvolume "$new_path" ; then
@@ -953,9 +953,7 @@ snapper_rollback() {
         snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        if ((use_snapshot[\$i] == 0)) ; then
-            continue
-        fi
+        [[ "${use_snapshot[$i]}" = 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" rollback
                       "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
         verbose_command "${snapper_cmd[@]}"
@@ -1000,9 +998,7 @@ snapper_undochange() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        if ((use_snapshot[\$i] == 0)) ; then
-            continue
-        fi
+        [[ "${use_snapshot[$i]}" = 0 ]] && continue
         snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
                       "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
         verbose_command "${snapper_cmd[@]}"
