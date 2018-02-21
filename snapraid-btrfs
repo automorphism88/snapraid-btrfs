@@ -298,7 +298,7 @@ err_trap() {
 # Intended to be called by EXIT trap
 # Removes $rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
-    [[ "${rm_on_exit:-}" ]] && rm -f -- "$rm_on_exit" && true
+    [[ "${#rm_on_exit[@]}" != 0 ]] && rm -f -- "${rm_on_exit[@]}" && true
     if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
         local -i temp_BASH_XTRACEFD
         temp_BASH_XTRACEFD="$BASH_XTRACEFD"
@@ -526,12 +526,11 @@ is_btrfs_subvolume() {
 main() {
     check_dependencies awk basename dirname grep mktemp rm sed stat tail
     local config_file my_name my_snapper my_snapraid original_BASH_XTRACEFD \
-          pool_dir rm_on_exit snapper_cleanup snapper_description \
-          snapper_userdata snapper_userdata_key use_snapshot_all_option \
-          use_snapshot_option
+          pool_dir snapper_cleanup snapper_description snapper_userdata \
+          snapper_userdata_key use_snapshot_all_option use_snapshot_option
     local -i interactive verbose
     local -a no_pre_post_option pre_post_configs pre_post_option \
-          snapper_configs
+          rm_on_exit snapper_configs
     local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
@@ -553,6 +552,7 @@ main() {
     no_pre_post_option=()
     original_BASH_XTRACEFD=
     pre_post_option=()
+    rm_on_exit=()
     snapper_configs=()
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     snapper_userdata="$snapper_userdata_key=created"
@@ -806,7 +806,7 @@ run_snapraid() {
     temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     must_be_writable "$temp_dir"
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
-    rm_on_exit="$temp_config_file"
+    rm_on_exit+=( "$temp_config_file" )
     must_be_writable "$temp_config_file"
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
