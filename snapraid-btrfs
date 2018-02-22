@@ -298,7 +298,9 @@ err_trap() {
 # Intended to be called by EXIT trap
 # Removes $rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
-    [[ "${#rm_on_exit[@]}" != 0 ]] && rm -f -- "${rm_on_exit[@]}" && true
+    if ((${#rm_on_exit[@]} > 0)) ; then
+        rm -f -- "${rm_on_exit[@]}" && true
+    fi
     if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
         local -i temp_BASH_XTRACEFD
         temp_BASH_XTRACEFD="$BASH_XTRACEFD"
