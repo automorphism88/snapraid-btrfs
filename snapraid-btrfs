@@ -617,7 +617,6 @@ parse_arguments() {
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
             cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
             config|create|resume|rollback|snapper|undochange)
-                setup_config
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
@@ -736,6 +735,7 @@ _EOF_
 
 # Run the command given in $1
 run_command() {
+    setup_config
     case $1 in
         # Setup ${use_snapshot[@]}
         cleanup)
