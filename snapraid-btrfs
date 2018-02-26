@@ -1211,8 +1211,10 @@ use_snapshot_fix() {
                 shift ;;
             --filter-disk|-*(["$SNAPRAID_OPTS_NOARG"])d)
                 option_requires_argument "$@"
-                disk="$2"
-                shift 2 ;;
+                disk="$2" ;&
+            --@(filter|import|plan|older-than|log|start|count|error-limit)) ;&
+            --gen-conf)
+                shift 2 || shift ;;
             -*)
                 opt_str="${1#-}"
                 length="${#opt_str}"
