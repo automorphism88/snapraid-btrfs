@@ -1219,8 +1219,7 @@ use_snapshot_fix() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         d)
-                            disk="${opt_str:$((i+1))}"
-                            break ;;
+                            disk="${opt_str:$((i+1))}" ;&
                         ["$SNAPRAID_OPTS_ARG"])
                             break ;;
                     esac
