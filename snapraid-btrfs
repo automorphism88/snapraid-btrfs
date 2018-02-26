@@ -794,8 +794,6 @@ run_command() {
             if ((diff_ret == 2)) ; then
                 ((++interactive))
                 run_snapraid sync "$@" && true
-            elif ((diff_ret == 0)) && ((verbose >= 0)) ; then
-                printf 'No difference, exiting\n'
             else
                 exit $diff_ret
             fi ;;
