@@ -280,14 +280,14 @@ do_snapper() {
     done
 }
 
-# Enable xtrace with a useful $PS4 setting and replace literal tab
-# characters in xtrace with the escape sequence \t in reversed color
-# Literal \t sequences are not replaced by \\t in order to preserve
-# readability - ambiguity should be minimal
+# Enable xtrace with a useful $PS4 setting and replace literal tab and CR
+# characters in xtrace with escape sequences \t and \r in reversed color
+# Literal \t and \r sequences are not replaced by \\t and \\r in order to
+# preserve readability - ambiguity should be minimal
 enable_debug_mode() {
     original_BASH_XTRACEFD="${BASH_XTRACEFD:-2}"
     coproc sed_escape_xtrace {
-        sed $'s/\t/\e[7m\\\\t\e[0m/g'
+        sed -e $'s/\r/\e[7m\\\\r\e[0m/g' -e $'s/\t/\e[7m\\\\t\e[0m/g'
     } >&"$original_BASH_XTRACEFD"
     BASH_XTRACEFD=${sed_escape_xtrace[1]}
     PS4='+(${BASH_SOURCE[0]}:$LINENO): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
@@ -344,9 +344,9 @@ find_configs() {
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
-        # allow trailing slash
-        if grep -Ex "$data_line$subvol"'[/]?' \
-            "$config_file" > /dev/null
+        # allow trailing slash and/or \r character
+        if grep -Ex "$data_line$subvol"$'[/]?[\r]?' \
+                "$config_file" > /dev/null
         then
             snapper_configs+=( "$config" )
             snapper_subvols[$config]="$subvol"
@@ -441,7 +441,7 @@ generate_temp_snapraid_conf() {
                 sed_find="$(sed 's/[].*$^/\[]/\\&/g' \
                     <<< "${snapper_subvols[$i]}")"
                 sed_replace="$(sed 's/[&/\]/\\&/g' <<< "$new_path")"
-                match_line="$data_line$sed_find"'[\/]\{0,1\}$'
+                match_line="$data_line$sed_find"$'[\/]\{0,1\}[\r]\{0,1\}$'
                 sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/" )
                 # also match the deprecated token 'disk' using separate sed
                 # expression to avoid depending on the GNU extension \|
