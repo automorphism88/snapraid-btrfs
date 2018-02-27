@@ -820,17 +820,20 @@ run_snapraid() {
     fi
     verbose_command "${snapraid_cmd[@]}"
     case $1 in
-        # Create pre/post snapshots if applicable
         fix|touch)
             create_pre_post_snapshots "$1" ;;
-        # If starting sync, update snapper userdata key
         sync)
-            modify_userdata syncing ;;
+            modify_userdata syncing
+            # set up a trap to track whether snapraid sync returned exit status
+            # 0 because it completed successfully, or because it was
+            # interrupted with ctrl-C, but was able to clean up before exiting
+            local -i interrupted
+            interrupted=0
+            trap '((++interrupted)) ; trap - INT' INT ;;
     esac
     # Run snapraid
     "${snapraid_cmd[@]}" && true
     ret=$?
-    # Update snapper userdata key to reflect completion
     case $1 in
         fix|touch)
             create_pre_post_snapshots "$1" ;;
@@ -840,7 +843,9 @@ run_snapraid() {
                 modify_userdata "$1"
             fi ;;
         sync)
-            if ((ret == 0)) ; then
+            trap - INT
+            # don't mark sync as completed if INT trap was triggered
+            if ((ret == 0)) && ((interrupted == 0)) ; then
                 modify_userdata synced
             fi ;;
     esac
