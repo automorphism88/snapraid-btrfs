@@ -108,8 +108,6 @@ check_config() {
     # the content files, and compare their mount points with those of the
     # subvolumes we are snapshotting, to see if any match
     local field1 field2 content_dir content_mount i
-    # No need for an if [[ -r "$config_file" ]] here,
-    # since this is our second pass
     while IFS=$' \t' read -r field1 field2 ; do
         if [[ "$field1" = content ]] ; then
             content_dir="$(dirname -- "$field2")"
@@ -136,6 +134,16 @@ check_config() {
             exit $EXIT_NO_PERMISSIONS
         fi
     done
+}
+
+check_config_file() {
+    if ! [[ -r "$config_file" ]] ; then
+        printf '%s: Could not read snapraid config file at %s\n' "$my_name" \
+            "$config_file" >&2
+        invalid_argument_exit
+    elif ((verbose > 0)) ; then
+        printf 'Using snapraid config file %s\n' "$config_file"
+    fi
 }
 
 # Make sure all external binaries in $@ can be found in $PATH
@@ -313,15 +321,6 @@ exit_trap() {
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
-    # Find snapraid config file
-    if ! [[ -r "$config_file" ]] ; then
-        printf '%s: Could not read snapraid config file at %s\n' "$my_name" \
-            "$config_file" >&2
-        invalid_argument_exit
-    elif ((verbose > 0)) ; then
-        printf 'Using snapraid config file %s\n' "$config_file"
-    fi
-    # Find snapper configs with paths in snapraid config file
     local config data_line subvol i
     # grep ERE matching data line up to the point where the path starts
     readonly data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
@@ -882,20 +881,17 @@ set_option() {
     esac
 }
 
-# Call immediately after all command line options have been parsed to
-# initialize ${snapper_configs[@]} and related arrays
+# Called immediately after all command line options have been parsed to
+# read snapraid configuration file and initialize the arrays local to main()
+# which track the configuration
 setup_config() {
-    # Check for snapraid and snapper now that option processing is complete
     check_dependencies "$my_snapper" "$my_snapraid"
-    # Populate arrays
+    check_config_file
     find_configs
-    # Do some sanity checks of the configuration we just read
     check_config
-    # Apply -U option
     [[ "$use_snapshot_option" ]] &&
         apply_use_snapshot_option "$use_snapshot_option"
     local i
-    # Set -u argument for any configurations not specified by -U
     if [[ "$use_snapshot_all_option" ]] ; then
         for i in "${snapper_configs[@]}" ; do
             [[ "${use_snapshot[$i]:-}" ]] ||
