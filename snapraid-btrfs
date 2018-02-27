@@ -184,8 +184,8 @@ cleanup_snapshots() {
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
-           < <("$my_snapper" -c "$i" ls |
-                   parse_snapper_ls "$snapper_userdata_key" '' ' ') && true
+           <<< "$("$my_snapper" -c "$i" ls |
+                      parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
