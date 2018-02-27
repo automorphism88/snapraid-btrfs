@@ -410,7 +410,7 @@ find_snapshots() {
 generate_temp_snapraid_conf() {
     local data_line match_line new_path sed_find sed_replace i
     local -a sed_exps
-    # regex matching data line up to the point where the path starts
+    # sed BRE matching data line up to the point where the path starts
     readonly data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
     if [[ "$pool_dir" ]] ; then
