@@ -62,7 +62,6 @@ apply_pre_post_options() {
         for i in "${no_pre_post_option[@]}" ; do
             config_must_exist "$i"
             temp_array=()
-            j=
             for j in "${pre_post_configs[@]}" ; do
                 [[ "$j" = "$i" ]] || temp_array+=( "$j" )
             done
@@ -77,8 +76,6 @@ apply_use_snapshot_option() {
     local config config_using i
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        config=
-        config_using=
         IFS='=' read -r config config_using <<< "$i"
         config_must_exist "$config"
         use_snapshot[$config]="$config_using"
@@ -188,11 +185,9 @@ cleanup_snapshots() {
             fi
             continue
         fi
-        snapshots_to_consider=()
         IFS=' ' read -r -a snapshots_to_consider \
            < <("$my_snapper" -c "$i" ls |
                    parse_snapper_ls "$snapper_userdata_key" '' ' ') && true
-        j=
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
                 snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
@@ -1157,8 +1152,6 @@ use_snapper_userdata() {
     local -a args
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
-        key=
-        value=
         IFS='=' read -r key value <<< "$i"
         [[ "$key" = "$snapper_userdata_key" ]] ||
             snapper_userdata+=",$key=$value"
