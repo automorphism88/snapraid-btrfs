@@ -361,6 +361,8 @@ find_snapshots() {
     local i
     for i in "${snapper_configs[@]}" ; do
         case ${use_snapshot[$i]} in
+            0|'')
+                continue ;;
             diff)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" diff |
@@ -384,8 +386,6 @@ find_snapshots() {
                 use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
-            0)
-                continue ;;
             +([[:digit:]]))
                 "$my_snapper" -c "$i" ls |
                     parse_snapper_ls |
@@ -396,7 +396,7 @@ find_snapshots() {
                        "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
                 invalid_argument_exit ;;
         esac
-        if ((verbose > 0)) ; then
+        if ((verbose > 0)) && [[ "${use_snapshot[$i]}" ]] ; then
             printf 'Using snapshot %s for config %s\n' \
                    "${use_snapshot[$i]}" "$i"
         fi
@@ -1021,6 +1021,43 @@ snapraid_opt_has_arg() {
     return 1
 }
 
+# if snapshot not found for a config, prompt the user to choose a different one
+snapshot_not_found() {
+    local choice snapshot_list
+    printf '%s: Snapshot not found for config %s at %s\n' "$my_name" "$1" \
+           "${snapper_subvols[$1]}"
+    if ((verbose < 0)) ; then
+        exit $EXIT_SNAPSHOT_NOT_FOUND
+    else
+        snapshot_list="$("$my_snapper" -c "$1" ls)"
+        printf '%s\n' "$snapshot_list"
+    fi
+    while true ; do
+        read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
+            choice
+        case $choice in
+            q)
+                exit $EXIT_INTERACTIVE_NO ;;
+            n)
+                use_snapshot[$1]=new
+                find_snapshots 'interactive prompt'
+                break ;;
+            +([[:digit:]]))
+                if [[ "$choice" = 0 ]] ||
+                       { parse_snapper_ls <<< "$snapshot_list" |
+                             grep -Fx "$choice" > /dev/null ; }
+                then
+                    use_snapshot[$1]="$choice"
+                    break
+                else
+                    printf 'Snapshot %s not found\n' "$choice"
+                fi ;;
+            *)
+                printf 'Invalid selection %s\n' "$choice" ;;
+        esac
+    done
+} >&2
+
 usage() {
     cat_builtin <<_EOF_
 Usage: $my_name [options] <command> [arguments]
@@ -1181,15 +1218,11 @@ use_snapshot_all() {
 }
 
 # If use_snapshot[$i] is the empty string for any snapper config, indicating
-# that find_snapshots did not find one, display an error message and exit
+# that find_snapshots did not find a match, handle the error
 use_snapshot_check() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        if [[ -z "${use_snapshot[$i]}" ]] ; then
-            printf '%s: Could not find a snapshot for config %s\n' \
-                   "$my_name" "$i" >&2
-            exit $EXIT_SNAPSHOT_NOT_FOUND
-        fi
+        [[ "${use_snapshot[$i]}" ]] || snapshot_not_found "$i"
     done
 }
 
