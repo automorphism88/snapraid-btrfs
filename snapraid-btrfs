@@ -523,7 +523,8 @@ main() {
     check_dependencies awk basename dirname grep mktemp rm sed stat tail
     local config_file my_name my_snapper my_snapraid original_BASH_XTRACEFD \
         pool_dir snapper_cleanup snapper_description snapper_userdata \
-        snapper_userdata_key use_snapshot_all_option use_snapshot_option
+        snapper_userdata_key temp_dir use_snapshot_all_option \
+        use_snapshot_option
     local -i interactive verbose
     local -a no_pre_post_option pre_post_configs pre_post_option \
         rm_on_exit snapper_configs
@@ -545,6 +546,8 @@ main() {
     snapper_description=
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     snapper_userdata="$snapper_userdata_key=created"
+    temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
+    must_be_writable "$temp_dir"
     use_snapshot_all_option=
     use_snapshot_option=
     verbose=0
@@ -789,11 +792,9 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local temp_config_file temp_dir
+    local temp_config_file
     local -i ret
     local -a snapraid_cmd
-    temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
-    must_be_writable "$temp_dir"
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     must_be_writable "$temp_config_file"
