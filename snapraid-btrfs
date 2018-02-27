@@ -169,7 +169,7 @@ check_snapraid_arguments() {
 }
 
 # In each config, delete snapshots with userdata key $snapper_userdata_key
-# created before use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+# except use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local i j
     local -i ret snapper_ret
