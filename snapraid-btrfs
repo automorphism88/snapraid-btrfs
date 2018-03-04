@@ -87,7 +87,7 @@ apply_use_snapshot_option() {
 cat_builtin() {
     local buf
     local -i fd
-    if [[ "${1:-}" ]] ; then
+    if [[ "${1-}" ]] ; then
         exec {fd}<"$1"
     else
         exec {fd}<&0
@@ -227,7 +227,7 @@ cleanup_snapshots() {
 # Check that the user didn't specify a nonexistent snapper config by ensuring
 # that a subvolume is set for the config name
 config_must_exist() {
-    if ! [[ "${snapper_subvols[$1]:-}" ]] ; then
+    if ! [[ "${snapper_subvols[$1]-}" ]] ; then
         printf '%s: Invalid snapper configuration %s!\n' "$my_name" "$1" >&2
         invalid_argument_exit
     fi
@@ -245,7 +245,7 @@ create_pre_post_snapshots() {
             snapper_cmd+=( -c "$snapper_cleanup" )
         snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
-        if [[ "${pre_snapshot[$i]:-}" ]] ; then
+        if [[ "${pre_snapshot[$i]-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
             if [[ "$snapper_description" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
@@ -317,7 +317,7 @@ exit_trap() {
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" && true
     fi
-    if [[ "${original_BASH_XTRACEFD:-}" ]] ; then
+    if [[ "${original_BASH_XTRACEFD-}" ]] ; then
         local -i temp_BASH_XTRACEFD
         temp_BASH_XTRACEFD="$BASH_XTRACEFD"
         BASH_XTRACEFD="$original_BASH_XTRACEFD"
@@ -609,7 +609,7 @@ must_be_writable() {
 
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
-    if [[ -z "${2:-}" ]] ; then
+    if [[ -z "${2-}" ]] ; then
         printf '%s: Option %s requires an argument\n' "$my_name" "$1" >&2
         invalid_argument_exit
     fi
@@ -637,7 +637,7 @@ parse_arguments() {
                 # allow POSIX --argument option or --argument=option formats
                 opt_str="${1%%=*}"
                 if [[ "$opt_str" = "$1" ]] ; then
-                    set_option "$opt_str" "${2:-}"
+                    set_option "$opt_str" "${2-}"
                     shift 2 || shift
                 else
                     set_option "$opt_str" "${1#$opt_str=}"
@@ -660,7 +660,7 @@ parse_arguments() {
                         # short options that require arguments
                         [cCduU])
                             if ((i == length-1)) ; then
-                                set_option "-${opt_str:$i:1}" "${2:-}"
+                                set_option "-${opt_str:$i:1}" "${2-}"
                                 shift 2 || shift
                             else
                                 set_option "-${opt_str:$i:1}" \
@@ -689,8 +689,8 @@ parse_arguments() {
 # if $3 is undefined, separate the snapshot numbers with newlines
 parse_snapper_ls() {
     awk -F '|' \
-        -v key="${1:-}" \
-        -v value="${2:-}" \
+        -v key="${1-}" \
+        -v value="${2-}" \
         -v ORS="${3:-$'\n'}" \
         -f <(cat_builtin <<'_EOF_'
 # first 2 lines are the header
@@ -917,7 +917,7 @@ setup_config() {
     local i
     if [[ "$use_snapshot_all_option" ]] ; then
         for i in "${snapper_configs[@]}" ; do
-            [[ "${use_snapshot[$i]:-}" ]] ||
+            [[ "${use_snapshot[$i]-}" ]] ||
                 use_snapshot[$i]="$use_snapshot_all_option"
         done
     fi
@@ -1245,7 +1245,7 @@ use_snapshot_check() {
 use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]:-}" ]] ||
+        [[ "${use_snapshot[$i]-}" ]] ||
             use_snapshot[$i]="$1"
     done
 }
@@ -1289,7 +1289,7 @@ use_snapshot_fix() {
             snapper_config_name="$(get_snapper_config_name "$disk")"
             if [[ "$snapper_config_name" ]] ; then
                 ((++configs_found))
-                [[ "${use_snapshot[$snapper_config_name]:-}" ]] ||
+                [[ "${use_snapshot[$snapper_config_name]-}" ]] ||
                     use_snapshot[$snapper_config_name]=0
             fi
         fi
