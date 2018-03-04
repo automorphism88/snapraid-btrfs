@@ -539,7 +539,7 @@ main() {
         pool_dir snapper_cleanup snapper_description snapper_userdata \
         snapper_userdata_key temp_dir use_snapshot_all_option \
         use_snapshot_option
-    local -i interactive verbose
+    local -i interactive use_filter_disk verbose
     local -a no_pre_post_option pre_post_configs pre_post_option \
         rm_on_exit snapper_configs
     local -A pre_snapshot snapper_subvols use_snapshot
@@ -562,6 +562,7 @@ main() {
     snapper_userdata="$snapper_userdata_key=created"
     temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     must_be_writable "$temp_dir"
+    use_filter_disk=0
     use_snapshot_all_option=
     use_snapshot_option=
     verbose=0
@@ -626,7 +627,7 @@ parse_arguments() {
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
-            --@(help|interactive|quiet|verbose|debug)?(=*))
+            --@(help|interactive|quiet|verbose|debug|use-filter-disk)?(=*))
                 # ignore any argument passed with --opt=arg format
                 set_option "${1%%=*}"
                 shift ;;
@@ -896,6 +897,8 @@ set_option() {
         --snapraid-path)
             must_be_executable "$2"
             my_snapraid="$2" ;;
+        --use-filter-disk)
+            ((++use_filter_disk)) ;;
         *)
             invalid_argument "$1" ;;
     esac
@@ -1100,7 +1103,7 @@ $my_name:
                                     'new' for diff|dsync|sync
                                     'last' for config
                                     'res' for resume
-                                    'sync' for all other commands
+                                    'sync' for all other readonly commands
   -U, --use-snapshot STR        Specify snapshots to use for specific snapper
                                 configurations, using the snapper config name
                                 followed by an equals sign. Multiple
@@ -1127,6 +1130,11 @@ $my_name:
                                 key1=value1,key2=value2)
   --snapraid-path PATH          Path to the snapraid executable (defaults to
                                 first found in \$PATH)
+  --use-filter-disk             If running a fix with the snapraid -d/
+                                --filter-disk option, use the live filesystem
+                                by default for all disks specified as arguments
+                                to the --filter-disk option, and the last
+                                synced snapshot for all disks not so specified.
 
   NOTE: The snapraid -c/--conf option will not work unless placed before the
   command, allowing it to be interpreted as a $my_name option. Snapraid will be
@@ -1244,6 +1252,10 @@ use_snapshot_default() {
 # When running a fix operation, parse the -d/--filter-disk snapraid option if
 # specified, and set ${use_snapshot[@]} accordingly
 use_snapshot_fix() {
+    if ((use_filter_disk == 0)) ; then
+        use_snapshot_default 0
+        return
+    fi
     local disk opt_str snapper_config_name
     local -i configs_found length i
     configs_found=0
