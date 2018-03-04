@@ -40,7 +40,13 @@ then
     exit 63
 fi
 
-set -Eeuo pipefail +Cfo posix
+set -o errexit
+set -o errtrace
+set -o nounset
+set -o pipefail
+set +o noclobber
+set +o noglob
+set +o posix
 shopt -s extglob
 shopt -u nocasematch
 # Use lastpipe if available (bash 4.2+) since it's faster,
