@@ -1070,13 +1070,15 @@ snapshot_not_found() {
 } >&2
 
 usage() {
+    local bold reset
+    readonly bold=$'\e[1m'
+    readonly reset=$'\e[0m'
     cat_builtin <<_EOF_
-Usage: $my_name [options] <command> [arguments]
+${bold}Usage: $my_name [options] <command> [arguments]${reset}
 
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
 $my_name:
-
   -h, --help                    Show this help
   -c, --conf FILE               Specify location of snapraid config file
                                 (default /etc/snapraid.conf)
@@ -1142,7 +1144,7 @@ $my_name:
   snapraid.conf file is specified using the $my_name -c/--conf option
   ($DEFAULT_CONFIG_FILE by default).
 
-Commands are either one of the following snapraid commands:
+${bold}Commands are either one of the following snapraid commands:${reset}
   'check'|'diff'|'dup'|'pool'|'scrub'|'status'|'sync':
         Run the snapraid command given, replacing data drives in snapraid config
         file that have corresponding snapper configs with read-only snapshots.
@@ -1152,7 +1154,7 @@ Commands are either one of the following snapraid commands:
         specified, create pre/post snapshots only for the specified disk(s),
         and use the last-synced snapshot for the rest).
 
-or one of the following $my_name specific commands:
+${bold}or one of the following $my_name specific commands:${reset}
   'config':
         Show the modified snapraid config file that would be used, but don't
         actually run snapraid.
@@ -1195,8 +1197,7 @@ or one of the following $my_name specific commands:
         passed through to snapper undochange, including the snapper undochange
         -i option.
 
-Environment variables:
-
+${bold}Environment variables:${reset}
   SNAPRAID_CONFIG_FILE -
         Default location of the snapraid.conf file if -c/--conf option is not
         used. If unset, it defaults to $DEFAULT_CONFIG_FILE.
