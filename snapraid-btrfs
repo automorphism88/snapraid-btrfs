@@ -837,7 +837,7 @@ run_snapraid() {
             # interrupted with ctrl-C, but was able to clean up before exiting
             local -i interrupted
             interrupted=0
-            trap '((++interrupted)) ; trap - INT' INT ;;
+            trap '((++interrupted)) ; trap - INT TERM QUIT' INT TERM QUIT ;;
     esac
     # Run snapraid
     "${snapraid_cmd[@]}" && true
@@ -851,8 +851,8 @@ run_snapraid() {
                 modify_userdata "$1"
             fi ;;
         sync)
-            trap - INT
-            # don't mark sync as completed if INT trap was triggered
+            trap - INT TERM QUIT
+            # don't mark sync as completed if INT/TERM/QUIT trap was triggered
             if ((ret == 0)) && ((interrupted == 0)) ; then
                 modify_userdata synced
             fi ;;
