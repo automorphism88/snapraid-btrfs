@@ -291,6 +291,46 @@ debug_trap() {
     printf '%s\n' "$div"
 } >&"$debug_fd"
 
+# start interactive shell in context of script,
+# with variables and functions exported
+do_shell() (
+    local arrs funcs vars
+    arrs="$(declare -p | grep '^declare -[Aa] [[:lower:]]')"
+    funcs="$(declare -F | awk '/^declare -f [[:lower:]]/{print $3}')"
+    vars="$(declare -p | awk -F '[ =]' \
+        '/^declare -[-ir] ([[:lower:]]|(DEFAULT|EXIT|SNAPRAID)_)/{print $3}')"
+    # shellcheck disable=SC2086,SC2163
+    IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
+    # shellcheck disable=SC2086,SC2163
+    IFS=$'\n' export -f $funcs
+    set +o errexit
+    set +o nounset
+    exec "$BASH" --init-file \
+        <(cat_builtin <<'_EOF_'
+source "$HOME/.bashrc"
+eval "$arrs"
+IFS=$'\n' export -fn $funcs
+IFS=$'\n' export -n BASHOPTS SHELLOPTS $vars
+unset -v arrs funcs vars
+exit() {
+    printf 'Hooked exit command with status %s\n' "${1:-$?}"
+    printf 'Use quit to exit the %s interactive shell\n' "$my_name"
+}
+quit() {
+    command exit "${@:-0}"
+}
+trap 'exit_trap' EXIT
+if ((verbose >= 0)) ; then
+    printf 'Started bash session in %s context - use quit to exit\n' "$my_name"
+fi
+if [[ "$debug_fd" ]] ; then
+    debug_fd=
+    enable_debug_mode
+fi
+_EOF_
+         ) -O extglob -i -s "$@"
+)
+
 # run the specified snapper command on each config
 do_snapper() {
     local i
@@ -642,7 +682,7 @@ parse_arguments() {
             # matching any command means option processing is complete
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
             cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
-            config|create|resume|rollback|snapper|undochange)
+            config|create|resume|rollback|shell|snapper|undochange)
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
@@ -778,11 +818,11 @@ run_command() {
             use_snapshot_fix "$@" ;;&
         resume)
             use_snapshot_default res ;;&
-        snapper)
+        shell|snapper)
             use_snapshot_default '' ;;&
         !(cleanup-all|l@(s|ist)|snapper|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|l@(s|ist)|snapper|touch))
+        !(cleanup?(-all)|l@(s|ist)|shell|snapper|touch))
             use_snapshot_check ;;&
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
@@ -794,6 +834,9 @@ run_command() {
             snapper_ls "$@" ;;
         rollback)
             snapper_rollback ;;
+        shell)
+            shift
+            do_shell "$@" ;;
         snapper)
             shift
             do_snapper "$@" ;;
