@@ -105,6 +105,8 @@ cat_builtin() {
     printf '%s' "$buf"
 }
 
+# Sanity checks to run after reading configuration from
+# snapraid.conf and snapper list-configs
 check_config() {
     # Make sure we found some configs
     if ((${#snapper_configs[@]} == 0)) ; then
@@ -141,6 +143,7 @@ check_config() {
     done
 }
 
+# Sanity checks to run before reading snapraid.conf file
 check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
         fatal_error $E_INVALID_ARGUMENT \
