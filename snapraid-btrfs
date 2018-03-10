@@ -159,7 +159,7 @@ check_config_file() {
         rm_on_exit+=( "$new_config_file" )
         must_be_writable "$new_config_file"
         cat_builtin "$config_file" > "$new_config_file"
-        printf '\n' >> "$new_config_file"
+        echo >> "$new_config_file"
         config_file="$new_config_file"
     fi
 }
@@ -416,7 +416,7 @@ find_configs() {
         fi
     done < <("$my_snapper" list-configs | tail -n +3)
     if ((verbose >= 0)) ; then
-        printf 'Snapper configs found:\n'
+        echo 'Snapper configs found:'
         for i in "${snapper_configs[@]}" ; do
             printf '%s %s\n' "$i" "${snapper_subvols[$i]}"
         done
@@ -549,9 +549,9 @@ get_snapper_config_name() {
 
 interactive_ask() {
     local choice
-    printf 'About to run the command:\n'
+    echo 'About to run the command:'
     printf '%s ' "$@"
-    printf '\n'
+    echo
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
@@ -560,7 +560,7 @@ interactive_ask() {
             n|N)
                 exit $E_INTERACTIVE_NO ;;
             *)
-                printf 'Invalid choice. Please enter y or n.\n' ;;
+                echo 'Invalid choice. Please enter y or n.' ;;
         esac
     done
 }
@@ -866,7 +866,7 @@ run_snapraid() {
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
-        printf 'Using snapraid config file:\n'
+        echo 'Using snapraid config file:'
         cat_builtin "$temp_config_file"
     fi
     verbose_command "${snapraid_cmd[@]}"
@@ -986,10 +986,10 @@ snapper_ls() {
                 "$snapper_userdata_key" "$*"
             "$my_snapper" -c "$i" ls |
                 parse_snapper_ls "$snapper_userdata_key" "$*" ' '
-            printf '\n'
+            echo
         fi
     done
-    printf '\n'
+    echo
 }
 
 # Run snapper rollback in each snapper config
@@ -1356,7 +1356,7 @@ verbose_command() {
         interactive_ask "$@" >&2
     elif ((verbose >= 0)) ; then
         printf '%s ' "$@"
-        printf '\n'
+        echo
     fi
 }
 
