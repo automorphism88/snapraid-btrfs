@@ -550,8 +550,7 @@ get_snapper_config_name() {
 interactive_ask() {
     local choice
     echo 'About to run the command:'
-    printf '%s ' "$@"
-    echo
+    printf '%s\n' "$*"
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
@@ -1355,8 +1354,7 @@ verbose_command() {
     if ((interactive > 0)) ; then
         interactive_ask "$@" >&2
     elif ((verbose >= 0)) ; then
-        printf '%s ' "$@"
-        echo
+        printf '%s\n' "$*"
     fi
 }
 
