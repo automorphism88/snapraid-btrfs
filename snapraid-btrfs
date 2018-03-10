@@ -460,10 +460,12 @@ find_snapshots() {
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             +([[:digit:]]))
-                "$my_snapper" -c "$i" ls |
-                    parse_snapper_ls |
-                    grep -Fx "${use_snapshot[$i]}" > /dev/null ||
-                    use_snapshot[$i]= ;;
+                if ! { "$my_snapper" -c "$i" ls |
+                           parse_snapper_ls |
+                           grep -Fx "${use_snapshot[$i]}" > /dev/null ; }
+                then
+                    use_snapshot[$i]=
+                fi ;;
             *)
                 printf '%s: Could not understand snapshot selection %s%s%s\n' \
                     "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
