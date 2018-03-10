@@ -351,17 +351,17 @@ enable_debug_mode() {
 # $3 - Exit status that caused the ERR condition
 err_trap() {
     trap - DEBUG
-    printf '%s: %s: %s failed with exit status %s\n%s\n' "$my_name" \
-        "${1:-?}" "${2:-unknown command}" "${3:-unknown}" \
-        'Stack trace:' >&2
+    printf '%s: %s: %s failed%s\n' "$my_name" "${1:-0}" \
+        "${2:-unknown command}" "${3:+ with exit status $3}"
     local func line script
     local -i frame
     frame=0
+    echo 'Call stack:'
     while IFS=' ' read -r line func script ; do
-        printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
+        printf '%s: %s: %s\n' "$script" "$func" "$line"
     done < <(while caller $frame ; do ((++frame)) ; done)
     exit "${3:-$E_INTERNAL_ERROR}"
-}
+} >&2
 
 # Intended to be called by EXIT trap
 # Removes $rm_on_exit if nonempty and cleans up coprocess if necessary
