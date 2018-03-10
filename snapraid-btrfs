@@ -20,12 +20,12 @@
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
-readonly EXIT_INTERNAL_ERROR=64
-readonly EXIT_INVALID_ARGUMENT=65
-readonly EXIT_INVALID_CONFIG=66
-readonly EXIT_NO_PERMISSIONS=67
-readonly EXIT_SNAPSHOT_NOT_FOUND=68
-readonly EXIT_INTERACTIVE_NO=69
+readonly E_INTERNAL_ERROR=64
+readonly E_INVALID_ARGUMENT=65
+readonly E_INVALID_CONFIG=66
+readonly E_NO_PERMISSION=67
+readonly E_SNAPSHOT_NOT_FOUND=68
+readonly E_INTERACTIVE_NO=69
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
@@ -108,9 +108,8 @@ cat_builtin() {
 check_config() {
     # Make sure we found some configs
     if ((${#snapper_configs[@]} == 0)) ; then
-        printf '%s: No snapper configs found for any data drives in %s\n' \
-            "$my_name" "$config_file" >&2
-        exit $EXIT_INVALID_CONFIG
+        fatal_error $E_INVALID_CONFIG \
+            "No snapper configs found for any data drives in $config_file"
     fi
     # We don't want to snapshot the content files. So, check the directories of
     # the content files, and compare their mount points with those of the
@@ -122,10 +121,9 @@ check_config() {
             content_mount="$(stat --format=%m -- "$content_dir")"
             for i in "${snapper_configs[@]}" ; do
                 if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]] ; then
-                    printf '%s: %s found in data subvolume %s - %s\n' \
-                        "$my_name" "$field2" "${snapper_subvols[$i]}" \
-                        'content files must be in separate subvolume' >&2
-                    exit $EXIT_INVALID_CONFIG
+                    fatal_error $E_INVALID_CONFIG \
+                        "$field2 found in subvolume ${snapper_subvols[$i]}" \
+                        "- content files must be in separate subvolume"
                 fi
             done
         fi
@@ -137,18 +135,16 @@ check_config() {
                    [[ -r "${snapper_subvols[$i]}/.snapshots" ]] &&
                    is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; }
         then
-            printf '%s: Could not read subvolume %s - is SYNC_ACL set?\n' \
-                "$my_name" "${snapper_subvols[$i]}/.snapshots" >&2
-            exit $EXIT_NO_PERMISSIONS
+            fatal_error $E_NO_PERMISSION 'Could not read subvolume' \
+                "${snapper_subvols[$i]}/.snapshots - is SYNC_ACL set?"
         fi
     done
 }
 
 check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
-        printf '%s: Could not read snapraid config file at %s\n' "$my_name" \
-            "$config_file" >&2
-        invalid_argument_exit
+        fatal_error $E_INVALID_ARGUMENT \
+            "Could not read snapraid config file at $config_file"
     elif ((verbose > 0)) ; then
         printf 'Using snapraid config file %s\n' "$config_file"
     fi
@@ -173,10 +169,7 @@ check_dependencies() {
     local i
     for i in "$@" ; do
         if ! type "$i" &> /dev/null ; then
-            # shellcheck disable=SC2016
-            # we really do want to print the literal string $PATH
-            printf '%s: Could not find %s in $PATH\n' "$my_name" "$i" >&2
-            exit $EXIT_INTERNAL_ERROR
+            fatal_error $E_INTERNAL_ERROR "Could not find $i in PATH"
         fi
     done
 }
@@ -186,9 +179,8 @@ check_snapraid_arguments() {
     while (($# > 0)) ; do
         case $1 in
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
-                printf '%s: The -c/--conf option may not be passed through\n' \
-                    "$my_name" >&2
-                invalid_argument_exit ;;
+                fatal_error $E_INVALID_ARGUMENT \
+                    'The -c/--conf option may not be passed through to snapraid'
         esac
         if snapraid_opt_has_arg "$@" ; then
             shift 2
@@ -235,10 +227,8 @@ cleanup_snapshots() {
 # Check that the user didn't specify a nonexistent snapper config by ensuring
 # that a subvolume is set for the config name
 config_must_exist() {
-    if ! [[ "${snapper_subvols[$1]-}" ]] ; then
-        printf '%s: Invalid snapper configuration %s!\n' "$my_name" "$1" >&2
-        invalid_argument_exit
-    fi
+    [[ "${snapper_subvols[$1]-}" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "Invalid snapper configuration $1"
 }
 
 # Calling once creates pre snapshots, calling again creates corresponding post
@@ -298,7 +288,7 @@ do_shell() (
     arrs="$(declare -p | grep '^declare -[Aa] [[:lower:]]')"
     funcs="$(declare -F | awk '/^declare -f [[:lower:]]/{print $3}')"
     vars="$(declare -p | awk -F '[ =]' \
-        '/^declare -[-ir] ([[:lower:]]|(DEFAULT|EXIT|SNAPRAID)_)/{print $3}')"
+        '/^declare -[-ir] ([[:lower:]]|(DEFAULT|E|SNAPRAID)_)/{print $3}')"
     # shellcheck disable=SC2086,SC2163
     IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
     # shellcheck disable=SC2086,SC2163
@@ -371,7 +361,7 @@ err_trap() {
     while IFS=' ' read -r line func script ; do
         printf '%s: %s: %s\n' "$script" "$func" "$line" >&2
     done < <(while caller $frame ; do ((++frame)) ; done)
-    exit "${3:-$EXIT_INTERNAL_ERROR}"
+    exit "${3:-$E_INTERNAL_ERROR}"
 }
 
 # Intended to be called by EXIT trap
@@ -391,6 +381,20 @@ exit_trap() {
     fi
     return 0
 }
+
+# $1 - exit status to exit with
+# $2,$3,... - error message to print as $* after shifting
+fatal_error() {
+    local -i errno
+    errno="${1:-$E_INTERNAL_ERROR}"
+    shift && true
+    printf '%s: %s\n' "$my_name" "${*:-fatal error}"
+    case $errno in
+        $E_INVALID_ARGUMENT)
+            printf 'Use %s -h for help\n' "$my_name" ;;
+    esac
+    exit "$errno"
+} >&2
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
@@ -467,9 +471,9 @@ find_snapshots() {
                     use_snapshot[$i]=
                 fi ;;
             *)
-                printf '%s: Could not understand snapshot selection %s%s%s\n' \
-                    "$my_name" "${use_snapshot[$i]}" ' for config ' "$i" >&2
-                invalid_argument_exit ;;
+                fatal_error $E_INVALID_ARGUMENT \
+                    'Could not understand snapshot selection' \
+                    "${use_snapshot[$i]} for config $i" ;;
         esac
         if ((verbose > 0)) && [[ "${use_snapshot[$i]}" ]] ; then
             printf 'Using snapshot %s for config %s\n' \
@@ -497,12 +501,9 @@ generate_temp_snapraid_conf() {
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
             if ! is_btrfs_subvolume "$new_path" ; then
-                printf '%s: Invalid snapshot %s\n' "$my_name" "$new_path" >&2
-                exit $EXIT_SNAPSHOT_NOT_FOUND
+                fatal_error $E_SNAPSHOT_NOT_FOUND "Invalid snapshot $new_path"
             elif ! [[ -r "$new_path" ]] ; then
-                printf '%s: No read permission for %s\n' "$my_name" \
-                    "$new_path" >&2
-                exit $EXIT_NO_PERMISSIONS
+                fatal_error $E_NO_PERMISSION "No read permission for $new_path"
             fi
             # Escape special characters in paths so that they can be
             # passed to sed as literal strings
@@ -557,7 +558,7 @@ interactive_ask() {
             y|Y)
                 break ;;
             n|N)
-                exit $EXIT_INTERACTIVE_NO ;;
+                exit $E_INTERACTIVE_NO ;;
             *)
                 printf 'Invalid choice. Please enter y or n.\n' ;;
         esac
@@ -565,13 +566,7 @@ interactive_ask() {
 }
 
 invalid_argument() {
-    printf '%s: Invalid argument %s\n' "$my_name" "$1" >&2
-    invalid_argument_exit
-}
-
-invalid_argument_exit() {
-    printf 'Use %s -h for help\n' "$my_name" >&2
-    exit $EXIT_INVALID_ARGUMENT
+    fatal_error $E_INVALID_ARGUMENT "Invalid argument $1"
 }
 
 # Returns:
@@ -647,33 +642,25 @@ modify_userdata() {
 }
 
 must_be_directory() {
-    if ! [[ -d "$1" ]] ; then
-        printf '%s: %s is not a valid directory\n' "$my_name" "$1" >&2
-        invalid_argument_exit
-    fi
+    [[ -d "$1" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory"
 }
 
 must_be_executable() {
-    if ! [[ -x "$1" ]] ; then
-        printf '%s: %s is not an executable file\n' "$my_name" "$1" >&2
-        invalid_argument_exit
-    fi
+    [[ -x "$1" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
 }
 
 must_be_writable() {
-    if ! [[ -w "$1" ]] ; then
-        printf '%s: No write permission for %s - %s\n' "$my_name" "$1" \
-               'set the TMPDIR environment variable and try again' >&2
-        exit $EXIT_NO_PERMISSIONS
-    fi
+    [[ -w "$1" ]] ||
+        fatal_error $E_NO_PERMISSION \
+            "No write permission for $1 - is TMPDIR set correctly?"
 }
 
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
-    if [[ -z "${2-}" ]] ; then
-        printf '%s: Option %s requires an argument\n' "$my_name" "$1" >&2
-        invalid_argument_exit
-    fi
+    [[ "${2-}" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "Option $1 requires an argument"
 }
 
 parse_arguments() {
@@ -737,8 +724,7 @@ parse_arguments() {
                 invalid_argument "$1" ;;
         esac
     done
-    printf '%s: No command specified\n' "$my_name" >&2
-    invalid_argument_exit
+    fatal_error $E_INVALID_ARGUMENT "No command specified"
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
@@ -1102,7 +1088,7 @@ snapshot_not_found() {
     printf '%s: Snapshot not found for config %s at %s\n' "$my_name" "$1" \
         "${snapper_subvols[$1]}"
     if ((verbose < 0)) ; then
-        exit $EXIT_SNAPSHOT_NOT_FOUND
+        exit $E_SNAPSHOT_NOT_FOUND
     else
         snapshot_list="$("$my_snapper" -c "$1" ls)"
         printf '%s\n' "$snapshot_list"
@@ -1112,7 +1098,7 @@ snapshot_not_found() {
             choice
         case $choice in
             q)
-                exit $EXIT_INTERACTIVE_NO ;;
+                exit $E_INTERACTIVE_NO ;;
             n)
                 use_snapshot[$1]=new
                 find_snapshots 'interactive prompt'
