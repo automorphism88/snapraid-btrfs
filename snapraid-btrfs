@@ -157,7 +157,6 @@ check_config_file() {
         local new_config_file
         new_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
         rm_on_exit+=( "$new_config_file" )
-        must_be_writable "$new_config_file"
         cat_builtin "$config_file" > "$new_config_file"
         echo >> "$new_config_file"
         config_file="$new_config_file"
@@ -616,7 +615,7 @@ main() {
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     snapper_userdata="$snapper_userdata_key=created"
     temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
-    must_be_writable "$temp_dir"
+    must_be_writable_directory "$temp_dir" 'is TMPDIR set correctly?'
     use_filter_disk=0
     use_snapshot_all_option=
     use_snapshot_option=
@@ -640,20 +639,16 @@ modify_userdata() {
     return $ret
 }
 
-must_be_directory() {
-    [[ -d "$1" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory"
-}
-
 must_be_executable() {
     [[ -x "$1" ]] ||
         fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
 }
 
-must_be_writable() {
+must_be_writable_directory() {
+    [[ -d "$1" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
     [[ -w "$1" ]] ||
-        fatal_error $E_NO_PERMISSION \
-            "No write permission for $1 - is TMPDIR set correctly?"
+        fatal_error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
 }
 
 # call this to make sure $2 is defined when user specifies option requring it
@@ -861,7 +856,6 @@ run_snapraid() {
     local -a snapraid_cmd
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
-    must_be_writable "$temp_config_file"
     generate_temp_snapraid_conf > "$temp_config_file"
     snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
@@ -934,7 +928,7 @@ set_option() {
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
         --pool-dir)
-            must_be_directory "$2"
+            must_be_writable_directory "$2"
             pool_dir="$2" ;;
         --pre-post)
             IFS=',' read -r -a pre_post_option <<< "$2" ;;
