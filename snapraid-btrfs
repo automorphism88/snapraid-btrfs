@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=SC2221,SC2222
+# shellcheck disable=2221,2222
 # These warnings don't take ;;& terminators in case statements into account
 # see https://github.com/koalaman/shellcheck/issues/1044
 
@@ -291,9 +291,9 @@ do_shell() (
     funcs="$(declare -F | awk '/^declare -f [[:lower:]]/{print $3}')"
     vars="$(declare -p | awk -F '[ =]' \
         '/^declare -[-ir] ([[:lower:]]|(DEFAULT|E|SNAPRAID)_)/{print $3}')"
-    # shellcheck disable=SC2086,SC2163
+    # shellcheck disable=2086,2163
     IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
-    # shellcheck disable=SC2086,SC2163
+    # shellcheck disable=2086,2163
     IFS=$'\n' export -f $funcs
     set +o errexit
     set +o nounset
@@ -343,7 +343,7 @@ enable_debug_mode() {
             -e $'s/\t/\e[7m\\\\t\e[0m/g'
     } >&"${DEBUG_FD:-2}"
     exec {debug_fd}<&"${sed_escape_debug[1]}"
-    # shellcheck disable=SC1004
+    # shellcheck disable=1004
     trap 'debug_trap "$LINENO" "$BASH_COMMAND" \
         "${FUNCNAME[0]:+${FUNCNAME[0]}(): }"' DEBUG
 }
@@ -375,7 +375,7 @@ exit_trap() {
     trap - DEBUG
     if [[ "${debug_fd-}" ]] ; then
         eval "exec ${debug_fd}>&- ${sed_escape_debug[1]}>&-"
-        # shellcheck disable=SC2086,SC2154
+        # shellcheck disable=2086,2154
         # Shellcheck doesn't understand named coprocesses
         # See https://github.com/koalaman/shellcheck/issues/1066
         wait $sed_escape_debug_PID
@@ -493,7 +493,7 @@ generate_temp_snapraid_conf() {
     readonly data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     sed_exps=()
     if [[ "$pool_dir" ]] ; then
-        # shellcheck disable=SC2016
+        # shellcheck disable=2016
         # $a is a sed command, not part of a bash variable, so is single quoted
         sed_exps+=( $'/^[ \t]*pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
