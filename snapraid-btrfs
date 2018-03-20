@@ -286,11 +286,13 @@ debug_trap() {
 # start interactive shell in context of script,
 # with variables and functions exported
 do_shell() (
-    local arrs funcs vars
+    local arrs funcs lower vars
+    # older versions of mawk don't support [:lower:] or [a-z]
+    readonly lower=abcdefghijklmnopqrstuvwxyz
     arrs="$(declare -p | grep '^declare -[Aa] [[:lower:]]')"
-    funcs="$(declare -F | awk '/^declare -f [[:lower:]]/{print $3}')"
+    funcs="$(declare -F | awk "/^declare -f [$lower]/{print \$3}")"
     vars="$(declare -p | awk -F '[ =]' \
-        '/^declare -[-ir] ([[:lower:]]|(DEFAULT|E|SNAPRAID)_)/{print $3}')"
+        "/^declare -[-ir] ([$lower]|(DEFAULT|E|SNAPRAID)_)/{print \$3}")"
     # shellcheck disable=2086,2163
     IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
     # shellcheck disable=2086,2163
