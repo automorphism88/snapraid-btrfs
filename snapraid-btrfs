@@ -197,7 +197,7 @@ check_snapraid_arguments() {
 cleanup_snapshots() {
     local i j
     local -i ret snapper_ret
-    local -a snapper_cmd snapshots_to_consider
+    local -a snapshots_to_consider
     ret=0
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
@@ -213,9 +213,7 @@ cleanup_snapshots() {
                 parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
-                snapper_cmd=( "$my_snapper" -c "$i" rm "$j" )
-                verbose_command "${snapper_cmd[@]}"
-                "${snapper_cmd[@]}" && true
+                verbose_command "$my_snapper" -c "$i" rm "$j"
                 snapper_ret=$?
                 if ((snapper_ret != 0)) ; then
                     ret=$snapper_ret
@@ -328,12 +326,9 @@ _EOF_
 # run the specified snapper command on each config
 do_snapper() {
     local i
-    local -a snapper_cmd
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        snapper_cmd=( "$my_snapper" -c "$i" "$@" )
-        verbose_command "${snapper_cmd[@]}"
-        "${snapper_cmd[@]}"
+        verbose_command "$my_snapper" -c "$i" "$@"
     done
 }
 
@@ -863,16 +858,13 @@ run_snapraid() {
     check_snapraid_arguments "$@"
     local temp_config_file
     local -i ret
-    local -a snapraid_cmd
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
-    snapraid_cmd=( "$my_snapraid" -c "$temp_config_file" "$@" )
     if ((verbose >= 0)) ; then
         echo 'Using snapraid config file:'
         cat_builtin "$temp_config_file"
     fi
-    verbose_command "${snapraid_cmd[@]}"
     case $1 in
         fix|touch)
             create_pre_post_snapshots "$1" ;;
@@ -886,7 +878,7 @@ run_snapraid() {
             trap '((++interrupted)) ; trap - INT TERM QUIT' INT TERM QUIT ;;
     esac
     # Run snapraid
-    "${snapraid_cmd[@]}" && true
+    verbose_command "$my_snapraid" -c "$temp_config_file" "$@"
     ret=$?
     case $1 in
         fix|touch)
@@ -999,7 +991,7 @@ snapper_ls() {
 snapper_rollback() {
     local i
     local -i ret snapper_ret
-    local -a snapper_cmd snapper_rollback_opts
+    local -a snapper_rollback_opts
     ret=0
     snapper_rollback_opts=( -u "$snapper_userdata" )
     [[ "$snapper_cleanup" ]] ||
@@ -1011,10 +1003,8 @@ snapper_rollback() {
     fi
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        snapper_cmd=( "$my_snapper" -c "$i" rollback
-                      "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}" )
-        verbose_command "${snapper_cmd[@]}"
-        "${snapper_cmd[@]}" && true
+        verbose_command "$my_snapper" -c "$i" rollback \
+            "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}"
         snapper_ret=$?
         if ((snapper_ret != 0)) ; then
             ret=$snapper_ret
@@ -1028,7 +1018,7 @@ snapper_rollback() {
 snapper_undochange() {
     local i
     local -i ret snapper_ret
-    local -a snapper_cmd undochange_files undochange_opts
+    local -a undochange_files undochange_opts
     ret=0
     undochange_files=()
     undochange_opts=()
@@ -1056,10 +1046,9 @@ snapper_undochange() {
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
         [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        snapper_cmd=( "$my_snapper" -c "$i" undochange "${undochange_opts[@]}"
-                      "${use_snapshot[$i]}..0" -- "${undochange_files[@]}" )
-        verbose_command "${snapper_cmd[@]}"
-        "${snapper_cmd[@]}" && true
+        verbose_command "$my_snapper" -c "$i" undochange \
+            "${undochange_opts[@]}" "${use_snapshot[$i]}..0" -- \
+            "${undochange_files[@]}"
         snapper_ret=$?
         if ((snapper_ret != 0)) ; then
             ret=$snapper_ret
@@ -1360,6 +1349,7 @@ verbose_command() {
     elif ((verbose >= 0)) ; then
         print_command "$@"
     fi
+    "$@" && true
 }
 
 main "$@"
