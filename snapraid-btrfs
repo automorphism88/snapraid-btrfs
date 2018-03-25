@@ -551,9 +551,9 @@ get_snapper_config_name() {
 }
 
 interactive_ask() {
+    echo 'About to run the following command:'
+    print_command "$@"
     local choice
-    echo 'About to run the command:'
-    printf '%s\n' "$*"
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
@@ -565,7 +565,7 @@ interactive_ask() {
                 echo 'Invalid choice. Please enter y or n.' ;;
         esac
     done
-}
+} >&2
 
 invalid_argument() {
     fatal_error $E_INVALID_ARGUMENT "Invalid argument $1"
@@ -724,6 +724,11 @@ parse_arguments() {
         esac
     done
     fatal_error $E_INVALID_ARGUMENT "No command specified"
+}
+
+print_command() {
+    printf '%q ' "$@"
+    echo
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
@@ -1351,9 +1356,9 @@ use_snapshot_fix() {
 
 verbose_command() {
     if ((interactive > 0)) ; then
-        interactive_ask "$@" >&2
+        interactive_ask "$@"
     elif ((verbose >= 0)) ; then
-        printf '%s\n' "$*"
+        print_command "$@"
     fi
 }
 
