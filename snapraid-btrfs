@@ -670,6 +670,7 @@ parse_arguments() {
             check|diff|dup|list|pool|scrub|status|fix|touch) ;&
             cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
             config|create|resume|rollback|shell|snapper|undochange)
+                unset -v length opt_str i
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
