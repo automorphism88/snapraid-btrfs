@@ -292,9 +292,10 @@ do_shell() (
     vars="$(declare -p | awk -F '[ =]' \
         "/^declare -[-ir] ([$lower]|(DEFAULT|E|SNAPRAID)_)/{print \$3}")"
     # shellcheck disable=2086,2163
-    IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
-    # shellcheck disable=2086,2163
-    IFS=$'\n' export -f $funcs
+    {
+        IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
+        IFS=$'\n' export -f $funcs
+    }
     set +o errexit
     set +o nounset
     exec "$BASH" --init-file \
