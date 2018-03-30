@@ -296,6 +296,8 @@ do_shell() (
         IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
         IFS=$'\n' export -f $funcs
     }
+    # shellcheck disable=2030
+    [[ "${DEBUG_FD-}" ]] && export DEBUG_FD
     set +o errexit
     set +o nounset
     exec "$BASH" --init-file \
@@ -335,6 +337,7 @@ do_snapper() {
 
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
+    # shellcheck disable=2031
     coproc sed_escape_debug {
         sed -e $'s/\e/\e[7m\\\\e\e[0m/g' \
             -e $'s/\r/\e[7m\\\\r\e[0m/g' \
