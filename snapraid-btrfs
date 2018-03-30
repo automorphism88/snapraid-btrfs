@@ -725,11 +725,6 @@ parse_arguments() {
     fatal_error $E_INVALID_ARGUMENT "No command specified"
 }
 
-print_command() {
-    printf '%q ' "$@"
-    echo
-}
-
 # use awk to parse piped snapper ls output and find snapshot numbers
 # matching the specified userdata constraints:
 # if $1 and $2 are nonempty, match snapshots with userdata key $1=$2
@@ -788,6 +783,11 @@ NR<=2 { next }
 }
 _EOF_
             )
+}
+
+print_command() {
+    printf '%q ' "$@"
+    echo
 }
 
 # Run the command given in $1
