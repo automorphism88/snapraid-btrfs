@@ -401,7 +401,7 @@ fatal_error() {
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
-    local config data_line subvol i
+    local config data_line subvol subvol_grep i
     # grep ERE matching data line up to the point where the path starts
     readonly data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
     while IFS='|' read -r config subvol ; do
@@ -409,8 +409,10 @@ find_configs() {
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
+        # escape grep ERE metacharacters in subvolume path
+        subvol_grep="$(sed 's/[].*+?{}()|$^\[]/\\&/g' <<< "$subvol")"
         # allow trailing slash and/or \r character
-        if grep -Ex "$data_line$subvol"$'[/]?[\r]?' \
+        if grep -Ex "$data_line$subvol_grep"$'[/]?[\r]?' \
                 "$config_file" > /dev/null
         then
             snapper_configs+=( "$config" )
