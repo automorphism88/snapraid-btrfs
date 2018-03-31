@@ -405,8 +405,7 @@ find_configs() {
     # grep ERE matching data line up to the point where the path starts
     readonly data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
     while IFS='|' read -r config subvol ; do
-        # Remove leading and trailing spaces
-        config="${config##*( )}"
+        # Remove padding spaces
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
