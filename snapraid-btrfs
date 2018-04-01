@@ -302,7 +302,7 @@ do_shell() (
     }
     set +o errexit
     set +o nounset
-    exec "$BASH" --init-file \
+    exec "$BASH" --rcfile \
         <(cat_builtin <<'_EOF_'
 [[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 eval "$arrs"
