@@ -296,8 +296,6 @@ do_shell() (
         IFS=$'\n' export BASHOPTS SHELLOPTS arrs funcs vars $vars
         IFS=$'\n' export -f $funcs
     }
-    # shellcheck disable=2030
-    [[ "${DEBUG_FD-}" ]] && export DEBUG_FD
     set +o errexit
     set +o nounset
     exec "$BASH" --init-file \
@@ -317,10 +315,6 @@ quit() {
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
     printf 'Started bash session in %s context - use quit to exit\n' "$my_name"
-fi
-if [[ "$debug_fd" ]] ; then
-    debug_fd=
-    enable_debug_mode
 fi
 _EOF_
          ) -O extglob -i -s "$@"
