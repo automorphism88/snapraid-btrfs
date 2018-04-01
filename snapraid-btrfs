@@ -316,9 +316,17 @@ exit() {
 quit() {
     command exit "${@:-0}"
 }
+vars() {
+    declare -p | grep '^declare -[-Aair]+ [[:lower:]]'
+}
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
-    printf 'Started bash session in %s context - use quit to exit\n' "$my_name"
+    cat_builtin <<_EOF2_
+Started bash session in $my_name context.
+Commands:
+    quit - exit the interactive shell
+    vars - display variable values
+_EOF2_
 fi
 _EOF_
          ) -O extglob -i -s "$@"
