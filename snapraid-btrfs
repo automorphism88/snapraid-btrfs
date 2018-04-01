@@ -285,6 +285,10 @@ debug_trap() {
 # with variables and functions exported
 do_shell() (
     local arrs funcs lower vars
+    # unset variables that will be invalid
+    trap - DEBUG
+    unset -v debug_fd sed_escape_debug sed_escape_debug_PID
+    rm_on_exit=()
     # older versions of mawk don't support [:lower:] or [a-z]
     readonly lower=abcdefghijklmnopqrstuvwxyz
     arrs="$(declare -p | grep '^declare -[Aa] [[:lower:]]')"
