@@ -304,7 +304,7 @@ do_shell() (
     set +o nounset
     exec "$BASH" --init-file \
         <(cat_builtin <<'_EOF_'
-source "$HOME/.bashrc"
+[[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 eval "$arrs"
 IFS=$'\n' export -fn $funcs
 IFS=$'\n' export -n BASHOPTS SHELLOPTS $vars
