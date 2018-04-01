@@ -269,7 +269,7 @@ create_pre_post_snapshots() {
 # display current state of variables
 # DEBUG is trapped in enable_debug_mode()
 debug_trap() {
-    local div line i
+    local div line
     readonly div='----------------------------------------'
     printf '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
     while IFS= read -r line ; do
