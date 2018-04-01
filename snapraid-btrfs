@@ -380,7 +380,8 @@ exit_trap() {
     fi
     trap - DEBUG
     if [[ "${debug_fd-}" ]] ; then
-        eval "exec ${debug_fd}>&- ${sed_escape_debug[1]}>&-"
+        eval "exec ${debug_fd}>&- \
+            ${sed_escape_debug[1]+${sed_escape_debug[1]}>&-}"
         # shellcheck disable=2086,2154
         # Shellcheck doesn't understand named coprocesses
         # See https://github.com/koalaman/shellcheck/issues/1066
