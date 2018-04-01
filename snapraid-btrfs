@@ -291,7 +291,7 @@ do_shell() (
     rm_on_exit=()
     # older versions of mawk don't support [:lower:] or [a-z]
     readonly lower=abcdefghijklmnopqrstuvwxyz
-    arrs="$(declare -p | grep '^declare -[Aa] [[:lower:]]')"
+    arrs="$(declare -p | awk "/^declare -[Aa] [$lower]/")"
     funcs="$(declare -F | awk "/^declare -f [$lower]/{print \$3}")"
     vars="$(declare -p | awk -F '[ =]' \
         "/^declare -[-ir] ([$lower]|(DEFAULT|E|SNAPRAID)_)/{print \$3}")"
@@ -317,7 +317,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    declare -p | grep '^declare -[-Aair]+ [[:lower:]]'
+    declare -p | awk "/^declare -[-Aair]+ [$lower]/"
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
