@@ -288,6 +288,7 @@ do_shell() (
     # unset variables that will be invalid
     trap - DEBUG
     unset -v debug_fd sed_escape_debug sed_escape_debug_PID
+    # shellcheck disable=2030
     rm_on_exit=()
     # older versions of mawk don't support [:lower:] or [a-z]
     readonly lower=abcdefghijklmnopqrstuvwxyz
@@ -371,8 +372,9 @@ err_trap() {
 } >&2
 
 # Intended to be called by EXIT trap
-# Removes $rm_on_exit if nonempty and cleans up coprocess if necessary
+# Removes rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
+    # shellcheck disable=SC2031
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" && true
     fi
