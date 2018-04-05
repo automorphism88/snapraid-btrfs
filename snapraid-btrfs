@@ -1272,8 +1272,12 @@ use_snapper_userdata() {
     IFS=',' read -r -a args <<< "$1"
     for i in "${args[@]}" ; do
         IFS='=' read -r key value <<< "$i"
-        [[ "$key" = "$snapper_userdata_key" ]] ||
+        if [[ "$key" = "$snapper_userdata_key" ]] ; then
+            fatal_error $E_INVALID_ARGUMENT \
+                "Cannot set reserved userdata key $key"
+        else
             snapper_userdata+=",$key=$value"
+        fi
     done
 }
 
