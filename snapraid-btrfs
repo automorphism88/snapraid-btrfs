@@ -182,7 +182,8 @@ check_snapraid_arguments() {
         case $1 in
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
                 fatal_error $E_INVALID_ARGUMENT \
-                    'The -c/--conf option may not be passed through to snapraid'
+                    'The -c/--conf option' \
+                    'may not be passed through to snapraid' ;;
         esac
         if snapraid_opt_has_arg "$@" ; then
             shift 2
