@@ -380,15 +380,13 @@ exit_trap() {
         rm -f -- "${rm_on_exit[@]}" && true
     fi
     trap - DEBUG
-    if [[ "${debug_fd-}" ]] ; then
-        eval "exec ${debug_fd}>&- \
-            ${sed_escape_debug[1]+${sed_escape_debug[1]}>&-}"
-        # shellcheck disable=2086,2154
-        # Shellcheck doesn't understand named coprocesses
-        # See https://github.com/koalaman/shellcheck/issues/1066
-        wait $sed_escape_debug_PID
-        unset -v debug_fd
-    fi
+    eval "${debug_fd:+exec ${debug_fd}>&-}"
+    eval "${sed_escape_debug[1]:+exec ${sed_escape_debug[1]}>&-}"
+    # shellcheck disable=2154
+    # Shellcheck doesn't understand named coprocesses
+    # See https://github.com/koalaman/shellcheck/issues/1066
+    eval "${sed_escape_debug_PID:+wait $sed_escape_debug_PID}"
+    unset -v debug_fd
     return 0
 }
 
