@@ -374,7 +374,7 @@ err_trap() {
 # Intended to be called by EXIT trap
 # Removes rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
-    # shellcheck disable=SC2031
+    # shellcheck disable=2031
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" && true
     fi
