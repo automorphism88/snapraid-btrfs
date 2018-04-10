@@ -273,6 +273,10 @@ debug_trap() {
     local div line
     readonly div='----------------------------------------'
     printf '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
+    shift 3
+    printf '%s' 'set -- '
+    (($# > 0)) && printf '%q ' "$@"
+    echo
     while IFS= read -r line ; do
         case $line in
             'declare -'[-aAi]' '@(@([[:lower:]]|BASH)*|FUNCNAME|PIPESTATUS))
@@ -351,7 +355,7 @@ enable_debug_mode() {
     exec {debug_fd}<&"${sed_escape_debug[1]}"
     # shellcheck disable=1004
     trap 'debug_trap "$LINENO" "$BASH_COMMAND" \
-        "${FUNCNAME[0]:+${FUNCNAME[0]}(): }"' DEBUG
+        "${FUNCNAME[0]:+${FUNCNAME[0]}(): }" "$@"' DEBUG
 }
 
 # Intended to be called by ERR trap. Accepts the following arguments:
