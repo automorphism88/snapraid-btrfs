@@ -858,7 +858,7 @@ run_command() {
             # snapraid diff returns 2 if a sync is required
             if ((diff_ret == 2)) ; then
                 ((++interactive))
-                run_snapraid sync "$@" && true
+                run_snapraid sync --force-empty "$@" && true
             else
                 exit $diff_ret
             fi ;;
@@ -1225,7 +1225,8 @@ ${bold}or one of the following $my_name specific commands:${reset}
   'dsync'|'diff-sync':
         Create a new snapshot for all snapper configs found in snapraid config
         file, do a snapraid diff, then sync. Implies --interactive option for
-        the sync operation.
+        the sync operation. Uses --force-empty for the sync operation, since
+        the diff must be manually approved anyway.
   'list'|'ls':
         Run snapper ls for all snapper configs found in snapraid config file.
         If an argument is given, also list which snapshots in each config were
