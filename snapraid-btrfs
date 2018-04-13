@@ -324,12 +324,12 @@ vars() {
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
-    cat_builtin <<_EOF2_
+    cat_builtin <<__EOF__
 Started bash session in $my_name context.
 Commands:
     quit - exit the interactive shell
     vars - display variable values
-_EOF2_
+__EOF__
 fi
 _EOF_
          ) -O extglob -i -s "$@"
