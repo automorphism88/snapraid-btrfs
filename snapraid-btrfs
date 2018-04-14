@@ -820,29 +820,8 @@ print_command() {
 
 # Run the command given in $1
 run_command() {
-    setup_config
+    setup_config "$@"
     case $1 in
-        # Setup ${use_snapshot[@]}
-        cleanup)
-            use_snapshot_all sync ;;&
-        cleanup-all|touch)
-            use_snapshot_all 0 ;;&
-        config)
-            use_snapshot_default last ;;&
-        check|dup|pool|rollback|scrub|status|undochange)
-            use_snapshot_default sync ;;&
-        create|diff|?(d|diff-)sync)
-            use_snapshot_default new ;;&
-        fix)
-            use_snapshot_fix "$@" ;;&
-        resume)
-            use_snapshot_default res ;;&
-        shell|snapper)
-            use_snapshot_default '' ;;&
-        !(cleanup-all|l@(s|ist)|snapper|touch))
-            find_snapshots "$1" ;;&
-        !(cleanup?(-all)|l@(s|ist)|shell|snapper|touch))
-            use_snapshot_check ;;&
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
             cleanup_snapshots ;;
@@ -1005,6 +984,33 @@ setup_config() {
         done
     fi
     apply_pre_post_options
+    setup_use_snapshot "$@"
+}
+
+# Initialize ${use_snapshot[@]} with command-specific defaults
+setup_use_snapshot() {
+    case $1 in
+        cleanup)
+            use_snapshot_all sync ;;&
+        cleanup-all|touch)
+            use_snapshot_all 0 ;;&
+        config)
+            use_snapshot_default last ;;&
+        check|dup|pool|rollback|scrub|status|undochange)
+            use_snapshot_default sync ;;&
+        create|diff|?(d|diff-)sync)
+            use_snapshot_default new ;;&
+        fix)
+            use_snapshot_fix "$@" ;;&
+        resume)
+            use_snapshot_default res ;;&
+        shell|snapper)
+            use_snapshot_default '' ;;&
+        !(cleanup-all|l@(s|ist)|snapper|touch))
+            find_snapshots "$1" ;;&
+        !(cleanup?(-all)|l@(s|ist)|shell|snapper|touch))
+            use_snapshot_check ;;
+    esac
 }
 
 # Do a snapper ls in all configs, and if argument is specified, additionally
