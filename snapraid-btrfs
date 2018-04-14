@@ -1356,10 +1356,12 @@ use_snapshot_fix() {
         disk=
         case $1 in
             --filter-disk=*)
-                disk="${1#--filter-disk=}" ;;
+                disk="${1#--filter-disk=}"
+                shift ;;
             --filter-disk|-*(["$SNAPRAID_OPTS_NOARG"])d)
                 option_requires_argument "$@"
-                disk="$2" ;;
+                disk="$2"
+                shift 2 ;;
             -!(-)*)
                 opt_str="${1#-}"
                 length="${#opt_str}"
@@ -1368,15 +1370,15 @@ use_snapshot_fix() {
                         d)
                             disk="${opt_str:$((i+1))}" ;&
                         ["$SNAPRAID_OPTS_ARG"])
+                            if ((length == i+1)) ; then
+                                shift 2 || shift
+                            else
+                                shift
+                            fi
                             break ;;
                     esac
                 done ;;
         esac
-        if snapraid_opt_has_arg "$@" ; then
-            shift 2
-        else
-            shift
-        fi
         if [[ "$disk" ]] ; then
             snapper_config_name="$(get_snapper_config_name "$disk")"
             if [[ "$snapper_config_name" ]] ; then
