@@ -676,20 +676,38 @@ parse_arguments() {
     while (($# > 0)) ; do
         case $1 in
             # matching any command means option processing is complete
-            check|diff|dup|list|pool|scrub|status|fix|touch) ;&
-            cleanup?(-all)|l@(s|ist)|?(diff-|d)sync) ;&
-            config|create|resume|rollback|shell|snapper|undochange)
+            check) ;&
+            cleanup?(-all)) ;&
+            diff) ;&
+            dup) ;&
+            fix) ;&
+            l@(s|ist)) ;&
+            pool) ;&
+            scrub) ;&
+            status) ;&
+            ?(diff-|d)sync) ;&
+            touch)
                 unset -v length opt_str i
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
-            --@(help|interactive|quiet|verbose|debug|use-filter-disk)?(=*))
-                # ignore any argument passed with --opt=arg format
-                set_option "${1%%=*}"
+            --debug) ;&
+            --help) ;&
+            --interactive) ;&
+            --quiet) ;&
+            --use-filter-disk) ;&
+            --verbose)
+                set_option "$1"
                 shift ;;
             # long form options that require arguments
-            --@(conf|cleanup|description|pool-dir|use-snapshot?(-all))?(=*)) ;&
-            --@(?(no-)pre-post|@(snap@(per-@(path|userdata)|raid-path)))?(=*))
+            --conf?(=*)) ;&
+            --cleanup?(=*)) ;&
+            --description?(=*)) ;&
+            --pool-dir?(=*)) ;&
+            --?(no-)pre-post?(=*)) ;&
+            --snapper-@(path|userdata)?(=*)) ;&
+            --snapraid-path?(=*)) ;&
+            --use-snapshot?(-all)?(=*))
                 # allow POSIX --argument option or --argument=option formats
                 opt_str="${1%%=*}"
                 if [[ "$opt_str" = "$1" ]] ; then
@@ -916,8 +934,14 @@ run_snapraid() {
 # $2 can be either undefined or empty
 set_option() {
     case $1 in
-        --@(conf|cleanup|description|pool-dir|use-snapshot?(-all))) ;&
-        --@(?(no-)pre-post|@(snap@(per-@(path|userdata)|raid-path)))) ;&
+        --conf) ;&
+        --cleanup) ;&
+        --description) ;&
+        --pool-dir) ;&
+        --?(no-)pre-post) ;&
+        --snapper-@(path|userdata)) ;&
+        --snapraid-path) ;&
+        --use-snapshot?(-all)) ;&
         -[cCduU])
             option_requires_argument "$@" ;;&
         -c|--conf)
@@ -1079,8 +1103,15 @@ snapraid_opt_has_arg() {
     fi
     case $1 in
         # snapraid long-form options that require arguments
-        --@(filter?(-disk)|percentage)) ;&
-        --@(import|plan|older-than|log|start|count|error-limit|gen-conf)) ;&
+        --count) ;&
+        --error-limit) ;&
+        --filter?(-disk)) ;&
+        --gen-conf) ;&
+        --import) ;&
+        --log) ;&
+        --older-than) ;&
+        --percentage) ;&
+        --plan) ;&
         # snapraid short-form options that require arguments
         -*(["$SNAPRAID_OPTS_NOARG"])["$SNAPRAID_OPTS_ARG"])
             return 0 ;;
