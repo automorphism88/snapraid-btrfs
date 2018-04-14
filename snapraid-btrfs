@@ -628,7 +628,7 @@ main() {
     snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     snapper_userdata="$snapper_userdata_key=created"
     temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
-    must_be_writable_directory "$temp_dir" 'is TMPDIR set correctly?'
+    must_be_writable_dir "$temp_dir" 'is TMPDIR set correctly?'
     use_filter_disk=0
     use_snapshot_all_option=
     use_snapshot_option=
@@ -657,7 +657,7 @@ must_be_executable() {
         fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
 }
 
-must_be_writable_directory() {
+must_be_writable_dir() {
     [[ -d "$1" ]] ||
         fatal_error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
     [[ -w "$1" ]] ||
@@ -968,7 +968,7 @@ set_option() {
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
         --pool-dir)
-            must_be_writable_directory "$2"
+            must_be_writable_dir "$2"
             pool_dir="$2" ;;
         --pre-post)
             IFS=',' read -r -a pre_post_option <<< "$2" ;;
