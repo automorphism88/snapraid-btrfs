@@ -1232,8 +1232,8 @@ $my_name:
                                 synced snapshot for all disks not so specified.
 
   NOTE: The snapraid -c/--conf option will not work unless placed before the
-  command, allowing it to be interpreted as a $my_name option. Snapraid will be
-  run with a temporary configuration file, generated using whatever
+  command, allowing it to be interpreted as a $my_name option. Snapraid
+  will be run with a temporary configuration file, generated using whatever
   snapraid.conf file is specified using the $my_name -c/--conf option
   ($DEFAULT_CONFIG_FILE by default).
 
