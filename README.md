@@ -269,12 +269,14 @@ runs a `snapraid diff`, and then asks for confirmation before running a
 `snapraid sync` with the same snapshots. Since SnapRAID can only restore the
 array to the state it was in at the time of the last sync, syncing is a
 destructive action, and the `dsync` command allows the user to make sure the new
-snapshots are okay before continuing with the sync. The behavior of this command
-is equivalent to running `snapraid-btrfs diff` followed by
-`snapraid-btrfs --use-snapshot-all diff --interactive sync`, except that
-`snapraid-btrfs dsync` will only run the sync if `snapraid diff` indicates that
-there have been changes since the last sync. Otherwise, `snapraid-btrfs dsync`
-will simply exit after the diff.
+snapshots are okay before continuing with the sync. Since the sync will only be
+run after the user has approved the diff, the `--force-empty` option is passed
+through to `snapraid`. The behavior of this command is equivalent to running
+`snapraid-btrfs diff` followed by
+`snapraid-btrfs --interactive --use-snapshot-all diff sync --force-empty`,
+except that `snapraid-btrfs dsync` will only run the sync if `snapraid diff`
+indicates that there have been changes since the last sync. Otherwise,
+`snapraid-btrfs dsync` will simply exit after the diff.
 
 ### Q: What about pooling?
 A: If you run `snapraid-btrfs pool` the symlinks created in your pool directory
