@@ -672,31 +672,38 @@ option_requires_argument() {
 }
 
 parse_arguments() {
-    local opt_str
+    local command opt_str
     local -i length i
+    command=
     while (($# > 0)) ; do
         case $1 in
-            # matching any command means option processing is complete
+            # matching a snapraid command means option processing is complete
+            # and any further options will be passed through to snapraid
             check) ;&
-            cleanup?(-all)) ;&
-            config) ;&
-            create) ;&
             diff) ;&
             dup) ;&
             fix) ;&
-            l@(s|ist)) ;&
             pool) ;&
             resume) ;&
-            rollback) ;&
             scrub) ;&
-            shell) ;&
-            snapper) ;&
             status) ;&
             ?(diff-|d)sync) ;&
             touch) ;&
+            # Option processing is also complete for other commands which
+            # accept arguments
+            l@(ist|s)) ;&
+            shell) ;&
+            snapper) ;&
             undochange)
-                unset -v length opt_str i
-                run_command "$@" ;;
+                break ;;
+            # support options specified either before or after the command
+            # for commands which don't invoke snapraid or accept argument
+            cleanup?(-all)) ;&
+            config) ;&
+            create) ;&
+            rollback)
+                command="$1"
+                shift ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
             --debug) ;&
@@ -758,7 +765,13 @@ parse_arguments() {
                 invalid_argument "$1" ;;
         esac
     done
-    fatal_error $E_INVALID_ARGUMENT "No command specified"
+    [[ "${command-}" ]] && set -- "$command"
+    if (($# > 0)) ; then
+        unset -v command length opt_str i
+        run_command "$@"
+    else
+        fatal_error $E_INVALID_ARGUMENT "No command specified"
+    fi
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
