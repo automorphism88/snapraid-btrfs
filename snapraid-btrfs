@@ -401,7 +401,7 @@ fatal_error() {
     local -i errno
     errno="${1:-$E_INTERNAL_ERROR}"
     shift && true
-    printf '%s: %s\n' "$my_name" "${*:-fatal error}"
+    IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
     case $errno in
         $E_INVALID_ARGUMENT)
             printf 'Use %s -h for help\n' "$my_name" ;;
