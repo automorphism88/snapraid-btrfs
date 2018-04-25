@@ -1180,6 +1180,7 @@ ${bold}Usage: $my_name [options] <command> [arguments]${reset}
 Arguments appearing after the command are passed through to snapraid, while
 the following options appearing before the command are interpreted by
 $my_name:
+
   -h, --help                    Show this help
   -c, --conf FILE               Specify location of snapraid config file
                                 (default /etc/snapraid.conf)
