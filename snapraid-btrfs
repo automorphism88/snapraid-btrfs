@@ -679,15 +679,22 @@ parse_arguments() {
             # matching any command means option processing is complete
             check) ;&
             cleanup?(-all)) ;&
+            config) ;&
+            create) ;&
             diff) ;&
             dup) ;&
             fix) ;&
             l@(s|ist)) ;&
             pool) ;&
+            resume) ;&
+            rollback) ;&
             scrub) ;&
+            shell) ;&
+            snapper) ;&
             status) ;&
             ?(diff-|d)sync) ;&
-            touch)
+            touch) ;&
+            undochange)
                 unset -v length opt_str i
                 run_command "$@" ;;
             # snapraid-btrfs options specified before command
