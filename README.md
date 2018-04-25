@@ -11,12 +11,17 @@ before and after snapshots. It aims to be a transparent wrapper around the
 file where the data paths are replaced with those of corresponding read-only
 snapshots, then running `snapraid` using the temporary configuration file.
 
-Options appearing before the command control the behavior of `snapraid-btrfs`,
-while options appearing after the command are passed through to `snapraid` (with
-the exception of `-c`/`--conf`, which must be specified before the command so
-that it can be processed by `snapraid-btrfs` when creating the temporary
-SnapRAID config file). `snapraid-btrfs` also adds additional commands, such as
-`cleanup`, for managing its snapshots.
+Options appearing before the command (e.g., `sync` or `scrub`) control the
+behavior of `snapraid-btrfs`, while options appearing after the command are
+passed through to `snapraid`, with the exception of `-c`/`--conf`, which is
+reserved for use by `snapraid-btrfs` to point `snapraid` to its temporary
+configuration file, and which can instead be specified as a `snapraid-btrfs`
+option, before the command, so that it can be processed by `snapraid-btrfs`
+when creating the temporary SnapRAID config file. For example,
+`snapraid-btrfs -c /foo/snapraid.conf sync -v` would run
+`snapraid sync -c /tmp/example -v`, where `/tmp/example` was generated using
+`/foo/snapraid.conf` instead of `/etc/snapraid.conf`. `snapraid-btrfs` also
+implements additional commands, such as `cleanup`, for managing its snapshots.
 
 ## Setup instructions
 
