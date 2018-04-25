@@ -15,7 +15,7 @@ Options appearing before the command control the behavior of `snapraid-btrfs`,
 while options appearing after the command are passed through to snapraid (with
 the exception of `-c`/`--conf`, which must be specified before the command so
 that it can be processed by `snapraid-btrfs` when creating the temporary
-snapraid config file). Snapraid-btrfs also adds additional commands, such as
+snapraid config file). `snapraid-btrfs` also adds additional commands, such as
 `cleanup`, for managing its snapshots.
 
 ## Setup instructions
@@ -180,7 +180,7 @@ snapraid-btrfs?" below.
 
 ### Q: How do I configure snapper for use with snapraid-btrfs?
 A: Create a snapper configuration for each data drive you want to use
-snapraid-btrfs for. Snapraid-btrfs will compare the output of
+`snapraid-btrfs` for. `snapraid-btrfs` will compare the output of
 `snapper list-configs` with the list of data directories found in the snapraid
 config file (as with snapraid, by default, `/etc/snapraid.conf`, but an
 alternate location can be specified with the `-c` or `--conf` command line
@@ -188,10 +188,10 @@ argument or by setting the `SNAPRAID_CONFIG_FILE` environment variable).
 
 **To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
-snapraid-btrfs in your snapper configurations.** You may wish to make a snapper
-template with the options you want to use for your snapraid drive configurations
-and set these variables at that level. For further details, see the snapper
-documentation.
+`snapraid-btrfs` in your snapper configurations.** You may wish to make a
+snapper template with the options you want to use for your snapraid drive
+configurations and set these variables at that level. For further details, see
+the snapper documentation.
 
 ### Q: What about my snapraid.conf file? Do I need to do anything there?
 A: `snapraid-btrfs` is designed to work with your existing snapraid
@@ -289,7 +289,7 @@ to deleted snapshots.
 
 ### Q: How do I stop using snapraid-btrfs?
 A: Just complete a full sync, invoking snapraid directly and not via
-snapraid-btrfs. Then your parity files will be up to date with the live
+`snapraid-btrfs`. Then your parity files will be up to date with the live
 filesystem, and you can safely delete all snapshots using
 `snapraid-btrfs cleanup-all` and have a regular snapraid configuration.
 
@@ -314,5 +314,5 @@ can temporarily disable `snapraid-btrfs`, either globally by doing a regular
 `snapraid sync`, or for specific drives by doing a `snapraid-btrfs sync` using
 the `-U` option to select snapshot 0 (i.e., the live filesystem, in snapper
 terminology) for the drives in question, moving the files, doing another sync
-with `snapraid-btrfs` disabled, and then reenabling snapraid-btrfs by doing a
+with `snapraid-btrfs` disabled, and then reenabling `snapraid-btrfs` by doing a
 normal `snapraid-btrfs sync`.
