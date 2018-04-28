@@ -686,7 +686,6 @@ parse_arguments() {
             pool) ;&
             resume) ;&
             scrub) ;&
-            status) ;&
             ?(diff-|d)sync) ;&
             touch) ;&
             # Option processing is also complete for other commands which
@@ -863,7 +862,7 @@ run_command() {
             shift
             snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
-        check|diff|dup|fix|pool|scrub|status|sync|touch)
+        check|diff|dup|fix|pool|scrub|sync|touch)
             run_snapraid "$@" && true ;;
         resume)
             shift
@@ -1017,7 +1016,7 @@ setup_use_snapshot() {
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
-        check|dup|pool|rollback|scrub|status|undochange)
+        check|dup|pool|rollback|scrubundochange)
             use_snapshot_default sync ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
@@ -1260,7 +1259,7 @@ $my_name:
   ($DEFAULT_CONFIG_FILE by default).
 
 ${bold}Commands are either one of the following snapraid commands:${reset}
-  'check'|'diff'|'dup'|'pool'|'scrub'|'status'|'sync':
+  'check'|'diff'|'dup'|'pool'|'scrub'|'sync':
         Run the snapraid command given, replacing data drives in snapraid config
         file that have corresponding snapper configs with read-only snapshots.
   'fix'|'touch':
