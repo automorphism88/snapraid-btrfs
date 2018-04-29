@@ -523,7 +523,7 @@ generate_temp_snapraid_conf() {
             # passed to sed as literal strings
             sed_find="$(sed 's/[].*$^/\[]/\\&/g' <<< "${snapper_subvols[$i]}")"
             sed_replace="$(sed 's/[&/\]/\\&/g' <<< "$new_path")"
-            match_line="$data_line$sed_find"$'[\/]\{0,1\}[\r]\{0,1\}$'
+            match_line="$data_line$sed_find"$'[/]\{0,1\}[\r]\{0,1\}$'
             # also match the deprecated token 'disk' using separate sed
             # expression to avoid depending on the GNU extension \|
             sed_exps+=( "/$match_line/s/$sed_find/$sed_replace/"
