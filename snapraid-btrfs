@@ -1016,7 +1016,7 @@ setup_use_snapshot() {
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
-        check|dup|pool|rollback|scrubundochange)
+        check|dup|pool|rollback|scrub|undochange)
             use_snapshot_default sync ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
