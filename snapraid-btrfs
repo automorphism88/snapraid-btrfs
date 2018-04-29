@@ -172,11 +172,11 @@ check_config_file() {
 
 # Make sure all external binaries in $@ can be found in $PATH
 check_dependencies() {
-    local i
-    for i in "$@" ; do
-        if ! type "$i" &> /dev/null ; then
-            fatal_error $E_INTERNAL_ERROR "Could not find $i in PATH"
+    while (($# > 0)) ; do
+        if ! type "$1" &> /dev/null ; then
+            fatal_error $E_INTERNAL_ERROR "Could not find $1 in PATH"
         fi
+        shift
     done
 }
 
