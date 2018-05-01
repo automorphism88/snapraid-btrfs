@@ -546,7 +546,8 @@ get_snapper_config_name() {
         case $field1 in
             data|disk)
                 if [[ "$field2" = "$1" ]] ; then
-                    subvol="$field3"
+                    subvol="${field3%$'\r'}"
+                    subvol="${subvol%/}"
                     break
                 fi ;;
         esac
