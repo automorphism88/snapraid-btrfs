@@ -322,5 +322,5 @@ can temporarily disable `snapraid-btrfs`, either globally by doing a regular
 `snapraid sync`, or for specific drives by doing a `snapraid-btrfs sync` using
 the `-U` option to select snapshot 0 (i.e., the live filesystem, in snapper
 terminology) for the drives in question, moving the files, doing another sync
-with `snapraid-btrfs` disabled, and then reenabling SnapRAID-btrfs by doing a
+with `snapraid-btrfs` disabled, and then reenabling `snapraid-btrfs` by doing a
 normal `snapraid-btrfs sync`.
