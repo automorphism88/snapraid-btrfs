@@ -406,7 +406,12 @@ fatal_error() {
         $E_INVALID_ARGUMENT)
             printf 'Use %s -h for help\n' "$my_name" ;;
     esac
-    exit "$errno"
+    if ((errno > 0)) ; then
+        exit "$errno"
+    else
+        printf 'fatal_error called with invalid exit status %s\n' "$1"
+        exit "$E_INTERNAL_ERROR"
+    fi
 } >&2
 
 # compare output of snapper list-configs with snapraid.conf
