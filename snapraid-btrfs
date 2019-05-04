@@ -17,10 +17,6 @@
 # do_shell() uses a subshell explicitly so that it will not propagate
 # modifications to variables to the rest of the script
 
-# shellcheck disable=2221,2222
-# These warnings don't take ;;& terminators in case statements into account
-# see https://github.com/koalaman/shellcheck/issues/1044
-
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
