@@ -138,7 +138,8 @@ check_config() {
                    is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; }
         then
             fatal_error $E_NO_PERMISSION 'Could not read subvolume' \
-                "${snapper_subvols[$i]}/.snapshots - is SYNC_ACL set?"
+                        "${snapper_subvols[$i]}/.snapshots" \
+                        '- is SYNC_ACL set in snapper configuration?'
         fi
     done
 }
