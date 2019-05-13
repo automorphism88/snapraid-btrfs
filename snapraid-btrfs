@@ -13,6 +13,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+# bash version 4+ required for associative arrays, coprocesses, and
+# ;& and ;;& terminators in case statements
+# 4.1+ required for ACL support
+if ! { ((BASH_VERSINFO[0] > 4)) ||
+        { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
+then
+    echo 'bash version 4.1+ is required to use this script' >&2
+    exit 63
+fi
+
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
@@ -25,16 +35,6 @@ readonly E_INTERACTIVE_NO=69
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
-
-# bash version 4+ required for associative arrays, coprocesses, and
-# ;& and ;;& terminators in case statements
-# 4.1+ required for ACL support
-if ! { ((BASH_VERSINFO[0] > 4)) ||
-        { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
-then
-    echo 'bash version 4.1+ is required to use this script' >&2
-    exit 63
-fi
 
 set -o errexit
 set -o errtrace
