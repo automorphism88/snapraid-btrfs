@@ -126,16 +126,19 @@ check_config() {
             done
         fi
     done < "$config_file"
-    # Check to make sure the user has permission to access snapshots
     for i in "${snapper_configs[@]}" ; do
-        # Try a snapper ls first, in case ACLs need to be refreshed
-        if ! { "$my_snapper" -c "$i" ls --disable-used-space &> /dev/null &&
-                   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] &&
-                   is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; }
+        # Check that .snapshots subvolume exists
+        if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
+            fatal_error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
+                'is not a valid btrfs subvolume'
+        # Check that we have read permission for snapshots
+        # Try a snapper ls first in case ACLs need to be refreshed
+        elif ! { "$my_snapper" -c "$i" ls --disable-used-space &> /dev/null &&
+                   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
-            fatal_error $E_NO_PERMISSION 'Could not read subvolume' \
-                        "${snapper_subvols[$i]}/.snapshots" \
-                        '- is SYNC_ACL set in snapper configuration?'
+            fatal_error $E_NO_PERMISSION 'No read permission for' \
+                "${snapper_subvols[$i]}/.snapshots" \
+                '- is SYNC_ACL set in snapper configuration?'
         fi
     done
 }
