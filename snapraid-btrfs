@@ -13,10 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# shellcheck disable=2030,2031
-# do_shell() uses a subshell explicitly so that it will not propagate
-# modifications to variables to the rest of the script
-
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
@@ -294,6 +290,8 @@ do_shell() (
     # unset variables that will be invalid
     trap - DEBUG
     unset -v debug_fd sed_escape_debug sed_escape_debug_PID
+    # shellcheck disable=2030,2031
+    # this is not intended to modify ${rm_on_exit[@]} outside the subshell
     rm_on_exit=()
     # older versions of mawk don't support [:lower:] or [a-z]
     readonly lower=abcdefghijklmnopqrstuvwxyz
@@ -378,6 +376,8 @@ err_trap() {
 # Intended to be called by EXIT trap
 # Removes rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
+    # shellcheck disable=2030,2031
+    # ${rm_on_exit[@]} is intended to be modified in a subshell in do_shell()
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" && true
     fi
