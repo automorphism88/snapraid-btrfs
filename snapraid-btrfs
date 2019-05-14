@@ -830,10 +830,10 @@ parse_snapper_ls() {
 NR<=2 { next }
 {
     # remove spaces used to pad column width
-    gsub(/[ ]+/,"",$2)
+    gsub(/[ ]+/,"",$1)
     if (key == "") {
         # match all snapshots
-        print $2
+        print $1
     } else {
         # split userdata column into key=value pairs in case
         # multiple userdata keys are defined for a snapshot
@@ -857,11 +857,11 @@ NR<=2 { next }
         # find and print our matches
         if (value == "") {
             if (key in v) {
-                print $2
+                print $1
             }
         } else {
             if (key "=" value in v) {
-                print $2
+                print $1
             }
         }
         # Wipe v so one match doesn't result in matching all subsequent lines
