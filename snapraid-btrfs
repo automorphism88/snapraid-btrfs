@@ -34,6 +34,7 @@ readonly E_INVALID_CONFIG=66
 readonly E_NO_PERMISSION=67
 readonly E_SNAPSHOT_NOT_FOUND=68
 readonly E_INTERACTIVE_NO=69
+readonly MY_VERSION='0.9.7+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
@@ -748,7 +749,8 @@ parse_arguments() {
             --interactive) ;&
             --quiet) ;&
             --use-filter-disk) ;&
-            --verbose)
+            --verbose) ;&
+            --version)
                 set_option "$1"
                 shift ;;
             # long form options that require arguments
@@ -778,7 +780,7 @@ parse_arguments() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         # short options that don't take arguments
-                        [hiqvx])
+                        [hiqvVx])
                             set_option "-${opt_str:$i:1}"
                             if ((i == length-1)) ; then
                                 shift
@@ -874,6 +876,16 @@ _EOF_
 print_command() {
     printf '%q ' "$@"
     echo
+}
+
+print_version() {
+    cat_builtin <<_EOF_
+snapraid-btrfs $MY_VERSION
+Copyright (C) 2017-2019 Alex deBeus
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
+This is free software; you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+_EOF_
 }
 
 # Run the command given in $1
@@ -999,6 +1011,9 @@ set_option() {
             use_snapshot_option="$2" ;;
         -v|--verbose)
             ((++verbose)) ;;
+        -V|--version)
+            print_version
+            exit ;;
         -x|--debug)
             enable_debug_mode ;;
         --no-pre-post)
@@ -1260,6 +1275,7 @@ $my_name:
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
   -v, --verbose                 Increase verbosity of output
+  -V, --version                 Show version info
   -x, --debug                   Enable debugging output
   --no-pre-post STR             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
