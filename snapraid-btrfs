@@ -611,30 +611,63 @@ main() {
     check_dependencies awk basename dirname grep mktemp rm sed stat tail
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
+
+    # Declare "global" variables as local to main since they will be
+    # accessible from any functions called from main
+    # These variables are set during processing of command line arguments and
+    # snapraid/snapper configurations and are initialized to defaults here
+
+    # snapraid config file location
     local config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
+    # fd to send debug output to if -x/--debug is enabled
     local debug_fd=
+    # indicates whether the -i/--interactive option has been enabled
     local -i interactive=0
+    # filename of script determined at runtime
     local my_name
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
+    # snapper/snapraid commands to use, can be specified with the
+    # --snapper-path and --snapraid-path command line options
     local my_snapper=snapper
     local my_snapraid=snapraid
+    # --pool-dir option argument
     local pool_dir=
+    # list of snapper configs to create pre/post snapshots for
     local pre_post_configs=()
+    # --pre-post option argument, after splitting
     local pre_post_option=()
+    # --no-pre-post option argument, after splitting
     local no_pre_post_option=()
+    # names of temp files to rm upon exiting
     local rm_on_exit=()
+    # snapper cleanup algorithm to specify when creating new snapshots
     local snapper_cleanup=
+    # names of all snapper configs that match snapraid.conf
     local snapper_configs=()
+    # description to specify to snapper when creating new snapshots
     local snapper_description=
+    # snapper userdata key that will be specified to track created snapshots
     local snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     local snapper_userdata="$snapper_userdata_key=created"
+    # directory to create temporary snapraid.conf file in
     local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     must_be_writable_dir "$temp_dir" 'is TMPDIR set correctly?'
+    # --use-filter-disk option argument
     local -i use_filter_disk=0
+    # --use-snapshot-all option argument
     local use_snapshot_all_option=
+    # --use-snapshot option argument
     local use_snapshot_option=
+    # controls verbosity, incremented by -v/--verbose or
+    # decremented by -q/--quiet command line option
     local -i verbose=0
+    # These associative arrays are indexed by snapper configs in the
+    # snapper_configs array, and hold the following data:
+    # pre_snapshot - number of pre snapshot created, to use when creating post
+    # snapper_subvols - subvolume corresponding to the snapper config
+    # use_snapshot - which snapshot should be used for the snapper config
     local -A pre_snapshot snapper_subvols use_snapshot
+
     parse_arguments "$@"
 }
 
