@@ -197,9 +197,9 @@ check_snapraid_arguments() {
 # except use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local i j
-    local -i ret snapper_ret
+    local -i ret=0
+    local -i snapper_ret
     local -a snapshots_to_consider
-    ret=0
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
@@ -289,7 +289,6 @@ debug_trap() {
 # start interactive shell in context of script,
 # with variables and functions exported
 do_shell() (
-    local funcs vars
     # unset variables that will be invalid
     trap - DEBUG
     unset -v debug_fd sed_escape_debug sed_escape_debug_PID
@@ -298,6 +297,7 @@ do_shell() (
     rm_on_exit=()
     # older versions of mawk don't support [:lower:] or [a-z]
     local -r lower=abcdefghijklmnopqrstuvwxyz
+    local funcs vars
     vars="$(declare -p | awk \
         "/^declare -[-Aair]+ ([$lower]|(DEFAULT|E|SNAPRAID)_)/")"
     funcs="$(declare -F | awk "/^declare -f [$lower]/{print \$3}")"
@@ -367,8 +367,7 @@ err_trap() {
     printf '%s: %s: %s failed%s\n' "$my_name" "${1:-0}" \
         "${2:-unknown command}" "${3:+ with exit status $3}"
     local func line script
-    local -i frame
-    frame=0
+    local -i frame=0
     echo 'Call stack:'
     while IFS=' ' read -r line func script ; do
         printf '%s: %s: %s\n' "$script" "$func" "$line"
@@ -398,8 +397,7 @@ exit_trap() {
 # $1 - exit status to exit with
 # $2,$3,... - error message to print as $* after shifting
 fatal_error() {
-    local -i errno
-    errno="${1:-$E_INTERNAL_ERROR}"
+    local -i errno="${1:-$E_INTERNAL_ERROR}"
     shift && true
     IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
     case $errno in
@@ -445,8 +443,7 @@ find_configs() {
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
-    local -a snapper_create_opts
-    snapper_create_opts=( -u "$snapper_userdata" )
+    local snapper_create_opts=( -u "$snapper_userdata" )
     [[ "$snapper_cleanup" ]] &&
         snapper_create_opts+=( -c "$snapper_cleanup" )
     if [[ "$snapper_description" ]] ; then
@@ -509,10 +506,9 @@ find_snapshots() {
 # (and pool directory, if --pool-dir is specified) and run it on snapraid.conf
 generate_temp_snapraid_conf() {
     local match_line new_path sed_find sed_replace i
-    local -a sed_exps
+    local sed_exps=()
     # sed BRE matching data line up to the point where the path starts
     local -r data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
-    sed_exps=()
     if [[ "$pool_dir" ]] ; then
         # shellcheck disable=2016
         # $a is a sed command, not part of a bash variable, so is single quoted
@@ -549,8 +545,8 @@ generate_temp_snapraid_conf() {
 # given the snapraid.conf name for a disk (e.g. d1 in disk d1 /foo/bar),
 # find the corresponding snapper config name, if any
 get_snapper_config_name() {
-    local field1 field2 field3 subvol i
-    subvol=
+    local subvol=
+    local field1 field2 field3 i
     while IFS=$' \t' read -r field1 field2 field3 ; do
         case $field1 in
             data|disk)
@@ -613,45 +609,40 @@ is_btrfs_subvolume() {
 
 main() {
     check_dependencies awk basename dirname grep mktemp rm sed stat tail
-    local config_file debug_fd my_name my_snapper my_snapraid pool_dir \
-        snapper_cleanup snapper_description snapper_userdata \
-        snapper_userdata_key temp_dir use_snapshot_all_option \
-        use_snapshot_option
-    local -i interactive use_filter_disk verbose
-    local -a no_pre_post_option pre_post_configs pre_post_option \
-        rm_on_exit snapper_configs
-    local -A pre_snapshot snapper_subvols use_snapshot
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
-    debug_fd=
-    interactive=0
+    local config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
+    local debug_fd=
+    local -i interactive=0
+    local my_name
     my_name="$(basename -- "${BASH_SOURCE[0]}")"
-    my_snapper=snapper
-    my_snapraid=snapraid
-    no_pre_post_option=()
-    pool_dir=
-    pre_post_option=()
-    rm_on_exit=()
-    snapper_cleanup=
-    snapper_configs=()
-    snapper_description=
-    snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
-    snapper_userdata="$snapper_userdata_key=created"
-    temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
+    local my_snapper=snapper
+    local my_snapraid=snapraid
+    local pool_dir=
+    local pre_post_configs=()
+    local pre_post_option=()
+    local no_pre_post_option=()
+    local rm_on_exit=()
+    local snapper_cleanup=
+    local snapper_configs=()
+    local snapper_description=
+    local snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
+    local snapper_userdata="$snapper_userdata_key=created"
+    local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     must_be_writable_dir "$temp_dir" 'is TMPDIR set correctly?'
-    use_filter_disk=0
-    use_snapshot_all_option=
-    use_snapshot_option=
-    verbose=0
+    local -i use_filter_disk=0
+    local use_snapshot_all_option=
+    local use_snapshot_option=
+    local -i verbose=0
+    local -A pre_snapshot snapper_subvols use_snapshot
     parse_arguments "$@"
 }
 
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
     local i
-    local -i ret snapper_ret
-    ret=0
+    local -i ret=0
+    local -i snapper_ret
     for i in "${snapper_configs[@]}" ; do
         "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
             "${use_snapshot[$i]}" && true
@@ -682,9 +673,9 @@ option_requires_argument() {
 }
 
 parse_arguments() {
-    local command opt_str
+    local opt_str
     local -i length i
-    command=
+    local command=
     while (($# > 0)) ; do
         case $1 in
             # matching a snapraid command means option processing is complete
@@ -896,8 +887,8 @@ run_command() {
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
     check_snapraid_arguments "$@"
-    local temp_config_file
     local -i ret
+    local temp_config_file
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
@@ -913,8 +904,7 @@ run_snapraid() {
             # set up a trap to track whether snapraid sync returned exit status
             # 0 because it completed successfully, or because it was
             # interrupted with ctrl-C, but was able to clean up before exiting
-            local -i interrupted
-            interrupted=0
+            local -i interrupted=0
             trap '((++interrupted)) ; trap - INT TERM QUIT' INT TERM QUIT ;;
     esac
     # Run snapraid
@@ -1063,10 +1053,9 @@ snapper_ls() {
 # Run snapper rollback in each snapper config
 snapper_rollback() {
     local i
-    local -i ret snapper_ret
-    local -a snapper_rollback_opts
-    ret=0
-    snapper_rollback_opts=( -u "$snapper_userdata" )
+    local -i ret=0
+    local -i snapper_ret
+    local snapper_rollback_opts=( -u "$snapper_userdata" )
     [[ "$snapper_cleanup" ]] ||
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
     if [[ "$snapper_description" ]] ; then
@@ -1090,11 +1079,10 @@ snapper_rollback() {
 # time ${use_snapshot[$i]} was created, creating before and after snapshots
 snapper_undochange() {
     local i
-    local -i ret snapper_ret
-    local -a undochange_files undochange_opts
-    ret=0
-    undochange_files=()
-    undochange_opts=()
+    local -i ret=0
+    local -i snapper_ret
+    local undochange_files=()
+    local undochange_opts=()
     create_pre_post_snapshots undochange
     # ensure that -i option, if specified, appears before snapshots
     # and any other arguments specified (except --) appear after snapshots
@@ -1385,8 +1373,8 @@ use_snapshot_fix() {
         return
     fi
     local disk opt_str snapper_config_name
-    local -i configs_found length i
-    configs_found=0
+    local -i length i
+    local -i configs_found=0
     while (($# > 0)) ; do
         disk=
         case $1 in
