@@ -705,6 +705,9 @@ option_requires_argument() {
         fatal_error $E_INVALID_ARGUMENT "Option $1 requires an argument"
 }
 
+# Iterate through command line arguments and process snapraid-btrfs options
+# until a command is reached, then run the specified command, passing through
+# any remaining command line arguments appearing after the command
 parse_arguments() {
     local opt_str
     local -i length i
