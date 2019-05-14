@@ -829,8 +829,8 @@ parse_snapper_ls() {
 # first 2 lines are the header
 NR<=2 { next }
 {
-    # remove spaces used to pad column width
-    gsub(/[ ]+/,"",$1)
+    # remove nonnumeric characters (padding spaces, mount status) from $1
+    gsub(/[^0-9]+/,"",$1)
     if (key == "") {
         # match all snapshots
         print $1
