@@ -393,7 +393,7 @@ fatal_error() {
         $E_INVALID_ARGUMENT)
             printf 'Use %s -h for help\n' "$my_name" ;;
     esac
-    if ((errno > 0)) ; then
+    if ((errno > 0)) && ((errno < 256)) ; then
         exit "$errno"
     else
         printf 'fatal_error called with invalid exit status %s\n' "$1"
