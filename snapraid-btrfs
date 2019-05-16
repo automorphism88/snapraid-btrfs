@@ -792,6 +792,8 @@ parse_arguments() {
     done
     [[ "${command-}" ]] && set -- "$command"
     if (($# > 0)) ; then
+        # These variables are intended to be truly local, unlike the "global"
+        # variables declared as local to main(), so we unset them when done
         unset -v command length opt_str i
         setup_config "$@"
         run_command "$@"
