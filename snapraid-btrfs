@@ -90,20 +90,6 @@ apply_use_snapshot_option() {
     done
 }
 
-# substitute for cat that doesn't invoke any external processes
-cat_builtin() {
-    local buf
-    local -i fd
-    if [[ "${1-}" ]] ; then
-        exec {fd}<"$1"
-    else
-        exec {fd}<&0
-    fi
-    IFS= read -r -d '' -u "$fd" buf && true
-    eval "exec ${fd}<&-"
-    printf '%s' "$buf"
-}
-
 # Sanity checks to run after reading configuration from
 # snapraid.conf and snapper list-configs
 check_config() {
@@ -163,7 +149,7 @@ check_config_file() {
         local new_config_file
         new_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
         rm_on_exit+=( "$new_config_file" )
-        cat_builtin "$config_file" > "$new_config_file"
+        cat < "$config_file" > "$new_config_file"
         echo >> "$new_config_file"
         config_file="$new_config_file"
     fi
@@ -310,7 +296,7 @@ do_shell() (
     set +o errexit
     set +o nounset
     exec "$BASH" --rcfile \
-        <(cat_builtin <<'_EOF_'
+        <(cat <<'_EOF_'
 [[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 eval "$vars"
 IFS=$'\n' export -fn $funcs
@@ -328,7 +314,7 @@ vars() {
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
-    cat_builtin <<__EOF__
+    cat <<__EOF__
 Started bash session in $my_name context.
 Commands:
     quit - exit the interactive shell
@@ -539,7 +525,7 @@ generate_temp_snapraid_conf() {
         fi
     done
     if ((${#sed_exps[@]} == 0)) ; then
-        cat_builtin "$config_file"
+        cat < "$config_file"
     else
         sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
     fi
@@ -611,7 +597,7 @@ is_btrfs_subvolume() {
 }
 
 main() {
-    check_dependencies awk basename dirname grep mktemp rm sed stat tail
+    check_dependencies awk basename cat dirname grep mktemp rm sed stat tail
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
 
@@ -825,7 +811,7 @@ parse_snapper_ls() {
         -v key="${1-}" \
         -v value="${2-}" \
         -v ORS="${3:-$'\n'}" \
-        -f <(cat_builtin <<'_EOF_'
+        -f <(cat <<'_EOF_'
 # read column titles in header, so as to work with different versions of
 # snapper that reorder columns
 NR==1 {
@@ -893,7 +879,7 @@ print_command() {
 }
 
 print_version() {
-    cat_builtin <<_EOF_
+    cat <<_EOF_
 snapraid-btrfs $MY_VERSION
 Copyright (C) 2017-2019 Alex deBeus
 License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
@@ -958,7 +944,7 @@ run_snapraid() {
     generate_temp_snapraid_conf > "$temp_config_file"
     if ((verbose >= 0)) ; then
         echo 'Using snapraid config file:'
-        cat_builtin "$temp_config_file"
+        cat < "$temp_config_file"
     fi
     case $1 in
         fix|touch)
@@ -1249,7 +1235,7 @@ snapshot_not_found() {
 usage() {
     local -r bold=$'\e[1m'
     local -r reset=$'\e[0m'
-    cat_builtin <<_EOF_
+    cat <<_EOF_
 ${bold}Usage: $my_name [options] <command> [arguments]${reset}
 
 Arguments appearing after the command are passed through to snapraid, while
