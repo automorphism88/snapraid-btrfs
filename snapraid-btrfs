@@ -110,7 +110,7 @@ check_config() {
                 if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]] ; then
                     fatal_error $E_INVALID_CONFIG \
                         "$field2 found in subvolume ${snapper_subvols[$i]}" \
-                        "- content files must be in separate subvolume"
+                        " - content files must be in separate subvolume"
                 fi
             done
         fi
@@ -119,15 +119,15 @@ check_config() {
         # Check that .snapshots subvolume exists
         if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
             fatal_error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
-                'is not a valid btrfs subvolume'
+                ' is not a valid btrfs subvolume'
         # Check that we have read permission for snapshots
         # Try a snapper ls first in case ACLs need to be refreshed
         elif ! { "$my_snapper" -c "$i" ls --disable-used-space &> /dev/null &&
                    [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
-            fatal_error $E_NO_PERMISSION 'No read permission for' \
+            fatal_error $E_NO_PERMISSION 'No read permission for ' \
                 "${snapper_subvols[$i]}/.snapshots" \
-                '- is SYNC_ACL set in snapper configuration?'
+                ' - is SYNC_ACL set in snapper configuration?'
         fi
     done
 }
@@ -171,7 +171,7 @@ check_snapraid_arguments() {
         case $1 in
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
                 fatal_error $E_INVALID_ARGUMENT \
-                    'The -c/--conf option' \
+                    'The -c/--conf option ' \
                     'may not be passed through to snapraid' ;;
         esac
         if snapraid_opt_has_arg "$@" ; then
@@ -481,7 +481,7 @@ find_snapshots() {
                 fi ;;
             *)
                 fatal_error $E_INVALID_ARGUMENT \
-                    'Could not understand snapshot selection' \
+                    'Could not understand snapshot selection ' \
                     "${use_snapshot[$i]} for config $i" ;;
         esac
         if ((verbose > 0)) && [[ "${use_snapshot[$i]}" ]] ; then
