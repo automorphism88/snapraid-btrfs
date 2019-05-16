@@ -834,6 +834,12 @@ NR==1 {
         gsub(/[ ]+/,"",$i)
         column[$i] = i
     }
+    # check to make sure we found columns labelled "#" and "Userdata"
+    if (column["#"] == "" || column["Userdata"] == "") {
+        printf("error: expected snapper ls column names not found in input\n",
+               "/dev/stderr")
+        exit 1
+    }
 }
 # snapshot data begins on line 3
 NR>=3 {
