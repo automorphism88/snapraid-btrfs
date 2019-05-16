@@ -1203,7 +1203,7 @@ snapshot_not_found() {
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
-        snapshot_list="$("$my_snapper" -c "$1" ls)"
+        snapshot_list="$("$my_snapper" -c "$1" ls --disable-used-space)"
         printf '%s\n' "$snapshot_list"
     fi
     while true ; do
