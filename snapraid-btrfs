@@ -715,7 +715,7 @@ parse_arguments() {
             touch) ;&
             # Option processing is also complete for other commands which
             # accept arguments
-            l@(ist|s)) ;&
+            ls|list) ;&
             shell) ;&
             snapper) ;&
             undochange)
@@ -897,7 +897,7 @@ run_command() {
             cleanup_snapshots ;;
         config)
             generate_temp_snapraid_conf ;;
-        l@(s|ist))
+        ls|list)
             shift
             snapper_ls "$@" ;;
         rollback)
@@ -1078,9 +1078,9 @@ setup_use_snapshot() {
             use_snapshot_default res ;;&
         shell|snapper)
             use_snapshot_default '' ;;&
-        !(cleanup-all|l@(s|ist)|snapper|touch))
+        !(cleanup-all|ls|list|snapper|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|l@(s|ist)|shell|snapper|touch))
+        !(cleanup?(-all)|ls|list|shell|snapper|touch))
             use_snapshot_check ;;
     esac
 }
