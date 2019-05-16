@@ -1085,20 +1085,21 @@ setup_use_snapshot() {
     esac
 }
 
-# Do a snapper ls in all configs, and if argument is specified, additionally
-# identify which snapshots we found with userdata $snapper_userdata_key=$*
+# Do a snapper ls in all configs, and if argument(s) are specified,
+# additionally identify which snapshots we found with userdata
+# key $snapper_userdata_key matching the arguments
 snapper_ls() {
-    local i
+    local snapshot_list i j
     for i in "${snapper_configs[@]}" ; do
-        printf '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
-        "$my_snapper" -c "$i" ls --disable-used-space
-        if (($# > 0)) ; then
+        snapshot_list="$("$my_snapper" -c "$i" ls --disable-used-space)"
+        printf '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
+        for j in "$@" ; do
             printf 'Snapshots with userdata key %s=%s:\n' \
-                "$snapper_userdata_key" "$*"
-            "$my_snapper" -c "$i" ls --disable-used-space |
-                parse_snapper_ls "$snapper_userdata_key" "$*" ' '
+                "$snapper_userdata_key" "$j"
+            parse_snapper_ls "$snapper_userdata_key" "$j" ' ' \
+                <<< "$snapshot_list"
             echo
-        fi
+        done
     done
     echo
 }
