@@ -1243,6 +1243,7 @@ the following options appearing before the command are interpreted by
 $my_name:
 
   -h, --help                    Show this help
+  -V, --version                 Show version info
   -c, --conf FILE               Specify location of snapraid config file
                                 (default /etc/snapraid.conf)
   -C, --cleanup STR             Specify snapper cleanup algorithm to set for any
@@ -1275,7 +1276,6 @@ $my_name:
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
   -v, --verbose                 Increase verbosity of output
-  -V, --version                 Show version info
   -x, --debug                   Enable debugging output
   --no-pre-post STR             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
