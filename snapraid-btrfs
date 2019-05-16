@@ -793,6 +793,7 @@ parse_arguments() {
     [[ "${command-}" ]] && set -- "$command"
     if (($# > 0)) ; then
         unset -v command length opt_str i
+        setup_config "$@"
         run_command "$@"
     else
         fatal_error $E_INVALID_ARGUMENT "No command specified"
@@ -890,7 +891,6 @@ _EOF_
 
 # Run the command given in $1
 run_command() {
-    setup_config "$@"
     case $1 in
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
