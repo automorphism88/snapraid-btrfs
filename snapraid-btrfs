@@ -636,7 +636,10 @@ main() {
     # description to specify to snapper when creating new snapshots
     local snapper_description=
     # snapper userdata key that will be specified to track created snapshots
+    # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
+    # default userdata to set for newly created snapshots
+    # additional userdata can be specified with the --snapper-userdata option
     local snapper_userdata="$snapper_userdata_key=created"
     # directory to create temporary snapraid.conf file in
     local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
