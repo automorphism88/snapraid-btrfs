@@ -1216,9 +1216,9 @@ snapshot_not_found() {
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
             choice
         case $choice in
-            q)
+            q|Q)
                 exit $E_INTERACTIVE_NO ;;
-            n)
+            n|N)
                 use_snapshot[$1]=new
                 find_snapshots 'interactive prompt'
                 break ;;
