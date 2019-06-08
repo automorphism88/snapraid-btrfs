@@ -828,7 +828,7 @@ NR==1 {
     }
     # check to make sure we found columns labelled "#" and "Userdata"
     if (column["#"] == "" || column["Userdata"] == "") {
-        printf("error: expected snapper ls column names not found in input\n",
+        printf("error: expected snapper ls column names not found\n",
                "/dev/stderr")
         exit 1
     }
