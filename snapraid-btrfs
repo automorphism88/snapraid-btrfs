@@ -34,7 +34,7 @@ readonly E_INVALID_CONFIG=66
 readonly E_NO_PERMISSION=67
 readonly E_SNAPSHOT_NOT_FOUND=68
 readonly E_INTERACTIVE_NO=69
-readonly MY_VERSION='0.9.8'
+readonly MY_VERSION='0.9.8+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
