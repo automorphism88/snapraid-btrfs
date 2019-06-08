@@ -67,8 +67,7 @@ All dependencies are checked on startup, and if any of them are not found,
 `snapraid-btrfs` will display an error message and exit. Note that by default,
 `snapraid-btrfs` will search for `snapraid` and `snapper` in the user's `$PATH`,
 but alternatively, the `--snapper-path` and/or `--snapraid-path` command line
-options can be specified. This is intended to allow another script to be run
-"in-between", providing a sort of "hook" functionality.
+options can be specified.
 
 `#!/bin/bash` is used as the shebang (as the `#!/usr/bin/env bash` trick has
 disadvantages), so if a compatible version of bash cannot be found there, one of
