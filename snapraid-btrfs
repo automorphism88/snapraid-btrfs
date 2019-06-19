@@ -122,7 +122,7 @@ check_config() {
                 ' is not a valid btrfs subvolume'
         # Check that we have read permission for snapshots
         # Try a snapper ls first in case ACLs need to be refreshed
-        elif ! { "$my_snapper" -c "$i" ls --disable-used-space &> /dev/null &&
+        elif ! { "$my_snapper" -c "$i" ls &> /dev/null &&
                    [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
             fatal_error $E_NO_PERMISSION 'No read permission for ' \
@@ -199,7 +199,7 @@ cleanup_snapshots() {
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$("$my_snapper" -c "$i" ls --disable-used-space |
+            <<< "$("$my_snapper" -c "$i" ls |
                 parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
@@ -446,13 +446,11 @@ find_snapshots() {
             0|'')
                 continue ;;
             diff)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" \
-                    ls --disable-used-space |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" diff |
                     tail -n 1)" ;;
             last)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" \
-                    ls --disable-used-space |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
@@ -463,17 +461,15 @@ find_snapshots() {
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
             res)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" \
-                    ls --disable-used-space |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
             sync)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" \
-                    ls --disable-used-space |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             +([[:digit:]]))
-                if ! { "$my_snapper" -c "$i" ls --disable-used-space |
+                if ! { "$my_snapper" -c "$i" ls |
                            parse_snapper_ls |
                            grep -Fx "${use_snapshot[$i]}" > /dev/null ; }
                 then
@@ -1096,7 +1092,7 @@ setup_use_snapshot() {
 snapper_ls() {
     local snapshot_list i j
     for i in "${snapper_configs[@]}" ; do
-        snapshot_list="$("$my_snapper" -c "$i" ls --disable-used-space)"
+        snapshot_list="$("$my_snapper" -c "$i" ls)"
         printf '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
         for j in "$@" ; do
             printf 'Snapshots with userdata key %s=%s:\n' \
@@ -1209,7 +1205,7 @@ snapshot_not_found() {
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
-        snapshot_list="$("$my_snapper" -c "$1" ls --disable-used-space)"
+        snapshot_list="$("$my_snapper" -c "$1" ls)"
         printf '%s\n' "$snapshot_list"
     fi
     while true ; do
