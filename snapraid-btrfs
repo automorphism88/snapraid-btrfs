@@ -1247,7 +1247,7 @@ $my_name:
   -h, --help                    Show this help
   -V, --version                 Show version info
   -c, --conf FILE               Specify location of snapraid config file
-                                (default /etc/snapraid.conf)
+                                (default $DEFAULT_CONFIG_FILE)
   -C, --cleanup STR             Specify snapper cleanup algorithm to set for any
                                 snapshots created (default none)
   -d, --description STR         Specify snapper description to set for any
