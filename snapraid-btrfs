@@ -832,7 +832,7 @@ NR==1 {
 # snapshot data begins on line 3
 NR>=3 {
     # remove nonnumeric characters (padding spaces, mount status) from #
-    gsub(/[^0-9]+/,"",$column["#"])
+    gsub(/[^0123456789]+/,"",$column["#"])
     if (key == "") {
         # match all snapshots
         print $column["#"]
