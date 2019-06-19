@@ -122,8 +122,9 @@ check_config() {
                 ' is not a valid btrfs subvolume'
         # Check that we have read permission for snapshots
         # Try a snapper ls first in case ACLs need to be refreshed
-        elif ! { "$my_snapper" -c "$i" ls &> /dev/null &&
-                   [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
+        elif ! { "$my_snapper" -c "$i" ls \
+            "${snapper_ls_quota_support:+--disable-used-space}" &> /dev/null &&
+                     [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
             fatal_error $E_NO_PERMISSION 'No read permission for ' \
                 "${snapper_subvols[$i]}/.snapshots" \
@@ -199,8 +200,9 @@ cleanup_snapshots() {
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$("$my_snapper" -c "$i" ls |
-                parse_snapper_ls "$snapper_userdata_key" '' ' ')"
+            <<< "$("$my_snapper" -c "$i" ls \
+            "${snapper_ls_quota_support:+--disable-used-space}" |
+            parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
                 verbose_command "$my_snapper" -c "$i" rm "$j"
@@ -446,11 +448,13 @@ find_snapshots() {
             0|'')
                 continue ;;
             diff)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
+                    "${snapper_ls_quota_support:+--disable-used-space}" |
                     parse_snapper_ls "$snapper_userdata_key" diff |
                     tail -n 1)" ;;
             last)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
+                    "${snapper_ls_quota_support:+--disable-used-space}" |
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
@@ -461,15 +465,18 @@ find_snapshots() {
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
             res)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
+                    "${snapper_ls_quota_support:+--disable-used-space}" |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
             sync)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls |
+                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
+                    "${snapper_ls_quota_support:+--disable-used-space}" |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             +([[:digit:]]))
-                if ! { "$my_snapper" -c "$i" ls |
+                if ! { "$my_snapper" -c "$i" ls \
+                    "${snapper_ls_quota_support:+--disable-used-space}" |
                            parse_snapper_ls |
                            grep -Fx "${use_snapshot[$i]}" > /dev/null ; }
                 then
@@ -549,6 +556,10 @@ get_snapper_config_name() {
             break
         fi
     done
+}
+
+get_snapper_version() {
+    "$my_snapper" --version | sed -n '1s/^[^0123456789]*//p'
 }
 
 interactive_ask() {
@@ -631,6 +642,9 @@ main() {
     local snapper_configs=()
     # description to specify to snapper when creating new snapshots
     local snapper_description=
+    # variable to be set if snapper ls supports --disable-used-space
+    # (version 0.6.0 or newer)
+    local snapper_ls_quota_support=
     # snapper userdata key that will be specified to track created snapshots
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
@@ -1044,6 +1058,8 @@ set_option() {
 # which track the configuration
 setup_config() {
     check_dependencies "$my_snapper" "$my_snapraid"
+    version_is_at_least "$(get_snapper_version)" 0.6.0 &&
+        snapper_ls_quota_support=1
     check_config_file
     find_configs
     check_config
@@ -1092,7 +1108,8 @@ setup_use_snapshot() {
 snapper_ls() {
     local snapshot_list i j
     for i in "${snapper_configs[@]}" ; do
-        snapshot_list="$("$my_snapper" -c "$i" ls)"
+        snapshot_list="$("$my_snapper" -c "$i" ls \
+            "${snapper_ls_quota_support:+--disable-used-space}")"
         printf '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
         for j in "$@" ; do
             printf 'Snapshots with userdata key %s=%s:\n' \
@@ -1205,7 +1222,8 @@ snapshot_not_found() {
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
-        snapshot_list="$("$my_snapper" -c "$1" ls)"
+        snapshot_list="$("$my_snapper" -c "$1" ls \
+            "${snapper_ls_quota_support:+--disable-used-space}")"
         printf '%s\n' "$snapshot_list"
     fi
     while true ; do
@@ -1481,6 +1499,34 @@ verbose_command() {
         print_command "$@"
     fi
     "$@" && true
+}
+
+# compares version numbers specified in $1 and $2
+# returns 0 if $1 >= $2
+version_is_at_least() {
+    local -i i
+    local -a ver1 ver2
+    IFS='.' read -r -a ver1 <<< "$1"
+    IFS='.' read -r -a ver2 <<< "$2"
+    # if ver1 contains fewer components than ver2, pad with zeroes
+    for ((i=${#ver1[@]};i<${#ver2[@]};i++)) ; do
+        ver1[i]=0
+    done
+    # ensure version components are suitable for numeric comparison
+    for ((i=0;i<${#ver1[@]};i++)) ; do
+        ver1[i]="${ver1[i]##*([^0123456789])}"
+        ver1[i]="${ver1[i]%%[^0123456789]*}"
+    done
+    # iterate through version components until we find the first difference
+    for ((i=0;i<${#ver2[@]};i++)) ; do
+        if ((ver1[i] > ver2[i])) ; then
+            return 0
+        elif ((ver1[i] < ver2[i])) ; then
+            return 1
+        fi
+    done
+    # if we reach this point, ver1 and ver2 are the same
+    return 0
 }
 
 main "$@"
