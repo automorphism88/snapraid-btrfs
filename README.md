@@ -300,8 +300,18 @@ A: Just complete a full sync, invoking SnapRAID directly and not via
 filesystem, and you can safely delete all snapshots using
 `snapraid-btrfs cleanup-all` and have a regular SnapRAID configuration.
 
-### Q: Under what terms is snapraid-btrfs available?
-A: This program is free software: you can redistribute it and/or modify
+## Known issues
+* SnapRAID won't be able to properly detect the UUID when using a snapshot, so
+it won't be able to use inodes to detect move operations. As a workaround, you
+can temporarily disable `snapraid-btrfs`, either globally by doing a regular
+`snapraid sync`, or for specific drives by doing a `snapraid-btrfs sync` using
+the `-U` option to select snapshot 0 (i.e., the live filesystem, in snapper
+terminology) for the drives in question, moving the files, doing another sync
+with `snapraid-btrfs` disabled, and then reenabling `snapraid-btrfs` by doing a
+normal `snapraid-btrfs sync`.
+
+## License
+This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
@@ -313,13 +323,3 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-## Known issues
-* SnapRAID won't be able to properly detect the UUID when using a snapshot, so
-it won't be able to use inodes to detect move operations. As a workaround, you
-can temporarily disable `snapraid-btrfs`, either globally by doing a regular
-`snapraid sync`, or for specific drives by doing a `snapraid-btrfs sync` using
-the `-U` option to select snapshot 0 (i.e., the live filesystem, in snapper
-terminology) for the drives in question, moving the files, doing another sync
-with `snapraid-btrfs` disabled, and then reenabling `snapraid-btrfs` by doing a
-normal `snapraid-btrfs sync`.
