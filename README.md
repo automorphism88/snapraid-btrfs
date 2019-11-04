@@ -82,7 +82,7 @@ the following workarounds must be used:
 
 ### Q: Why use snapraid-btrfs?
 A: A major disadvantage of SnapRAID is that the parity files are not updated in
-real time. This not only means that new files are not protected until after
+realtime. This not only means that new files are not protected until after
 running `snapraid sync`, but also creates a form of "write hole" where if files
 are modified or deleted, some protection of other files which share the same
 parity block(s) is lost until another sync is completed, since if other files
