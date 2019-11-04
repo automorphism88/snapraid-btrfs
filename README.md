@@ -120,12 +120,12 @@ any data drives that it does not manage.
 
 ### Q: What about the parity drives?
 A: Since the parity files are (or, at least, should be) only written to during
-SnapRAID sync operations, there is no need to snapshot them, as the parity files
-will always correspond with the read-only snapshots they were created from. If a
-sync is interrupted, different sets of snapshots will correspond with different
-portions of the parity file(s), and both sets of snapshots should be retained
-until a sync is completed, at which point all previous snapshots can be safely
-cleaned up. A snapper userdata key is used to keep track of whether a
+`snapraid sync` operations, there is no need to snapshot them, as the parity
+files will always correspond with the read-only snapshots they were created
+from. If a sync is interrupted, different sets of snapshots will correspond with
+different portions of the parity file(s), and both sets of snapshots should be
+retained until a sync is completed, at which point all previous snapshots can be
+safely cleaned up. A snapper userdata key is used to keep track of whether a
 `snapraid sync` run on a set of snapshots completes successfully (i.e., returns
 exit status 0) to ensure that `snapraid-btrfs cleanup` can handle this situation
 properly.
@@ -193,7 +193,7 @@ argument or by setting the `SNAPRAID_CONFIG_FILE` environment variable).
 
 **To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
-SnapRAID-btrfs in your snapper configurations.** You may wish to make a snapper
+snapraid-btrfs in your snapper configurations.** You may wish to make a snapper
 template with the options you want to use for your SnapRAID drive configurations
 and set these variables at that level. For further details, see the snapper
 documentation.
