@@ -183,6 +183,16 @@ check_snapraid_arguments() {
     done
 }
 
+cleanup_coproc() {
+    eval "${debug_fd:+exec ${debug_fd}>&-}"
+    eval "${sed_escape_debug[1]:+exec ${sed_escape_debug[1]}>&-}"
+    # shellcheck disable=2154
+    # Shellcheck doesn't understand named coprocesses
+    # See https://github.com/koalaman/shellcheck/issues/1066
+    eval "${sed_escape_debug_PID:+wait $sed_escape_debug_PID}"
+    debug_fd=
+}
+
 # In each config, delete snapshots with userdata key $snapper_userdata_key
 # except use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
@@ -338,6 +348,7 @@ do_snapper() {
 
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
+    [[ "${debug_fd-}" ]] && cleanup_coproc
     coproc sed_escape_debug {
         sed -e $'s/\e/\e[7m\\\\e\e[0m/g' \
             -e $'s/\r/\e[7m\\\\r\e[0m/g' \
@@ -375,13 +386,7 @@ exit_trap() {
         rm -f -- "${rm_on_exit[@]}" && true
     fi
     trap - DEBUG
-    eval "${debug_fd:+exec ${debug_fd}>&-}"
-    eval "${sed_escape_debug[1]:+exec ${sed_escape_debug[1]}>&-}"
-    # shellcheck disable=2154
-    # Shellcheck doesn't understand named coprocesses
-    # See https://github.com/koalaman/shellcheck/issues/1066
-    eval "${sed_escape_debug_PID:+wait $sed_escape_debug_PID}"
-    unset -v debug_fd
+    cleanup_coproc
     return 0
 }
 
