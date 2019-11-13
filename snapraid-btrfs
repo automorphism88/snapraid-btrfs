@@ -606,8 +606,6 @@ is_btrfs_subvolume() {
 
 main() {
     check_dependencies awk basename cat dirname grep mktemp rm sed stat tail
-    trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
-    trap 'exit_trap' EXIT
 
     # Declare "global" variables as local to main since they will be
     # accessible from any functions called from main
@@ -671,6 +669,8 @@ main() {
     # use_snapshot - which snapshot should be used for the snapper config
     local -A pre_snapshot snapper_subvols use_snapshot
 
+    trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
+    trap 'exit_trap' EXIT
     parse_arguments "$@"
 }
 
