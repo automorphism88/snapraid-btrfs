@@ -480,7 +480,7 @@ find_snapshots() {
                     "${snapper_ls_quota_support:+--disable-used-space}" |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
-            +([[:digit:]]))
+            +([0123456789]))
                 if ! { "$my_snapper" -c "$i" ls \
                     "${snapper_ls_quota_support:+--disable-used-space}" |
                            parse_snapper_ls |
@@ -1242,7 +1242,7 @@ snapshot_not_found() {
                 use_snapshot[$1]=new
                 find_snapshots 'interactive prompt'
                 break ;;
-            +([[:digit:]]))
+            +([0123456789]))
                 if [[ "$choice" = 0 ]] ||
                        { parse_snapper_ls <<< "$snapshot_list" |
                              grep -Fx "$choice" > /dev/null ; }
