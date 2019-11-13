@@ -575,9 +575,9 @@ interactive_ask() {
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
-            y|Y)
+            [yY]?([eE][sS]))
                 break ;;
-            n|N)
+            [nN]?([oO]))
                 exit $E_INTERACTIVE_NO ;;
             *)
                 echo 'Invalid choice. Please enter y or n.' ;;
