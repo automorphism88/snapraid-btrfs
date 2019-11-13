@@ -414,6 +414,7 @@ find_configs() {
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
         # escape grep ERE metacharacters in subvolume path
+        # shellcheck disable=2001
         subvol_grep="$(sed 's/[].*+?{}()|$^\[]/\\&/g' <<< "$subvol")"
         # allow trailing slash and/or \r character
         if grep -Ex "$data_line$subvol_grep"$'[/]?[\r]?' \
