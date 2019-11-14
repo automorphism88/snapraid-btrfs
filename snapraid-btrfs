@@ -255,8 +255,8 @@ create_pre_post_snapshots() {
             snapper_cmd+=( -t post --pre-number "${pre_snapshot[$i]}" )
             "${snapper_cmd[@]}" && true
         else
-            # We haven't created pre snapshots yet, so create them and store the
-            # snapshot numbers from snapper -p option in ${pre_snapshot[@]}
+            # We haven't created pre snapshots yet, so create them and store
+            # the snapshot numbers from snapper -p option in ${pre_snapshot[@]}
             if [[ "$snapper_description" ]] ; then
                 snapper_cmd+=( -d "$snapper_description" )
             else
@@ -651,7 +651,8 @@ main() {
     local snapper_ls_quota_support=
     # snapper userdata key that will be specified to track created snapshots
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
-    local snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
+    local \
+        snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     # default userdata to set for newly created snapshots
     # additional userdata can be specified with the --snapper-userdata option
     local snapper_userdata="$snapper_userdata_key=created"
@@ -1270,13 +1271,14 @@ $my_name:
   -V, --version                 Show version info
   -c, --conf FILE               Specify location of snapraid config file
                                 (default $DEFAULT_CONFIG_FILE)
-  -C, --cleanup STR             Specify snapper cleanup algorithm to set for any
-                                snapshots created (default none)
+  -C, --cleanup STR             Specify snapper cleanup algorithm to set for
+                                any snapshots created (default none)
   -d, --description STR         Specify snapper description to set for any
                                 snapshots created
   -i, --interactive             Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
-                                cleanup(-all), rollback, or undochange commands)
+                                cleanup(-all), rollback, or undochange
+                                commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
   -u, --use-snapshot-all STR    Use one of the following arguments:
                                     diff - Use last snapshot a diff was
@@ -1334,8 +1336,9 @@ $my_name:
 
 Commands are either one of the following snapraid commands:
   'check'|'diff'|'pool'|'scrub'|'sync':
-        Run the snapraid command given, replacing data drives in snapraid config
-        file that have corresponding snapper configs with read-only snapshots.
+        Run the snapraid command given, replacing data drives in snapraid
+        config file that have corresponding snapper configs with read-only
+        snapshots.
   'fix'|'touch':
         Run the snapraid command given, creating a set of pre/post snapshots
         before and after (for fix, if the snapraid -d/--filter-disk option is
