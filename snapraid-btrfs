@@ -122,8 +122,7 @@ check_config() {
                 ' is not a valid btrfs subvolume'
         # Check that we have read permission for snapshots
         # Try a snapper ls first in case ACLs need to be refreshed
-        elif ! { "$my_snapper" -c "$i" ls \
-            "${snapper_ls_quota_support:+--disable-used-space}" &> /dev/null &&
+        elif ! { snapper_ls_wrapper "$i" &> /dev/null &&
                      [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
             fatal_error $E_NO_PERMISSION 'No read permission for ' \
@@ -210,8 +209,7 @@ cleanup_snapshots() {
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$("$my_snapper" -c "$i" ls \
-            "${snapper_ls_quota_support:+--disable-used-space}" |
+            <<< "$(snapper_ls_wrapper "$i" |
             parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
@@ -454,13 +452,11 @@ find_snapshots() {
             0|'')
                 continue ;;
             diff)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
-                    "${snapper_ls_quota_support:+--disable-used-space}" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
                     parse_snapper_ls "$snapper_userdata_key" diff |
                     tail -n 1)" ;;
             last)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
-                    "${snapper_ls_quota_support:+--disable-used-space}" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
@@ -471,18 +467,15 @@ find_snapshots() {
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
             res)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
-                    "${snapper_ls_quota_support:+--disable-used-space}" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
             sync)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" ls \
-                    "${snapper_ls_quota_support:+--disable-used-space}" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             +([0123456789]))
-                if ! { "$my_snapper" -c "$i" ls \
-                    "${snapper_ls_quota_support:+--disable-used-space}" |
+                if ! { snapper_ls_wrapper "$i" |
                            parse_snapper_ls |
                            grep -Fx "${use_snapshot[$i]}" > /dev/null ; }
                 then
@@ -1115,8 +1108,7 @@ setup_use_snapshot() {
 snapper_ls() {
     local snapshot_list i j
     for i in "${snapper_configs[@]}" ; do
-        snapshot_list="$("$my_snapper" -c "$i" ls \
-            "${snapper_ls_quota_support:+--disable-used-space}")"
+        snapshot_list="$(snapper_ls_wrapper "$i")"
         printf '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
         for j in "$@" ; do
             printf 'Snapshots with userdata key %s=%s:\n' \
@@ -1127,6 +1119,14 @@ snapper_ls() {
         done
     done
     echo
+}
+
+# Run snapper ls on config $1, using --disable-used-space option if supported
+# by snapper version in use
+snapper_ls_wrapper() {
+    config_must_exist "$1"
+    "$my_snapper" -c "$1" ls \
+        "${snapper_ls_quota_support:+--disable-used-space}"
 }
 
 # Run snapper rollback in each snapper config
@@ -1229,8 +1229,7 @@ snapshot_not_found() {
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
-        snapshot_list="$("$my_snapper" -c "$1" ls \
-            "${snapper_ls_quota_support:+--disable-used-space}")"
+        snapshot_list="$(snapper_ls_wrapper "$1")"
         printf '%s\n' "$snapshot_list"
     fi
     while true ; do
