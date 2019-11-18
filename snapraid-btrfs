@@ -1058,6 +1058,7 @@ set_option() {
 # which track the configuration
 setup_config() {
     check_dependencies "$my_snapper" "$my_snapraid"
+    readonly my_snapper my_snapraid
     version_is_at_least "$(get_snapper_version)" 0.6.0 &&
         snapper_ls_quota_support=1
     check_config_file
