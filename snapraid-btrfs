@@ -395,7 +395,7 @@ fatal_error() {
     shift && true
     IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
     case $errno in
-        $E_INVALID_ARGUMENT)
+        "$E_INVALID_ARGUMENT")
             printf 'Use %s -h for help\n' "$my_name" ;;
     esac
     if ((errno > 0)) && ((errno < 256)) ; then
