@@ -1271,16 +1271,16 @@ $my_name:
   -V, --version                 Show version info
   -c, --conf FILE               Specify location of snapraid config file
                                 (default $DEFAULT_CONFIG_FILE)
-  -C, --cleanup STR             Specify snapper cleanup algorithm to set for
+  -C, --cleanup ARG             Specify snapper cleanup algorithm to set for
                                 any snapshots created (default none)
-  -d, --description STR         Specify snapper description to set for any
+  -d, --description ARG         Specify snapper description to set for any
                                 snapshots created
   -i, --interactive             Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
                                 cleanup(-all), rollback, or undochange
                                 commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
-  -u, --use-snapshot-all STR    Use one of the following arguments:
+  -u, --use-snapshot-all ARG    Use one of the following arguments:
                                     diff - Use last snapshot a diff was
                                            completed with
                                     last - Use last snapshots created
@@ -1296,24 +1296,24 @@ $my_name:
                                     'last' for config
                                     'res' for resume
                                     'sync' for all other readonly commands
-  -U, --use-snapshot STR        Specify snapshots to use for specific snapper
+  -U, --use-snapshot ARG        Specify snapshots to use for specific snapper
                                 configurations, using the snapper config name
                                 followed by an equals sign. Multiple
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
   -v, --verbose                 Increase verbosity of output
   -x, --debug                   Enable debugging output
-  --no-pre-post STR             Don't create pre/post snapshots for the
+  --no-pre-post ARG             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
   --pool-dir DIR                Create pool symlinks in DIR (defaults to
                                 directory specified in snapraid config file)
-  --pre-post STR                Create pre/post snapshots only for the
+  --pre-post ARG                Create pre/post snapshots only for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
   --snapper-path PATH           Path to the snapper executable (defaults to
                                 first found in \$PATH)
-  --snapper-userdata STR        Specify snapper userdata to set for any
+  --snapper-userdata ARG        Specify snapper userdata to set for any
                                 snapshots created in addition to the
                                 $my_name attribute, which is set by
                                 default and cannot be changed. Argument should
