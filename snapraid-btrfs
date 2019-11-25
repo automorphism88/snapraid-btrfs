@@ -670,47 +670,10 @@ main() {
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
-    parse_arguments "$@"
-}
 
-# set $snapper_userdata_key userdata key to $1
-modify_userdata() {
-    local i
-    local -i ret=0
-    local -i snapper_ret
-    for i in "${snapper_configs[@]}" ; do
-        "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
-            "${use_snapshot[$i]}" && true
-        snapper_ret=$?
-        if ((snapper_ret != 0)) ; then
-            ret=$snapper_ret
-        fi
-    done
-    return $ret
-}
-
-must_be_executable() {
-    [[ -x "$1" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
-}
-
-must_be_writable_dir() {
-    [[ -d "$1" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
-    [[ -w "$1" ]] ||
-        fatal_error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
-}
-
-# call this to make sure $2 is defined when user specifies option requring it
-option_requires_argument() {
-    [[ "${2-}" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "Option $1 requires an argument"
-}
-
-# Iterate through command line arguments and process snapraid-btrfs options
-# until a command is reached, then run the specified command, passing through
-# any remaining command line arguments appearing after the command
-parse_arguments() {
+    # Iterate through command line arguments and process snapraid-btrfs options
+    # until a command is reached, then run the specified command, passing
+    # through any remaining command line arguments appearing after the command
     local opt_str
     local -i length i
     local command=
@@ -813,6 +776,40 @@ parse_arguments() {
     else
         fatal_error $E_INVALID_ARGUMENT "No command specified"
     fi
+}
+
+# set $snapper_userdata_key userdata key to $1
+modify_userdata() {
+    local i
+    local -i ret=0
+    local -i snapper_ret
+    for i in "${snapper_configs[@]}" ; do
+        "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
+            "${use_snapshot[$i]}" && true
+        snapper_ret=$?
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
+    done
+    return $ret
+}
+
+must_be_executable() {
+    [[ -x "$1" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
+}
+
+must_be_writable_dir() {
+    [[ -d "$1" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
+    [[ -w "$1" ]] ||
+        fatal_error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
+}
+
+# call this to make sure $2 is defined when user specifies option requring it
+option_requires_argument() {
+    [[ "${2-}" ]] ||
+        fatal_error $E_INVALID_ARGUMENT "Option $1 requires an argument"
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
