@@ -331,7 +331,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    declare -p $(declare-p_vars)
+    IFS= declare -p $(declare-p_vars)
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
