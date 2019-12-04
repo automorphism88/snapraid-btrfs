@@ -1139,7 +1139,7 @@ snapper_ls() {
 }
 
 # Run snapper ls on config $1, using --disable-used-space option if supported
-# by snapper version in use
+# by snapper version in use and if --used-space option wasn't specified
 snapper_ls_wrapper() {
     "$my_snapper" -c "$1" ls \
         "${snapper_ls_disable_used_space:+--disable-used-space}"
