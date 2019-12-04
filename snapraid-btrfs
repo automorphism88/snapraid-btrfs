@@ -321,7 +321,7 @@ do_shell() (
 [[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 eval "$vars"
 IFS=$'\n' export -fn $funcs
-IFS=$'\n' export -n BASHOPTS SHELLOPTS
+export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
 exit() {
     printf 'Hooked exit command with status %s\n' "${1:-$?}"
