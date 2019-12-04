@@ -1425,7 +1425,6 @@ Environment variables:
   TMPDIR -
         Directory to create temporary snapraid.conf file in. If unset, it
         defaults to $DEFAULT_TMPDIR.
-
 _EOF_
 }
 
