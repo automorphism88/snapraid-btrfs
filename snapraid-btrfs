@@ -651,8 +651,8 @@ main() {
     # description to specify to snapper when creating new snapshots
     local snapper_description=
     # variable to be set if snapper ls supports --disable-used-space
-    # (version 0.6.0 or newer)
-    local snapper_ls_quota_support=
+    # (version 0.6.0 or newer) and --used-space option is not specified
+    local snapper_ls_disable_used_space=
     # snapper userdata key that will be specified to track created snapshots
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local \
@@ -669,6 +669,8 @@ main() {
     local use_snapshot_all_option=
     # --use-snapshot option argument
     local use_snapshot_option=
+    # variable to be set if --used-space option is specified
+    local used_space_option=
     # controls verbosity, incremented by -v/--verbose or
     # decremented by -q/--quiet command line option
     local -i verbose=0
@@ -726,6 +728,7 @@ main() {
             --interactive) ;&
             --quiet) ;&
             --use-filter-disk) ;&
+            --used-space) ;&
             --verbose) ;&
             --version)
                 set_option "$1"
@@ -1060,6 +1063,8 @@ set_option() {
             my_snapraid="$2" ;;
         --use-filter-disk)
             ((++use_filter_disk)) ;;
+        --used-space)
+            used_space_option=1 ;;
         *)
             invalid_argument "$1" ;;
     esac
@@ -1071,8 +1076,9 @@ set_option() {
 setup_config() {
     check_dependencies "$my_snapper" "$my_snapraid"
     readonly my_snapper my_snapraid
-    version_is_at_least "$(get_snapper_version)" 0.6.0 &&
-        snapper_ls_quota_support=1
+    [[ -z "$used_space_option" ]] &&
+        version_is_at_least "$(get_snapper_version)" 0.6.0 &&
+        snapper_ls_disable_used_space=1
     check_config_file
     find_configs
     check_config
@@ -1139,7 +1145,7 @@ snapper_ls() {
 snapper_ls_wrapper() {
     config_must_exist "$1"
     "$my_snapper" -c "$1" ls \
-        "${snapper_ls_quota_support:+--disable-used-space}"
+        "${snapper_ls_disable_used_space:+--disable-used-space}"
 }
 
 # Run snapper rollback in each snapper config
@@ -1339,6 +1345,8 @@ $my_name:
                                 by default for all disks specified as arguments
                                 to the --filter-disk option, and the last
                                 synced snapshot for all disks not so specified.
+  --used-space                  Don't pass the --disable-used-space option to
+                                snapper ls.
 
   NOTE: The snapraid -c/--conf option will not work unless placed before the
   command, allowing it to be interpreted as a $my_name option. Snapraid
