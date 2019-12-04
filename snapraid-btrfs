@@ -702,8 +702,12 @@ main() {
             config) ;&
             create) ;&
             rollback)
-                command="$1"
-                shift ;;
+                if [[ -z "$command" ]] ; then
+                    command="$1"
+                    shift
+                else
+                    invalid_argument "$1"
+                fi ;;
             # snapraid-btrfs options specified before command
             # long form options that don't take arguments
             --debug) ;&
