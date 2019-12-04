@@ -392,18 +392,18 @@ exit_trap() {
 # $2,$3,... - error message to print as $* after shifting
 fatal_error() {
     local -i errno="${1:-$E_INTERNAL_ERROR}"
-    shift && true
+    if ((errno > 0)) && ((errno < 256)) ; then
+        shift && true
+    else
+        printf 'fatal_error called with invalid exit status %s\n' "$1"
+        errno="$E_INTERNAL_ERROR"
+    fi
     IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
     case $errno in
         "$E_INVALID_ARGUMENT")
             printf 'Use %s -h for help\n' "$my_name" ;;
     esac
-    if ((errno > 0)) && ((errno < 256)) ; then
-        exit "$errno"
-    else
-        printf 'fatal_error called with invalid exit status %s\n' "$1"
-        exit "$E_INTERNAL_ERROR"
-    fi
+    exit "$errno"
 } >&2
 
 # compare output of snapper list-configs with snapraid.conf
