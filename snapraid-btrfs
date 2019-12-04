@@ -310,17 +310,17 @@ do_shell() (
     local funcs vars
     # shellcheck disable=2046
     vars="$(IFS= declare -p $(declare-p_vars))"
-    funcs="$(declare -F | awk "/^declare -f [$LOWER]/{print \$3}")"
+    funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
-    IFS=$'\n' export -f $funcs
+    IFS= export -f $funcs
     set +o errexit
     set +o nounset
     exec "$BASH" --rcfile \
         <(cat <<'_EOF_'
 [[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
 eval "$vars"
-IFS=$'\n' export -fn $funcs
+IFS= export -fn $funcs
 export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
 exit() {
