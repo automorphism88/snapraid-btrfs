@@ -291,7 +291,7 @@ BEGIN {
     ORS = " "
 }
 /^declare -[-Aair]+ \
-([$LOWER]|LOWER|BASH|FUNCNAME|PIPESTATUS|(E|MY|SNAPRAID)_)/ {
+([$LOWER]|BASH|(E|MY|SNAPRAID)_|(FUNCNAME|LOWER|PIPESTATUS)=)/ {
     print \$3
 }
 _EOF_
