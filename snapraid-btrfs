@@ -34,6 +34,7 @@ readonly E_INVALID_CONFIG=66
 readonly E_NO_PERMISSION=67
 readonly E_SNAPSHOT_NOT_FOUND=68
 readonly E_INTERACTIVE_NO=69
+readonly LOWER=abcdefghijklmnopqrstuvwxyz
 readonly MY_VERSION='0.9.9+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
@@ -270,20 +271,32 @@ create_pre_post_snapshots() {
 # DEBUG is trapped in enable_debug_mode()
 debug_trap() {
     local -r div='----------------------------------------'
-    local line
+    local vars
+    vars="$(declare-p_vars)"
     printf '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
     shift 3
     printf '%s' 'set -- '
     (($# > 0)) && printf '%q ' "$@"
     echo
-    while IFS= read -r line ; do
-        case $line in
-            'declare -'[-Aai]' '@(@([[:lower:]]|BASH)*|FUNCNAME|PIPESTATUS))
-                printf '%s\n' "$line" ;;
-        esac
-    done < <(declare -p)
+    # shellcheck disable=2086
+    IFS= declare -p $vars
     printf '%s\n' "$div"
 } >&"$debug_fd"
+
+# get variables to pass as arguments to declare -p
+declare-p_vars() {
+    declare -p | awk -f <(cat <<_EOF_
+BEGIN {
+    FS = "[ \t=]+"
+    ORS = " "
+}
+/^declare -[-Aair]+ \
+([$LOWER]|LOWER|BASH|FUNCNAME|PIPESTATUS|(E|MY|SNAPRAID)_)/ {
+    print \$3
+}
+_EOF_
+                         )
+}
 
 # start interactive shell in context of script,
 # with variables and functions exported
@@ -294,12 +307,10 @@ do_shell() (
     # shellcheck disable=2030
     # this is not intended to modify ${rm_on_exit[@]} outside the subshell
     rm_on_exit=()
-    # older versions of mawk don't support [:lower:] or [a-z]
-    local -r lower=abcdefghijklmnopqrstuvwxyz
     local funcs vars
-    vars="$(declare -p | awk \
-        "/^declare -[-Aair]+ ([$lower]|(DEFAULT|E|SNAPRAID)_)/")"
-    funcs="$(declare -F | awk "/^declare -f [$lower]/{print \$3}")"
+    # shellcheck disable=2046
+    vars="$(IFS= declare -p $(declare-p_vars))"
+    funcs="$(declare -F | awk "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
     IFS=$'\n' export -f $funcs
@@ -320,7 +331,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    declare -p | awk "/^declare -[-Aair]+ [$lower]/"
+    declare -p $(declare-p_vars)
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
