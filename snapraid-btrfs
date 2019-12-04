@@ -1412,9 +1412,9 @@ or one of the following $my_name specific commands:
 Environment variables:
   DEBUG_FD -
         File descriptor to send debug output to if -x/--debug is used. For
-        example, running "DEBUG_FD=3 snapraid-btrfs -xh 3>/tmp/debug" would
+        example, running "DEBUG_FD=3 $my_name -xh 3>/tmp/debug" would
         send debug output to /tmp/debug while displaying only the normal output
-        of "snapraid-btrfs -h" on the console. If unset, the default behavior
+        of "$my_name -h" on the console. If unset, the default behavior
         is to send debug output to stderr.
   SNAPRAID_CONFIG_FILE -
         Default location of the snapraid.conf file if -c/--conf option is not
