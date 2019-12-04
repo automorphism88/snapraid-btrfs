@@ -278,7 +278,7 @@ debug_trap() {
     echo
     while IFS= read -r line ; do
         case $line in
-            'declare -'[-aAi]' '@(@([[:lower:]]|BASH)*|FUNCNAME|PIPESTATUS))
+            'declare -'[-Aai]' '@(@([[:lower:]]|BASH)*|FUNCNAME|PIPESTATUS))
                 printf '%s\n' "$line" ;;
         esac
     done < <(declare -p)
@@ -568,9 +568,9 @@ interactive_ask() {
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
         case $choice in
-            [yY]?([eE][sS]))
+            [Yy]?([Ee][Ss]))
                 break ;;
-            [nN]?([oO]))
+            [Nn]?([Oo]))
                 exit $E_INTERACTIVE_NO ;;
             *)
                 echo 'Invalid choice. Please enter y or n.' ;;
@@ -742,13 +742,13 @@ main() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         # short options that don't take arguments
-                        [hiqvVx])
+                        [Vhiqvx])
                             set_option "-${opt_str:$i:1}"
                             if ((i == length-1)) ; then
                                 shift
                             fi ;;
                         # short options that require arguments
-                        [cCduU])
+                        [CUcdu])
                             if ((i == length-1)) ; then
                                 set_option "-${opt_str:$i:1}" "${2-}"
                                 shift 2 || shift
@@ -1002,7 +1002,7 @@ set_option() {
         --snapper-@(path|userdata)) ;&
         --snapraid-path) ;&
         --use-snapshot?(-all)) ;&
-        -[cCduU])
+        -[CUcdu])
             option_requires_argument "$@" ;;&
         -c|--conf)
             config_file="$2" ;;
@@ -1234,9 +1234,9 @@ snapshot_not_found() {
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
             choice
         case $choice in
-            [qQ]?([uU][iI][tT]))
+            [Qq]?([Uu][Ii][Tt]))
                 exit $E_INTERACTIVE_NO ;;
-            [nN]?([eE][wW]))
+            [Nn]?([Ee][Ww]))
                 use_snapshot[$1]=new
                 find_snapshots 'interactive prompt'
                 break ;;
