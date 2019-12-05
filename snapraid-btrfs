@@ -1555,6 +1555,7 @@ version_is_at_least() {
         fi
     done
     # if we reach this point, ver1 and ver2 are the same
+    # (possibly with ver1 having extra components)
     return 0
 }
 
