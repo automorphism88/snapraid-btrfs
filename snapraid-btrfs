@@ -141,7 +141,10 @@ check_config_file() {
     elif ((verbose > 0)) ; then
         printf 'Using snapraid config file %s\n' "$config_file"
     fi
-    # check for newline at end of snapraid.conf file
+    # check for trailing newline in snapraid.conf
+    # Lack of a trailing newline will cause problems when parsing the config
+    # file with read. Therefore, if there is no trailing newline, create a
+    # temporary config file with a newline added and use that instead.
     if [[ "$(tail -c 1 "$config_file")" ]] ; then
         if ((verbose >= 0)) ; then
             printf '%s: Warning: No newline at end of %s\n' "$my_name" \
