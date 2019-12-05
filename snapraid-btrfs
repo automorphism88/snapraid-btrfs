@@ -1032,13 +1032,13 @@ set_option() {
         -i|--interactive)
             ((++interactive)) ;;
         -q|--quiet)
-            ((--verbose)) ;;
+            ((--verbose)) && true ;;
         -u|--use-snapshot-all)
             use_snapshot_all_option="$2" ;;
         -U|--use-snapshot)
             use_snapshot_option="$2" ;;
         -v|--verbose)
-            ((++verbose)) ;;
+            ((++verbose)) && true ;;
         -V|--version)
             print_version
             exit ;;
