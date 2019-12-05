@@ -287,7 +287,13 @@ debug_trap() {
 # get variable names to pass as arguments to declare -p
 declare-p_vars() {
     while (($# > 0)) ; do
-        declare -p | awk -f <(cat <<_EOF_
+        declare -p | declare-p_vars_awk "$1"
+        shift
+    done
+}
+
+declare-p_vars_awk() {
+    awk -f <(cat <<_EOF_
 BEGIN {
     FS = "[ \t=]+"
     ORS = " "
@@ -296,9 +302,7 @@ BEGIN {
     print \$3
 }
 _EOF_
-                             )
-        shift
-    done
+            )
 }
 
 declare-p_vars_debug() {
