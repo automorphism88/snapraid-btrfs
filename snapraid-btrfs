@@ -53,7 +53,7 @@ shopt -s extquote
 shopt -u nocasematch
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
-shopt -s lastpipe &> /dev/null && true
+shopt -s lastpipe &> /dev/null || true
 
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
@@ -252,7 +252,7 @@ create_pre_post_snapshots() {
                 snapper_cmd+=( -d "$my_name post-$1" )
             fi
             snapper_cmd+=( -t post --pre-number "${pre_snapshot[$i]}" )
-            "${snapper_cmd[@]}" && true
+            "${snapper_cmd[@]}" || true
         else
             # We haven't created pre snapshots yet, so create them and store
             # the snapshot numbers from snapper -p option in ${pre_snapshot[@]}
@@ -390,7 +390,7 @@ exit_trap() {
     # shellcheck disable=2031
     # ${rm_on_exit[@]} is intended to be modified in a subshell in do_shell()
     if ((${#rm_on_exit[@]} > 0)) ; then
-        rm -f -- "${rm_on_exit[@]}" && true
+        rm -f -- "${rm_on_exit[@]}" || true
     fi
     trap - DEBUG
     cleanup_coproc
@@ -402,7 +402,7 @@ exit_trap() {
 fatal_error() {
     local -i errno="${1:-$E_INTERNAL_ERROR}"
     if ((errno > 0)) && ((errno < 256)) ; then
-        shift && true
+        shift || true
     else
         printf 'fatal_error called with invalid exit status %s\n' "$1"
         errno="$E_INTERNAL_ERROR"
@@ -1032,13 +1032,13 @@ set_option() {
         -i|--interactive)
             ((++interactive)) ;;
         -q|--quiet)
-            ((--verbose)) && true ;;
+            ((--verbose)) || true ;;
         -u|--use-snapshot-all)
             use_snapshot_all_option="$2" ;;
         -U|--use-snapshot)
             use_snapshot_option="$2" ;;
         -v|--verbose)
-            ((++verbose)) && true ;;
+            ((++verbose)) || true ;;
         -V|--version)
             print_version
             exit ;;
