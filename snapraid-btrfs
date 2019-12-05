@@ -301,12 +301,10 @@ _EOF_
     done
 }
 
-# get variable names to pass as arguments to declare -p in debug_trap
 declare-p_vars_debug() {
     declare-p_vars "([$LOWER]|BASH|(E|MY|SNAPRAID)_|(FUNCNAME|PIPESTATUS)=)"
 }
 
-# get variable names to pass as arguments to declare -p in do_shell
 declare-p_vars_shell() {
     declare-p_vars "([$LOWER]|LOWER=|(E|MY|SNAPRAID)_)"
 }
@@ -318,7 +316,6 @@ do_shell() (
     trap - DEBUG
     unset -v debug_fd sed_escape_debug sed_escape_debug_PID
     # shellcheck disable=2030
-    # this is not intended to modify ${rm_on_exit[@]} outside the subshell
     rm_on_exit=()
     local funcs vars
     # shellcheck disable=2046
@@ -527,7 +524,6 @@ generate_temp_snapraid_conf() {
     local -r data_line=$'^[ \t]*data[ \t]\{1,\}[^ \t]\{1,\}[ \t]\{1,\}'
     if [[ "$pool_dir" ]] ; then
         # shellcheck disable=2016
-        # $a is a sed command, not part of a bash variable, so is single quoted
         sed_exps+=( $'/^[ \t]*pool[ \t]\{1,\}/d'
                     '$apool '"$pool_dir" )
     fi
