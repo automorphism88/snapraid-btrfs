@@ -404,7 +404,6 @@ err_trap() {
 # Removes rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
     # shellcheck disable=2031
-    # ${rm_on_exit[@]} is intended to be modified in a subshell in do_shell()
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" || true
     fi
