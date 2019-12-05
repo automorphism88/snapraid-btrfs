@@ -280,23 +280,35 @@ debug_trap() {
     (($# > 0)) && printf '%q ' "$@"
     echo
     # shellcheck disable=2046
-    IFS= declare -p $(declare-p_vars)
+    IFS= declare -p $(declare-p_vars_debug)
     printf '%s\n' "$div"
 } >&"$debug_fd"
 
-# get variables to pass as arguments to declare -p
+# get variable names to pass as arguments to declare -p
 declare-p_vars() {
-    declare -p | awk -f <(cat <<_EOF_
+    while (($# > 0)) ; do
+        declare -p | awk -f <(cat <<_EOF_
 BEGIN {
     FS = "[ \t=]+"
     ORS = " "
 }
-/^declare -[-Aair]+ \
-([$LOWER]|BASH|(E|MY|SNAPRAID)_|(FUNCNAME|LOWER|PIPESTATUS)=)/ {
+/^declare -[-Aair]+ $1/ {
     print \$3
 }
 _EOF_
-                         )
+                             )
+        shift
+    done
+}
+
+# get variable names to pass as arguments to declare -p in debug_trap
+declare-p_vars_debug() {
+    declare-p_vars "([$LOWER]|BASH|(E|MY|SNAPRAID)_|(FUNCNAME|PIPESTATUS)=)"
+}
+
+# get variable names to pass as arguments to declare -p in do_shell
+declare-p_vars_shell() {
+    declare-p_vars "([$LOWER]|LOWER=|(E|MY|SNAPRAID)_)"
 }
 
 # start interactive shell in context of script,
@@ -310,7 +322,7 @@ do_shell() (
     rm_on_exit=()
     local funcs vars
     # shellcheck disable=2046
-    vars="$(IFS= declare -p $(declare-p_vars))"
+    vars="$(IFS= declare -p $(declare-p_vars_shell))"
     funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
@@ -332,7 +344,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    IFS= declare -p $(declare-p_vars)
+    IFS= declare -p $(declare-p_vars_debug)
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
