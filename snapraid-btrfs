@@ -1486,6 +1486,12 @@ use_snapshot_default() {
 # When running a fix operation, parse the -d/--filter-disk snapraid option if
 # specified, and set ${use_snapshot[@]} accordingly
 use_snapshot_fix() {
+    if [[ "${1-}" = fix ]] ; then
+        shift
+    else
+        fatal_error $E_INTERNAL_ERROR \
+            "use_snapshot_fix() called with unexpected arguments"
+    fi
     if ((use_filter_disk == 0)) ; then
         use_snapshot_default 0
         return
@@ -1519,6 +1525,9 @@ use_snapshot_fix() {
                             break ;;
                     esac
                 done ;;
+            *)
+                fatal_error $E_INTERNAL_ERROR \
+                    "error parsing snapraid fix arguments" ;;
         esac
         if [[ "$disk" ]] ; then
             snapper_config_name="$(get_snapper_config_name "$disk")"
