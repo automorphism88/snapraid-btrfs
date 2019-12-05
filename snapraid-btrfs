@@ -668,7 +668,7 @@ main() {
     # --use-snapshot option argument
     local use_snapshot_option=
     # variable to be set if --used-space option is specified
-    local used_space_option=
+    local -i used_space_option=0
     # controls verbosity, incremented by -v/--verbose or
     # decremented by -q/--quiet command line option
     local -i verbose=0
@@ -1062,7 +1062,7 @@ set_option() {
         --use-filter-disk)
             ((++use_filter_disk)) ;;
         --used-space)
-            used_space_option=1 ;;
+            ((++used_space_option)) ;;
         *)
             invalid_argument "$1" ;;
     esac
@@ -1074,7 +1074,7 @@ set_option() {
 setup_config() {
     check_dependencies "$my_snapper" "$my_snapraid"
     readonly my_snapper my_snapraid
-    [[ -z "$used_space_option" ]] &&
+    ((used_space_option > 0)) &&
         version_is_at_least "$(get_snapper_version)" 0.6.0 &&
         snapper_ls_disable_used_space=1
     check_config_file
