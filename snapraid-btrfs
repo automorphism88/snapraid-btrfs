@@ -430,6 +430,7 @@ find_configs() {
         subvol="${subvol%%*( )}"
         # escape grep ERE metacharacters in subvolume path
         # shellcheck disable=2001
+        # https://github.com/koalaman/shellcheck/issues/1768
         subvol_grep="$(sed 's/[].*+?{}()|$^\[]/\\&/g' <<< "$subvol")"
         # allow trailing slash and/or \r character
         if grep -Ex "$data_line$subvol_grep"$'[/]?[\r]?' \
