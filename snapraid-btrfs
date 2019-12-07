@@ -415,7 +415,7 @@ exit_trap() {
 # $1 - exit status to exit with
 # $2,$3,... - error message to print as $* after shifting
 fatal_error() {
-    local -i errno="${1:-$E_INTERNAL_ERROR}"
+    local -i errno="${1-}"
     if ((errno > 0)) && ((errno < 256)) ; then
         shift || true
     else
