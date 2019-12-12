@@ -416,12 +416,11 @@ exit_trap() {
 # $2,$3,... - error message to print as $* after shifting
 fatal_error() {
     local -i errno="${1-}"
-    if ((errno > 0)) && ((errno < 256)) ; then
-        shift || true
-    else
-        printf 'fatal_error called with invalid exit status %s\n' "$1"
+    if ((errno < 1)) || ((errno > 255)) ; then
+        printf 'fatal_error called with invalid exit status %s\n' "${1-(none)}"
         errno="$E_INTERNAL_ERROR"
     fi
+    shift || true
     IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
     case $errno in
         "$E_INVALID_ARGUMENT")
