@@ -121,10 +121,11 @@ check_config() {
         if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
             fatal_error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
                 ' is not a valid btrfs subvolume'
-        # Check that we have read permission for snapshots
-        # Try a snapper ls first in case ACLs need to be refreshed
-        elif ! { snapper_ls_sync_acl "$i" &&
-                     [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
+        # Check that we have read permission for the .snapshots subvolume
+        # If not, try running snapper ls, in case ACLs need to be synced
+        elif ! { [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ||
+                     { snapper_ls_sync_acl "$i" &&
+                           [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; } ; }
         then
             fatal_error $E_NO_PERMISSION 'No read permission for ' \
                 "${snapper_subvols[$i]}/.snapshots" \
