@@ -1178,7 +1178,7 @@ snapper_rollback() {
     local -i ret=0
     local -i snapper_ret
     local snapper_rollback_opts=( -u "$snapper_userdata" )
-    [[ "$snapper_cleanup" ]] ||
+    [[ "$snapper_cleanup" ]] &&
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
     if [[ "$snapper_description" ]] ; then
         snapper_rollback_opts+=( -d "$snapper_description" )
