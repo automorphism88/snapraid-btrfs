@@ -418,7 +418,8 @@ exit_trap() {
 fatal_error() {
     local -i errno="${1-}"
     if ((errno < 1)) || ((errno > 255)) ; then
-        printf 'fatal_error called with invalid exit status %s\n' "${1-(none)}"
+        printf 'fatal_error called with invalid exit status %s\n' \
+            "${1:-(none)}"
         errno="$E_INTERNAL_ERROR"
     fi
     shift || true
