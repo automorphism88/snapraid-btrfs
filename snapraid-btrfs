@@ -123,7 +123,7 @@ check_config() {
                 ' is not a valid btrfs subvolume'
         # Check that we have read permission for snapshots
         # Try a snapper ls first in case ACLs need to be refreshed
-        elif ! { snapper_ls_wrapper "$i" &> /dev/null &&
+        elif ! { snapper_ls_sync_acl "$i" &&
                      [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; }
         then
             fatal_error $E_NO_PERMISSION 'No read permission for ' \
@@ -663,8 +663,11 @@ main() {
     # description to specify to snapper when creating new snapshots
     local snapper_description=
     # variable to be set if snapper ls supports --disable-used-space
-    # (version 0.6.0 or newer) and --used-space option is not specified
-    local snapper_ls_disable_used_space=
+    # (version 0.6.0 or newer)
+    local snapper_ls_quota_support=
+    # variable to be set if snapper ls supports --disable-used-space and
+    # --used-space option was not specified
+    local snapper_ls_quota_support_disable=
     # snapper userdata key that will be specified to track created snapshots
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local \
@@ -1088,9 +1091,10 @@ set_option() {
 setup_config() {
     check_dependencies "$my_snapper" "$my_snapraid"
     readonly my_snapper my_snapraid
-    ((used_space_option > 0)) &&
-        version_is_at_least "$(get_snapper_version)" 0.6.0 &&
-        snapper_ls_disable_used_space=1
+    if version_is_at_least "$(get_snapper_version)" 0.6.0 ; then
+        snapper_ls_quota_support=1
+        ((used_space_option == 0)) && snapper_ls_quota_support_disable=1
+    fi
     check_config_file
     find_configs
     check_config
@@ -1152,11 +1156,18 @@ snapper_ls() {
     echo
 }
 
+# Run snapper ls &> /dev/null on config $1 to sync ACLs, using
+# --disable-used-space option if supported by snapper version in use
+snapper_ls_sync_acl() {
+    "$my_snapper" -c "$1" ls \
+        "${snapper_ls_quota_support:+--disable-used-space}" &>/dev/null
+}
+
 # Run snapper ls on config $1, using --disable-used-space option if supported
 # by snapper version in use and if --used-space option wasn't specified
 snapper_ls_wrapper() {
     "$my_snapper" -c "$1" ls \
-        "${snapper_ls_disable_used_space:+--disable-used-space}"
+        "${snapper_ls_quota_support_disable:+--disable-used-space}"
 }
 
 # Run snapper rollback in each snapper config
