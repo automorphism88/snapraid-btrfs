@@ -474,6 +474,7 @@ find_snapshots() {
     fi
     local i
     for i in "${snapper_configs[@]}" ; do
+        use_snapshot_missing[$i]="${use_snapshot[$i]}"
         case ${use_snapshot[$i]} in
             0|'')
                 continue ;;
@@ -512,9 +513,11 @@ find_snapshots() {
                     'Could not understand snapshot selection ' \
                     "${use_snapshot[$i]} for config $i" ;;
         esac
-        if ((verbose > 0)) && [[ "${use_snapshot[$i]}" ]] ; then
-            printf 'Using snapshot %s for config %s\n' \
-                "${use_snapshot[$i]}" "$i"
+        if [[ "${use_snapshot[$i]}" ]] ; then
+            use_snapshot_missing[$i]=
+            ((verbose > 0)) &&
+                printf 'Using snapshot %s for config %s\n' \
+                    "${use_snapshot[$i]}" "$i"
         fi
     done
 }
@@ -696,7 +699,9 @@ main() {
     # pre_snapshot - number of pre snapshot created, to use when creating post
     # snapper_subvols - subvolume corresponding to the snapper config
     # use_snapshot - which snapshot should be used for the snapper config
-    local -A pre_snapshot snapper_subvols use_snapshot
+    # use_snapshot_missing - values of use_snapshot which find_snapshots()
+    #     replaced with the empty string
+    local -A pre_snapshot snapper_subvols use_snapshot use_snapshot_missing
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
@@ -1267,8 +1272,8 @@ snapraid_opt_has_arg() {
 # if snapshot not found for a config, prompt the user to choose a different one
 snapshot_not_found() {
     local choice snapshot_list
-    printf '%s: Snapshot not found for config %s at %s\n' "$my_name" "$1" \
-        "${snapper_subvols[$1]}"
+    printf '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
+        "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
