@@ -307,7 +307,8 @@ _EOF_
 }
 
 declare-p_vars_debug() {
-    declare-p_vars "([$LOWER]|BASH|MY_|(FUNCNAME|PIPESTATUS)=)"
+    declare-p_vars \
+        "([$LOWER]|BASH|(MY|SNAPRAID)_|(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)=)"
 }
 
 declare-p_vars_shell() {
