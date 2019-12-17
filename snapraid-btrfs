@@ -288,19 +288,19 @@ debug_trap() {
 
 # get variable names to pass as arguments to declare -p
 declare-p_vars() {
-    while (($# > 0)) ; do
-        declare -p | declare-p_vars_awk "$1"
-        shift
-    done
+    declare -p | declare-p_vars_awk "$@"
 }
 
 declare-p_vars_awk() {
+    local args
+    printf -v args '%s|' "$@"
+    args="${args%|}"
     awk -f <(cat <<_EOF_
 BEGIN {
     FS = "[ \t=]+"
     ORS = " "
 }
-/^declare -[-Aair]+ $1/ {
+/^declare -[-Aair]+ ($args)/ {
     print \$3
 }
 _EOF_
@@ -308,12 +308,12 @@ _EOF_
 }
 
 declare-p_vars_debug() {
-    declare-p_vars \
-        "([$LOWER]|BASH|(MY|SNAPRAID)_|(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)=)"
+    declare-p_vars "[$LOWER]" 'BASH' '(MY|SNAPRAID)_' \
+        '(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)='
 }
 
 declare-p_vars_shell() {
-    declare-p_vars "([$LOWER]|LOWER=|(E|MY|SNAPRAID)_)"
+    declare-p_vars "[$LOWER]" 'LOWER=' '(E|MY|SNAPRAID)_'
 }
 
 # start interactive shell in context of script,
