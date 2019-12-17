@@ -188,6 +188,7 @@ check_snapraid_arguments() {
 }
 
 cleanup_coproc() {
+    trap - DEBUG
     eval "${debug_fd:+exec ${debug_fd}>&-}"
     eval "${sed_escape_debug[1]:+exec ${sed_escape_debug[1]}>&-}"
     # shellcheck disable=2154
@@ -318,8 +319,8 @@ declare-p_vars_shell() {
 # start interactive shell in context of script,
 # with variables and functions exported
 do_shell() (
+    cleanup_coproc
     # unset variables that will be invalid
-    trap - DEBUG
     unset -v debug_fd sed_escape_debug sed_escape_debug_PID
     # shellcheck disable=2030
     rm_on_exit=()
@@ -409,7 +410,6 @@ exit_trap() {
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" || true
     fi
-    trap - DEBUG
     cleanup_coproc
     return 0
 }
