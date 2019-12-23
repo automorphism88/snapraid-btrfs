@@ -516,9 +516,10 @@ find_snapshots() {
         esac
         if [[ "${use_snapshot[$i]}" ]] ; then
             use_snapshot_missing[$i]=
-            ((verbose > 0)) &&
+            if ((verbose > 0)) ; then
                 printf 'Using snapshot %s for config %s\n' \
                     "${use_snapshot[$i]}" "$i"
+            fi
         fi
     done
 }
@@ -1101,7 +1102,9 @@ setup_config() {
     readonly my_snapper my_snapraid
     if version_is_at_least "$(get_snapper_version)" 0.6.0 ; then
         snapper_ls_quota_support=1
-        ((used_space_option == 0)) && snapper_ls_quota_support_disable=1
+        if ((used_space_option == 0)) ; then
+            snapper_ls_quota_support_disable=1
+        fi
     fi
     check_config_file
     find_configs
