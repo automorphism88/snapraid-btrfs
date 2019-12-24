@@ -245,8 +245,9 @@ create_pre_post_snapshots() {
         # skip configs where we're using a readonly snapshot
         [[ "${use_snapshot[$i]}" = 0 ]] || continue
         snapper_cmd=( "$my_snapper" -c "$i" create )
-        [[ "$snapper_cleanup" ]] &&
+        if [[ "$snapper_cleanup" ]] ; then
             snapper_cmd+=( -c "$snapper_cleanup" )
+        fi
         snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
         if [[ "${pre_snapshot[$i]-}" ]] ; then
@@ -279,7 +280,9 @@ debug_trap() {
     printf '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
     shift 3
     printf '%s' 'set -- '
-    (($# > 0)) && printf '%q ' "$@"
+    if (($# > 0)) ; then
+        printf '%q ' "$@"
+    fi
     echo
     # shellcheck disable=2046
     IFS= declare -p $(declare-p_vars_debug)
@@ -335,7 +338,9 @@ do_shell() (
     set +o nounset
     exec "$BASH" --rcfile \
         <(cat <<'_EOF_'
-[[ -e "$HOME/.bashrc" ]] && source "$HOME/.bashrc"
+if [[ -e "$HOME/.bashrc" ]] ; then
+    source "$HOME/.bashrc"
+fi
 eval "$vars"
 IFS= export -fn $funcs
 export -n BASHOPTS SHELLOPTS
@@ -367,14 +372,19 @@ _EOF_
 do_snapper() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        verbose_command "$my_snapper" -c "$i" "$@"
+        if [[ "${use_snapshot[$i]}" = 0 ]] ; then
+            continue
+        else
+            verbose_command "$my_snapper" -c "$i" "$@"
+        fi
     done
 }
 
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
-    [[ "${debug_fd-}" ]] && cleanup_coproc
+    if [[ "${debug_fd-}" ]] ; then
+        cleanup_coproc
+    fi
     coproc sed_escape_debug {
         sed -e $'s/\e/\e[7m\\\\e\e[0m/g' \
             -e $'s/\r/\e[7m\\\\r\e[0m/g' \
@@ -466,8 +476,9 @@ find_configs() {
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
     local snapper_create_opts=( -u "$snapper_userdata" )
-    [[ "$snapper_cleanup" ]] &&
+    if [[ "$snapper_cleanup" ]] ; then
         snapper_create_opts+=( -c "$snapper_cleanup" )
+    fi
     if [[ "$snapper_description" ]] ; then
         snapper_create_opts+=( -d "$snapper_description" )
     else
@@ -808,7 +819,9 @@ main() {
                 invalid_argument "$1" ;;
         esac
     done
-    [[ "${command-}" ]] && set -- "$command"
+    if [[ "${command-}" ]] ; then
+        set -- "$command"
+    fi
     if (($# > 0)) ; then
         # These variables are intended to be truly local, unlike the "global"
         # variables declared as local to main(), so we unset them when done
@@ -1109,8 +1122,9 @@ setup_config() {
     check_config_file
     find_configs
     check_config
-    [[ "$use_snapshot_option" ]] &&
+    if [[ "$use_snapshot_option" ]] ; then
         apply_use_snapshot_option "$use_snapshot_option"
+    fi
     local i
     if [[ "$use_snapshot_all_option" ]] ; then
         for i in "${snapper_configs[@]}" ; do
@@ -1187,20 +1201,24 @@ snapper_rollback() {
     local -i ret=0
     local -i snapper_ret
     local snapper_rollback_opts=( -u "$snapper_userdata" )
-    [[ "$snapper_cleanup" ]] &&
+    if [[ "$snapper_cleanup" ]] ; then
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
+    fi
     if [[ "$snapper_description" ]] ; then
         snapper_rollback_opts+=( -d "$snapper_description" )
     else
         snapper_rollback_opts+=( -d "$my_name rollback" )
     fi
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        verbose_command "$my_snapper" -c "$i" rollback \
-            "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}"
-        snapper_ret=$?
-        if ((snapper_ret != 0)) ; then
-            ret=$snapper_ret
+        if [[ "${use_snapshot[$i]}" = 0 ]] ; then
+            continue
+        else
+            verbose_command "$my_snapper" -c "$i" rollback \
+                "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}"
+            snapper_ret=$?
+            if ((snapper_ret != 0)) ; then
+                ret=$snapper_ret
+            fi
         fi
     done
     return $ret
@@ -1237,13 +1255,16 @@ snapper_undochange() {
     done
     undochange_files+=( "$@" )
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" = 0 ]] && continue
-        verbose_command "$my_snapper" -c "$i" undochange \
-            "${undochange_opts[@]}" "${use_snapshot[$i]}..0" -- \
-            "${undochange_files[@]}"
-        snapper_ret=$?
-        if ((snapper_ret != 0)) ; then
-            ret=$snapper_ret
+        if [[ "${use_snapshot[$i]}" = 0 ]] ; then
+            continue
+        else
+            verbose_command "$my_snapper" -c "$i" undochange \
+                "${undochange_opts[@]}" "${use_snapshot[$i]}..0" -- \
+                "${undochange_files[@]}"
+            snapper_ret=$?
+            if ((snapper_ret != 0)) ; then
+                ret=$snapper_ret
+            fi
         fi
     done
     create_pre_post_snapshots undochange
