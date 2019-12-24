@@ -48,7 +48,6 @@ set -o functrace
 set -o nounset
 set -o pipefail
 set +o noclobber
-set +o noglob
 set +o posix
 shopt -s extglob
 shopt -s extquote
