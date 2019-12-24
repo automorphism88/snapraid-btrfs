@@ -287,7 +287,7 @@ debug_trap() {
     fi
     echo
     # shellcheck disable=2046
-    IFS= declare -p $(declare-p_vars_debug)
+    IFS=' ' declare -p $(declare-p_vars_debug)
     printf '%s\n' "$div"
 } >&"$debug_fd"
 
@@ -331,11 +331,11 @@ do_shell() (
     rm_on_exit=()
     local funcs vars
     # shellcheck disable=2046
-    vars="$(IFS= declare -p $(declare-p_vars_shell))"
+    vars="$(IFS=' ' declare -p $(declare-p_vars_shell))"
     funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
-    IFS= export -f $funcs
+    IFS=' ' export -f $funcs
     set +o errexit
     set +o nounset
     exec "$BASH" --rcfile \
@@ -344,7 +344,7 @@ if [[ -e "$HOME/.bashrc" ]] ; then
     source "$HOME/.bashrc"
 fi
 eval "$vars"
-IFS= export -fn $funcs
+IFS=' ' export -fn $funcs
 export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
 exit() {
@@ -355,7 +355,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    IFS= declare -p $(declare-p_vars_debug)
+    IFS=' ' declare -p $(declare-p_vars_debug)
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
