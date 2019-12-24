@@ -45,6 +45,7 @@ fi
 set -o errexit
 set -o errtrace
 set -o functrace
+set -o noglob
 set -o nounset
 set -o pipefail
 set +o noclobber
