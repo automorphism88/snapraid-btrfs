@@ -15,19 +15,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# bash version 4+ required for associative arrays, coprocesses, and
-# ;& and ;;& terminators in case statements
-# 4.1+ required for ACL support
-if ! { ((BASH_VERSINFO[0] > 4)) ||
-        { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
-then
-    echo 'bash version 4.1+ is required to use this script' >&2
-    exit 63
-fi
-
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
+readonly E_MISSING_DEPENDENCY=63
 readonly E_INTERNAL_ERROR=64
 readonly E_INVALID_ARGUMENT=65
 readonly E_INVALID_CONFIG=66
@@ -39,6 +30,16 @@ readonly MY_VERSION='0.9.10+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
+
+# bash version 4+ required for associative arrays, coprocesses, and
+# ;& and ;;& terminators in case statements
+# 4.1+ required for ACL support
+if ! { ((BASH_VERSINFO[0] > 4)) ||
+        { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
+then
+    echo 'bash version 4.1+ is required to use this script' >&2
+    exit ${E_MISSING_DEPENDENCY:-63}
+fi
 
 set -o errexit
 set -o errtrace
@@ -164,7 +165,7 @@ check_config_file() {
 check_dependencies() {
     while (($# > 0)) ; do
         if ! type "$1" &> /dev/null ; then
-            fatal_error $E_INTERNAL_ERROR "Could not find $1 in PATH"
+            fatal_error $E_MISSING_DEPENDENCY "Could not find $1 in PATH"
         fi
         shift
     done
