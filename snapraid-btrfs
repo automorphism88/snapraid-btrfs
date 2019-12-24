@@ -333,6 +333,7 @@ do_shell() (
     local funcs vars
     # shellcheck disable=2046
     vars="$(IFS=' ' declare -p $(declare-p_vars_shell))"
+    shopt -u extdebug
     funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
