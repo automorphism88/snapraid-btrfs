@@ -436,7 +436,9 @@ fatal_error() {
         errno="$E_INTERNAL_ERROR"
     fi
     shift || true
-    IFS= printf '%s: %s\n' "$my_name" "${*:-fatal error}"
+    printf '%s: ' "$my_name"
+    printf '%s ' "${@:-fatal error}"
+    echo
     case $errno in
         "$E_INVALID_ARGUMENT")
             printf 'Use %s -h for help\n' "$my_name" ;;
