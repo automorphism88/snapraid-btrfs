@@ -34,8 +34,9 @@ readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
 # bash version 4+ required for associative arrays, coprocesses, and
 # ;& and ;;& terminators in case statements
 # 4.1+ required for ACL support
-if ! { ((BASH_VERSINFO[0] > 4)) ||
-        { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
+if [ -z "${BASH_VERSION-}" ] ||
+       ! { ((BASH_VERSINFO[0] > 4)) ||
+               { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
 then
     echo 'bash version 4.1+ is required to use this script' >&2
     exit ${E_MISSING_DEPENDENCY:-63}
