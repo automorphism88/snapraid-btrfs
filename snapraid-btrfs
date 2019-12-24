@@ -33,7 +33,7 @@ readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
 
 # bash version 4+ required for associative arrays, coprocesses, and
 # ;& and ;;& terminators in case statements
-# 4.1+ required for ACL support
+# 4.1+ required for ACL support and <{var} fd variable assignment
 if [ -z "${BASH_VERSION-}" ] ||
        ! { ((BASH_VERSINFO[0] > 4)) ||
                { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
