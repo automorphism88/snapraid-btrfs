@@ -968,7 +968,7 @@ run_command() {
             shift
             snapper_ls "$@" ;;
         rollback)
-            snapper_rollback ;;
+            snapper_rollback && true ;;
         shell)
             shift
             do_shell "$@" ;;
@@ -977,7 +977,7 @@ run_command() {
             do_snapper "$@" ;;
         undochange)
             shift
-            snapper_undochange "$@" ;;
+            snapper_undochange "$@" && true ;;
         # Implementation of commands that invoke snapraid
         check|diff|fix|pool|scrub|sync|touch)
             run_snapraid "$@" && true ;;
