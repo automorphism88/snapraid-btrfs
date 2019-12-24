@@ -286,6 +286,7 @@ debug_trap() {
         printf '%q ' "$@"
     fi
     echo
+    declare -p IFS
     # shellcheck disable=2046
     IFS=' ' declare -p $(declare-p_vars_debug)
     printf '%s\n' "$div"
@@ -314,7 +315,7 @@ _EOF_
 
 declare-p_vars_debug() {
     declare-p_vars "[$LOWER]" 'BASH' '(MY|SNAPRAID)_' \
-        '(DEBUG_FD|FUNCNAME|IFS|PIPESTATUS|TMPDIR)='
+        '(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)='
 }
 
 declare-p_vars_shell() {
