@@ -597,7 +597,7 @@ get_snapper_config_name() {
     done < "$config_file"
     [[ "$subvol" ]] || return
     for i in "${snapper_configs[@]}" ; do
-        if [[ "${snapper_subvols[$i]}" = "$subvol" ]] ; then
+        if [[ "${snapper_subvols[$i]}" -ef "$subvol" ]] ; then
             printf '%s\n' "$i"
             break
         fi
