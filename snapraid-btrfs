@@ -1191,7 +1191,7 @@ snapper_ls() {
 # --disable-used-space option if supported by snapper version in use
 snapper_ls_sync_acl() {
     "$my_snapper" -c "$1" ls \
-        "${snapper_ls_quota_support:+--disable-used-space}" &>/dev/null
+        "${snapper_ls_quota_support:+--disable-used-space}" > /dev/null
 }
 
 # Run snapper ls on config $1, using --disable-used-space option if supported
