@@ -511,7 +511,7 @@ find_snapshots() {
                     printf 'Created new snapshot %s for config %s\n' \
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
-            res)
+            res?(ume))
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
@@ -1158,7 +1158,7 @@ setup_use_snapshot() {
         fix)
             use_snapshot_fix "$@" ;;&
         resume)
-            use_snapshot_default res ;;&
+            use_snapshot_default resume ;;&
         shell|snapper)
             use_snapshot_default '' ;;&
         !(cleanup-all|ls|list|snapper|touch))
