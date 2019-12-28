@@ -450,25 +450,21 @@ fatal_error() {
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
-    local config subvol subvol_grep i
-    # grep ERE matching data line up to the point where the path starts
-    local -r data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
+    local config field1 field2 field3 subvol i
     while IFS='|' read -r config subvol ; do
         # Remove padding spaces
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
-        # escape grep ERE metacharacters in subvolume path
-        # shellcheck disable=2001
-        # https://github.com/koalaman/shellcheck/issues/1768
-        subvol_grep="$(sed 's/[].*+?{}()|$^\[]/\\&/g' <<< "$subvol")"
-        # allow trailing slash and/or \r character
-        if grep -Ex "$data_line$subvol_grep"$'[/]?[\r]?' \
-                "$config_file" > /dev/null
-        then
-            snapper_configs+=( "$config" )
-            snapper_subvols[$config]="$subvol"
-        fi
+        while IFS=$' \t' read -r field1 field2 field3 ; do
+            if [[ "$field1" =~ (data|disk) ]] &&
+                   [[ "${field3%$'\r'}" -ef "$subvol" ]]
+            then
+                snapper_configs+=( "$config" )
+                snapper_subvols[$config]="${field3%$'\r'}"
+                snapraid_names[$config]="$field2"
+            fi
+        done < "$config_file"
     done < <("$my_snapper" list-configs | tail -n +3)
     if ((verbose >= 0)) ; then
         echo 'Snapper configs found:'
@@ -583,21 +579,9 @@ generate_temp_snapraid_conf() {
 # given the snapraid.conf name for a disk (e.g. d1 in disk d1 /foo/bar),
 # find the corresponding snapper config name, if any
 get_snapper_config_name() {
-    local subvol=
-    local field1 field2 field3 i
-    while IFS=$' \t' read -r field1 field2 field3 ; do
-        case $field1 in
-            data|disk)
-                if [[ "$field2" = "$1" ]] ; then
-                    subvol="${field3%$'\r'}"
-                    subvol="${subvol%/}"
-                    break
-                fi ;;
-        esac
-    done < "$config_file"
-    [[ "$subvol" ]] || return
+    local i
     for i in "${snapper_configs[@]}" ; do
-        if [[ "${snapper_subvols[$i]}" -ef "$subvol" ]] ; then
+        if [[ "$1" = "${snapraid_names[$i]}" ]] ; then
             printf '%s\n' "$i"
             break
         fi
@@ -714,12 +698,16 @@ main() {
     local -i verbose=0
     # These associative arrays are indexed by snapper configs in the
     # snapper_configs array, and hold the following data:
-    # pre_snapshot - number of pre snapshot created, to use when creating post
-    # snapper_subvols - subvolume corresponding to the snapper config
-    # use_snapshot - which snapshot should be used for the snapper config
-    # use_snapshot_missing - values of use_snapshot which find_snapshots()
-    #     replaced with the empty string
-    local -A pre_snapshot snapper_subvols use_snapshot use_snapshot_missing
+    # number of pre snapshot created, to use when creating post
+    local -A pre_snapshot
+    # subvolume corresponding to the snapper config
+    local -A snapper_subvols
+    # snapraid disk name corresponding to the snapper config
+    local -A snapraid_names
+    # which snapshot should be used for the snapper config
+    local -A use_snapshot
+    # values of use_snapshot not found by find_snapshots()
+    local -A use_snapshot_missing
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
