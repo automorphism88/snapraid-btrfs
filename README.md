@@ -27,23 +27,23 @@ implements additional commands, such as `cleanup`, for managing its snapshots.
 
 To start using `snapraid-btrfs`, you need to set up
 [snapper](http://snapper.io/) configurations for each data drive that you want
-`snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will compare
-the output of `snapper list-configs` with the SnapRAID configuration file, and
-will ignore any data drives which do not have corresponding snapper
+`snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will
+compare the output of `snapper list-configs` with the SnapRAID configuration
+file, and will ignore any data drives which do not have corresponding snapper
 configurations (in other words, the live filesystem will be used for all
 operations and no snapshots will be created). Just like SnapRAID,
-`snapraid-btrfs` will use `/etc/snapraid.conf` by
-default, but another configuration file can be specified using the `-c`/`--conf`
-option or by setting the `SNAPRAID_CONFIG_FILE` environment variable.
+`snapraid-btrfs` will use `/etc/snapraid.conf` by default, but another
+configuration file can be specified using the `-c`/`--conf` option or by
+setting the `SNAPRAID_CONFIG_FILE` environment variable.
 
 All files on the data drives which are not excluded by the SnapRAID
 configuration file must be in the same subvolume. **If any of the SnapRAID
-"content" files are stored on data drives, create a dedicated subvolume for them
-so that they are not snapshotted.** It is also recommended that you add the line
-`exclude /.snapshots/` to your SnapRAID configuration file, so that if you ever
-run `snapraid sync` instead of `snapraid-btrfs sync`, SnapRAID will not try to
-sync both the live filesystem and the read-only snapshots, causing it to run out
-of parity space.
+"content" files are stored on data drives, create a dedicated subvolume for
+them so that they are not snapshotted.** It is also recommended that you add
+the line `exclude /.snapshots/` to your SnapRAID configuration file, so that if
+you ever run `snapraid sync` instead of `snapraid-btrfs sync`, SnapRAID will
+not try to sync both the live filesystem and the read-only snapshots, causing
+it to run out of parity space.
 
 See the FAQ below for more details. To verify that snapper has been set up
 correctly, you can use the `snapraid-btrfs ls` command, which will run
@@ -64,15 +64,15 @@ for the sync. For more details on using `snapraid-btrfs`, see the output of
 
 All dependencies are checked on startup, and if any of them are not found,
 `snapraid-btrfs` will display an error message and exit. Note that by default,
-`snapraid-btrfs` will search for `snapraid` and `snapper` in the user's `$PATH`,
+`snapraid-btrfs` will search for `snapraid` and `snapper` in the user's `PATH`,
 but alternatively, the `--snapper-path` and/or `--snapraid-path` command line
 options can be specified.
 
 `#!/bin/bash` is used as the shebang (as the `#!/usr/bin/env bash` trick has
-disadvantages), so if a compatible version of bash cannot be found there, one of
-the following workarounds must be used:
-- Create a symlink. This is generally already done on distros that have done the
-  `/usr` merge and install bash in `/usr/bin` instead of `/bin`.
+disadvantages), so if a compatible version of bash cannot be found there, one
+of the following workarounds must be used:
+- Create a symlink. This is generally already done on distros that have done
+  the `/usr` merge and install bash in `/usr/bin` instead of `/bin`.
 - Run `snapraid-btrfs` using `/path/to/right/bash /path/to/snapraid-btrfs`,
   possibly by creating a wrapper script or shell alias
 - Manually edit the first line of the script to point to the correct location
@@ -94,10 +94,10 @@ to remove them from the parity before deleting them. However, this problem is a
 textbook use case for btrfs snapshots.
 
 By using read-only snapshots when we do a `snapraid sync`, we ensure that if we
-modify or delete files during or after the sync, we can always restore the array
-to the state it was in at the time the read-only snapshots were created, so long
-as the snapshots are not deleted until another sync is completed with new
-snapshots. This use case for btrfs snapshots is similar to using
+modify or delete files during or after the sync, we can always restore the
+array to the state it was in at the time the read-only snapshots were created,
+so long as the snapshots are not deleted until another sync is completed with
+new snapshots. This use case for btrfs snapshots is similar to using
 `btrfs send/receive` to back up a live filesystem, where the use of read-only
 snapshots guarantees the consistency of the result, while using `dd` would
 require that the entire filesystem be mounted read-only to prevent corruption
@@ -121,13 +121,13 @@ any data drives that it does not manage.
 A: Since the parity files are (or, at least, should be) only written to during
 `snapraid sync` operations, there is no need to snapshot them, as the parity
 files will always correspond with the read-only snapshots they were created
-from. If a sync is interrupted, different sets of snapshots will correspond with
-different portions of the parity file(s), and both sets of snapshots should be
-retained until a sync is completed, at which point all previous snapshots can be
-safely cleaned up. A snapper userdata key is used to keep track of whether a
-`snapraid sync` run on a set of snapshots completes successfully (i.e., returns
-exit status 0) to ensure that `snapraid-btrfs cleanup` can handle this situation
-properly.
+from. If a sync is interrupted, different sets of snapshots will correspond
+with different portions of the parity file(s), and both sets of snapshots
+should be retained until a sync is completed, at which point all previous
+snapshots can be safely cleaned up. A snapper userdata key is used to keep
+track of whether a `snapraid sync` run on a set of snapshots completes
+successfully (i.e., returns exit status 0) to ensure that
+ `snapraid-btrfs cleanup` can handle this situation properly.
 
 It is recommended that you use ext4 for the parity drives, since the metadata
 overhead is extremely small with the right mkfs settings (minimum possible
@@ -169,9 +169,9 @@ This is an unavoidable limitation of the protection provided by
 `snapraid-btrfs`, and the same price would be paid for any solution to the
 problem `snapraid-btrfs` aims to solve - e.g. moving files to a directory which
 is excluded in the SnapRAID config file before deleting them. To preserve the
-ability to restore the array to the state it was in at the time of the last sync
-even if files are modified or deleted, those files must be saved somewhere until
-the parity has been brought up to date.
+ability to restore the array to the state it was in at the time of the last
+sync even if files are modified or deleted, those files must be saved somewhere
+until the parity has been brought up to date.
 
 ### Q: Does snapraid-btrfs need to be run as root?
 A: No, and it is recommended that you do not do so, just as you should not run
@@ -193,9 +193,9 @@ argument or by setting the `SNAPRAID_CONFIG_FILE` environment variable).
 **To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
 snapraid-btrfs in your snapper configurations.** You may wish to make a snapper
-template with the options you want to use for your SnapRAID drive configurations
-and set these variables at that level. For further details, see the snapper
-documentation.
+template with the options you want to use for your SnapRAID drive
+configurations and set these variables at that level. For further details, see
+the snapper documentation.
 
 ### Q: What about my snapraid.conf file? Do I need to do anything there?
 A: `snapraid-btrfs` is designed to work with your existing SnapRAID
@@ -216,18 +216,18 @@ mounted at `/foo/bar` then if using snapshot n it will exclude
 it will exclude `/foo/bar/.snapshots`.)
 
 ### Q: Can I have multiple subvolumes on a single data drive?
-A: `snapraid-btrfs` only uses one subvolume per data drive, which should contain
-all the data which is to be protected by SnapRAID, and should have a snapper
-config with the `SUBVOLUME` variable matching the path in the SnapRAID config
-file. **Any files stored in other subvolumes on the data drives will NOT be
-protected by the parity, even if those subvolumes are mounted below the path
+A: `snapraid-btrfs` only uses one subvolume per data drive, which should
+contain all the data which is to be protected by SnapRAID, and should have a
+snapper config with the `SUBVOLUME` variable matching the path in the SnapRAID
+config file. **Any files stored in other subvolumes on the data drives will NOT
+be protected by the parity, even if those subvolumes are mounted below the path
 specified in the SnapRAID config file.** This is because syncs will be done
 using a read-only snapshot, where the subvolume mount point will appear to
-SnapRAID as an empty directory. This is by design; storing all the SnapRAID data
-files in a single subvolume makes snapshotting atomic, ensuring that after a
-successful sync, the parity corresponds to a single snapshot of each data drive.
-The SnapRAID "content" files should be stored in a separate subvolume to prevent
-them from being snapshotted.
+SnapRAID as an empty directory. This is by design; storing all the SnapRAID
+data files in a single subvolume makes snapshotting atomic, ensuring that after
+a successful sync, the parity corresponds to a single snapshot of each data
+drive. The SnapRAID "content" files should be stored in a separate subvolume to
+prevent them from being snapshotted.
 
 ### Q: Can I also manage snapshots manually with snapper?
 A: Yes. `snapraid-btrfs` keeps track of its own snapshots using a snapper
@@ -263,19 +263,19 @@ the filesystem or block device level.
 The above only refers to what is possible with `snapraid fix` (whether or not
 invoked via `snapraid-btrfs fix`). Of course, you can still revert individual
 data disks, or the entire array, to a previous state, just as with any btrfs
-filesystem. You just won't be able to make use of the parity to reconstruct data
-in older snapshots if a disk fails.
+filesystem. You just won't be able to make use of the parity to reconstruct
+data in older snapshots if a disk fails.
 
 ### Q: What is the 'dsync' command and what is it for?
 A: Short for `diff-sync`, this command creates a set of read-only snapshots,
 runs a `snapraid diff`, and then asks for confirmation before running a
 `snapraid sync` with the same snapshots. Since SnapRAID can only restore the
 array to the state it was in at the time of the last sync, syncing is a
-destructive action, and the `dsync` command allows the user to make sure the new
-snapshots are okay before continuing with the sync. Since the sync will only be
-run after the user has approved the diff, the `--force-empty` option is passed
-through to `snapraid`. The behavior of this command is equivalent to running
-`snapraid-btrfs diff` followed by
+destructive action, and the `dsync` command allows the user to make sure the
+new snapshots are okay before continuing with the sync. Since the sync will
+only be run after the user has approved the diff, the `--force-empty` option is
+passed through to `snapraid`. The behavior of this command is equivalent to
+running `snapraid-btrfs diff` followed by
 `snapraid-btrfs --interactive --use-snapshot-all diff sync --force-empty`,
 except that `snapraid-btrfs dsync` will only run the sync if `snapraid diff`
 indicates that there have been changes since the last sync. Otherwise,
