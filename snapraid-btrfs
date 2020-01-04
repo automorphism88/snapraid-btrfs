@@ -1126,11 +1126,6 @@ setup_config() {
         done
     fi
     apply_pre_post_options
-    setup_use_snapshot "$@"
-}
-
-# Initialize ${use_snapshot[@]} with command-specific defaults
-setup_use_snapshot() {
     case $1 in
         cleanup)
             use_snapshot_all sync ;;&
