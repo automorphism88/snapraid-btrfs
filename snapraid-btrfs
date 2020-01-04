@@ -1,6 +1,6 @@
 #!/bin/bash -
 
-# Copyright (C) 2017-2019 Alex deBeus
+# Copyright (C) 2017-2020 Alex deBeus
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -425,7 +425,6 @@ exit_trap() {
         rm -f -- "${rm_on_exit[@]}" || true
     fi
     cleanup_coproc
-    return 0
 }
 
 # $1 - exit status to exit with
@@ -942,7 +941,7 @@ print_command() {
 print_version() {
     cat <<_EOF_
 snapraid-btrfs $MY_VERSION
-Copyright (C) 2017-2019 Alex deBeus
+Copyright (C) 2017-2020 Alex deBeus
 License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 This is free software; you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
