@@ -56,6 +56,8 @@ shopt -u nocasematch
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
+# Ensure new bash 5.0 option is disabled if present
+shopt -u localvar_inherit &> /dev/null || true
 
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
