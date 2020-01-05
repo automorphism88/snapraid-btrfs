@@ -936,8 +936,10 @@ _EOF_
 }
 
 print_command() {
-    printf '%q ' "$@"
-    echo
+    local cmd
+    printf -v cmd '%q ' "$@"
+    cmd="${cmd% }"
+    printf '%s\n' "$cmd"
 }
 
 print_version() {
