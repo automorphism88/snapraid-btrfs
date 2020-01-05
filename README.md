@@ -202,10 +202,12 @@ A: `snapraid-btrfs` is designed to work with your existing SnapRAID
 configuration without requiring further changes. However, you may wish to add
 the line `exclude /.snapshots/` to your config file. If you ever plan to sync
 your SnapRAID configuration without using `snapraid-btrfs` (or disable it for
-specific drives using the command-line options), this will ensure that only one
-snapshot is synced at a time, preventing you from running out of parity space.
-Also, if you want to run `snapraid diff` (as opposed to `snapraid-btrfs diff`),
-this will prevent SnapRAID from thinking all the snapshots are new files.
+specific drives using the command-line options), SnapRAID will see the
+`.snapshots` subvolume as a separate filesystem and warn you that it won't be
+included in the parity. Excluding it explicitly will prevent you from receiving
+this warning message from SnapRAID. Also, if you want to run `snapraid diff`
+(as opposed to `snapraid-btrfs diff`), this will prevent SnapRAID from thinking
+all the snapshots are new files.
 
 When using `snapraid-btrfs` to sync, the `.snapshots` subvolume will appear as
 an empty directory in the read-only snapshots, so excluding it in the SnapRAID
@@ -215,6 +217,15 @@ mounted at `/foo/bar` then if using snapshot n it will exclude
 `/foo/bar/.snapshots/n/snapshot/.snapshots`, and if using the live filesystem
 it will exclude `/foo/bar/.snapshots`.)
 
+Similarly, if you store any of your content files in subvolumes which have
+mountpoints underneath the data subvolume, you should `exclude` those paths to
+avoid receiving warnings from SnapRAID. For instance, if data is stored in
+`/path/to/snapraid/1/data` and content in `/path/to/snapraid/1/content` then
+no `exclude` would be required, but if the content subvolume is mounted
+underneath the data subvolume, e.g. at `/path/to/snapraid/1/data/content`, then
+an `exclude` statement would be needed to avoid a warning from SnapRAID. See
+"What about the SnapRAID content files?" below.
+
 ### Q: Can I have multiple subvolumes on a single data drive?
 A: `snapraid-btrfs` only uses one subvolume per data drive, which should
 contain all the data which is to be protected by SnapRAID, and should have a
@@ -223,11 +234,19 @@ config file. **Any files stored in other subvolumes on the data drives will NOT
 be protected by the parity, even if those subvolumes are mounted below the path
 specified in the SnapRAID config file.** This is because syncs will be done
 using a read-only snapshot, where the subvolume mount point will appear to
-SnapRAID as an empty directory. This is by design; storing all the SnapRAID
-data files in a single subvolume makes snapshotting atomic, ensuring that after
-a successful sync, the parity corresponds to a single snapshot of each data
-drive. The SnapRAID "content" files should be stored in a separate subvolume to
-prevent them from being snapshotted.
+SnapRAID as an empty directory. Also, SnapRAID currently sees separate btrfs
+subvolumes as separate filesystems, so this wouldn't work even without
+using snapshots.
+
+In any case, it's desirable to have all the SnapRAID data files in a single
+subvolume, since this makes snapshotting atomic, ensuring that after a
+successful sync, the parity corresponds to a single snapshot of each data
+drive.
+
+### Q: What about the SnapRAID content files?
+The SnapRAID "content" files should be stored in a separate subvolume to
+prevent them from being snapshotted. `snapraid-btrfs` will display an error
+message and refuse to run if this is not done.
 
 ### Q: Can I also manage snapshots manually with snapper?
 A: Yes. `snapraid-btrfs` keeps track of its own snapshots using a snapper
