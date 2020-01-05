@@ -53,6 +53,8 @@ set +o posix
 shopt -s extglob
 shopt -s extquote
 shopt -u nocasematch
+# Option added in bash 4.3, default in 5.0, not needed and reduces performance
+shopt -u checkwinsize &> /dev/null || true
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
