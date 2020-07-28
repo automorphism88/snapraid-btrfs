@@ -129,9 +129,9 @@ check_config() {
                      { snapper_ls_sync_acl "$i" &&
                            [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; } ; }
         then
-            fatal_error $E_NO_PERMISSION 'No read permission for ' \
+            fatal_error $E_NO_PERMISSION 'No read permission for' \
                 "${snapper_subvols[$i]}/.snapshots" \
-                ' - is SYNC_ACL set in snapper configuration?'
+                '- is SYNC_ACL set in snapper configuration?'
         fi
     done
 }
