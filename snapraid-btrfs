@@ -57,7 +57,9 @@ shopt -u checkwinsize &> /dev/null || true
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
 # Ensure new bash 5.0 option is disabled if present
-shopt -u localvar_inherit &> /dev/null || true
+if ((BASH_VERSINFO[0] >= 5)) ; then
+    shopt -u localvar_inherit
+fi
 
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
