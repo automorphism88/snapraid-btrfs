@@ -105,7 +105,7 @@ apply_use_snapshot_option() {
 # snapraid.conf and snapper list-configs
 check_config() {
     local field1 field2 content_dir content_mount i
-    if ((${#snapper_configs[@]} == 0)) ; then
+    if ((${#snapper_configs[@]} > 0)) ; then
         # We don't want to snapshot the content files. So, check the
         # directories of the content files, and compare their mount points with
         # those of the subvolumes we are snapshotting, to see if any match
