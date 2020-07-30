@@ -1063,7 +1063,7 @@ run_snapraid() {
 
 # make input suitable to be used in sed BRE as fixed string
 sed_escape_bre() {
-    sed 's/[].*$^/\[]/\\&/g'
+    sed 's/[.*$^/\[]/\\&/g'
 }
 
 # make input suitable to be used in sed replacement text as fixed string
