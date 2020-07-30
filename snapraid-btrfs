@@ -1240,9 +1240,9 @@ snapshot_not_found() {
         exit $E_SNAPSHOT_NOT_FOUND
     else
         snapshot_list="$(snapper_ls_wrapper "$1")"
-        printf -- '%s\n' "$snapshot_list"
     fi
     while true ; do
+        printf -- '%s\n' "$snapshot_list"
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
             choice
         case $choice in
