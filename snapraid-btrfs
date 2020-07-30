@@ -1545,6 +1545,10 @@ verbose_command() {
 # compares version numbers specified in $1 and $2
 # returns 0 if $1 >= $2
 version_is_at_least() {
+    if (($# != 2)) ; then
+        fatal_error "$E_INTERNAL_ERROR" \
+            'version_is_at_least() requires 2 arguments'
+    fi
     local -i i
     local -a ver1 ver2
     IFS='.' read -r -a ver1 <<< "$1"
