@@ -178,6 +178,8 @@ check_dependencies() {
 check_snapraid_arguments() {
     while (($# > 0)) ; do
         case $1 in
+            --)
+                break ;;
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
                 fatal_error $E_INVALID_ARGUMENT \
                     'The -c/--conf option' \
@@ -1479,15 +1481,13 @@ use_snapshot_fix() {
                 option_requires_argument "$@"
                 disk="$2"
                 shift 2 ;;
-            --!(=)*)
+            --*)
                 if snapraid_opt_has_arg "$@" ; then
                     shift 2
                 else
                     shift
                 fi ;;
-            --*)
-                shift ;;
-            -!(-)*)
+            -*)
                 opt_str="${1#-}"
                 length="${#opt_str}"
                 for ((i=0;i<length;i++)) ; do
