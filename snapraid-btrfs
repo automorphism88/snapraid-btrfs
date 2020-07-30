@@ -141,7 +141,7 @@ check_config_file() {
         fatal_error $E_INVALID_ARGUMENT \
             "Could not read snapraid config file at $config_file"
     elif ((verbose > 0)) ; then
-        printf 'Using snapraid config file %s\n' "$config_file"
+        printf -- 'Using snapraid config file %s\n' "$config_file"
     fi
     # check for trailing newline in snapraid.conf
     # Lack of a trailing newline will cause problems when parsing the config
@@ -149,7 +149,7 @@ check_config_file() {
     # temporary config file with a newline added and use that instead.
     if [[ "$(tail -c 1 "$config_file")" ]] ; then
         if ((verbose >= 0)) ; then
-            printf '%s: Warning: No newline at end of %s\n' "$my_name" \
+            printf -- '%s: Warning: No newline at end of %s\n' "$my_name" \
                 "$config_file" >&2
         fi
         local new_config_file
@@ -210,7 +210,7 @@ cleanup_snapshots() {
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
             if ((verbose >= 0)) ; then
-                printf 'No synced snapshot found for config %s, skipping\n' \
+                printf -- 'No synced snapshot found for config %s, skipping\n' \
                     "$i" >&2
             fi
             continue
@@ -278,17 +278,17 @@ create_pre_post_snapshots() {
 # DEBUG is trapped in enable_debug_mode()
 debug_trap() {
     local -r div='----------------------------------------'
-    printf '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
+    printf -- '%s\n%s: %s%s\n%s\n' "$div" "$1" "$3" "$2" "$div"
     shift 3
-    printf '%s' 'set -- '
+    printf -- '%s' 'set -- '
     if (($# > 0)) ; then
-        printf '%q ' "$@"
+        printf -- '%q ' "$@"
     fi
     echo
     declare -p IFS
     # shellcheck disable=2046
     IFS=' ' declare -p $(declare-p_vars_debug)
-    printf '%s\n' "$div"
+    printf -- '%s\n' "$div"
 } >&"$debug_fd"
 
 # get variable names to pass as arguments to declare -p
@@ -298,7 +298,7 @@ declare-p_vars() {
 
 declare-p_vars_awk() {
     local args
-    printf -v args '%s|' "$@"
+    printf -v args -- '%s|' "$@"
     args="${args%|}"
     awk -f <(cat <<_EOF_
 BEGIN {
@@ -349,8 +349,8 @@ IFS=' ' export -fn $funcs
 export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
 exit() {
-    printf 'Hooked exit command with status %s\n' "${1:-$?}"
-    printf 'Use quit to exit the %s interactive shell\n' "$my_name"
+    printf -- 'Hooked exit command with status %s\n' "${1:-$?}"
+    printf -- 'Use quit to exit the %s interactive shell\n' "$my_name"
 }
 quit() {
     command exit "${@:-0}"
@@ -405,13 +405,13 @@ enable_debug_mode() {
 # $3 - Exit status that caused the ERR condition
 err_trap() {
     trap - DEBUG
-    printf '%s: %s: %s failed%s\n' "$my_name" "${1:-0}" \
+    printf -- '%s: %s: %s failed%s\n' "$my_name" "${1:-0}" \
         "${2:-unknown command}" "${3:+ with exit status $3}"
     local func line script
     local -i frame=0
     echo 'Call stack:'
     while IFS=' ' read -r line func script ; do
-        printf '%s: %s: %s\n' "$script" "$func" "$line"
+        printf -- '%s: %s: %s\n' "$script" "$func" "$line"
     done < <(while caller $frame ; do ((++frame)) ; done)
     exit "${3:-$E_INTERNAL_ERROR}"
 } >&2
@@ -432,17 +432,17 @@ exit_trap() {
 fatal_error() {
     local -i errno="${1-}"
     if ((errno < 1)) || ((errno > 255)) ; then
-        printf 'fatal_error called with invalid exit status %s\n' \
+        printf -- 'fatal_error called with invalid exit status %s\n' \
             "${1:-(none)}"
         errno="$E_INTERNAL_ERROR"
     fi
     shift || true
-    printf '%s: ' "$my_name"
-    printf '%s ' "${@:-fatal error}"
+    printf -- '%s: ' "$my_name"
+    printf -- '%s ' "${@:-fatal error}"
     echo
     case $errno in
         "$E_INVALID_ARGUMENT")
-            printf 'Use %s -h for help\n' "$my_name" ;;
+            printf -- 'Use %s -h for help\n' "$my_name" ;;
     esac
     exit "$errno"
 } >&2
@@ -472,7 +472,7 @@ find_configs() {
     if ((verbose >= 0)) ; then
         echo 'Snapper configs found:'
         for i in "${snapper_configs[@]}" ; do
-            printf '%s %s\n' "$i" "${snapper_subvols[$i]}"
+            printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
         done
     fi
 }
@@ -507,7 +507,7 @@ find_snapshots() {
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")"
                 if ((verbose > 0)) ; then
-                    printf 'Created new snapshot %s for config %s\n' \
+                    printf -- 'Created new snapshot %s for config %s\n' \
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
             res?(ume))
@@ -533,7 +533,7 @@ find_snapshots() {
         if [[ "${use_snapshot[$i]}" ]] ; then
             use_snapshot_missing[$i]=
             if ((verbose > 0)) ; then
-                printf 'Using snapshot %s for config %s\n' \
+                printf -- 'Using snapshot %s for config %s\n' \
                     "${use_snapshot[$i]}" "$i"
             fi
         fi
@@ -575,7 +575,7 @@ generate_temp_snapraid_conf() {
     if ((${#sed_exps[@]} == 0)) ; then
         cat < "$config_file"
     else
-        sed -f <(printf '%s\n' "${sed_exps[@]}") -- "$config_file"
+        sed -f <(printf -- '%s\n' "${sed_exps[@]}") -- "$config_file"
     fi
 }
 
@@ -597,7 +597,7 @@ get_snapper_config_name() {
     [[ "$subvol" ]] || return
     for i in "${snapper_configs[@]}" ; do
         if [[ "${snapper_subvols[$i]}" -ef "$subvol" ]] ; then
-            printf '%s\n' "$i"
+            printf -- '%s\n' "$i"
             break
         fi
     done
@@ -946,7 +946,7 @@ _EOF_
 }
 
 print_command() {
-    printf '%q ' "$@"
+    printf -- '%q ' "$@"
     echo
 }
 
@@ -1174,9 +1174,9 @@ snapper_ls() {
     local snapshot_list i j
     for i in "${snapper_configs[@]}" ; do
         snapshot_list="$(snapper_ls_wrapper "$i")"
-        printf '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
+        printf -- '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
         for j in "$@" ; do
-            printf 'Snapshots with userdata key %s=%s:\n' \
+            printf -- 'Snapshots with userdata key %s=%s:\n' \
                 "$snapper_userdata_key" "$j"
             parse_snapper_ls "$snapper_userdata_key" "$j" ' ' \
                 <<< "$snapshot_list"
@@ -1306,13 +1306,13 @@ snapraid_opt_has_arg() {
 # if snapshot not found for a config, prompt the user to choose a different one
 snapshot_not_found() {
     local choice snapshot_list
-    printf '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
+    printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
         "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
         snapshot_list="$(snapper_ls_wrapper "$1")"
-        printf '%s\n' "$snapshot_list"
+        printf -- '%s\n' "$snapshot_list"
     fi
     while true ; do
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
@@ -1332,10 +1332,10 @@ snapshot_not_found() {
                     use_snapshot[$1]="$choice"
                     break
                 else
-                    printf 'Snapshot %s not found\n' "$choice"
+                    printf -- 'Snapshot %s not found\n' "$choice"
                 fi ;;
             *)
-                printf 'Invalid selection %s\n' "$choice" ;;
+                printf -- 'Invalid selection %s\n' "$choice" ;;
         esac
     done
 } >&2
