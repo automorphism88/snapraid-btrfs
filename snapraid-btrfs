@@ -52,9 +52,13 @@ set +o posix
 shopt -s extglob
 shopt -s extquote
 shopt -u nocasematch
+# Option added in bash 4.3, default in 5.0, not needed and reduces performance
+shopt -u checkwinsize &> /dev/null || true
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
+# Ensure new bash 5.0 option is disabled if present
+shopt -u localvar_inherit &> /dev/null || true
 
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
@@ -424,7 +428,6 @@ exit_trap() {
         rm -f -- "${rm_on_exit[@]}" || true
     fi
     cleanup_coproc
-    return 0
 }
 
 # $1 - exit status to exit with
@@ -449,25 +452,21 @@ fatal_error() {
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
-    local config subvol subvol_grep i
-    # grep ERE matching data line up to the point where the path starts
-    local -r data_line=$'[ \t]*(data|disk)[ \t]+[^ \t]+[ \t]+'
+    local config field1 field2 field3 subvol i
     while IFS='|' read -r config subvol ; do
         # Remove padding spaces
         config="${config%%*( )}"
         subvol="${subvol##*( )}"
         subvol="${subvol%%*( )}"
-        # escape grep ERE metacharacters in subvolume path
-        # shellcheck disable=2001
-        # https://github.com/koalaman/shellcheck/issues/1768
-        subvol_grep="$(sed 's/[].*+?{}()|$^\[]/\\&/g' <<< "$subvol")"
-        # allow trailing slash and/or \r character
-        if grep -Ex "$data_line$subvol_grep"$'[/]?[\r]?' \
-                "$config_file" > /dev/null
-        then
-            snapper_configs+=( "$config" )
-            snapper_subvols[$config]="$subvol"
-        fi
+        while IFS=$' \t' read -r field1 field2 field3 ; do
+            if [[ "$field1" =~ (data|disk) ]] &&
+                   [[ "${field3%$'\r'}" -ef "$subvol" ]]
+            then
+                snapper_configs+=( "$config" )
+                snapper_subvols[$config]="${field3%$'\r'}"
+                snapraid_names[$config]="$field2"
+            fi
+        done < "$config_file"
     done < <("$my_snapper" list-configs | tail -n +3)
     if ((verbose >= 0)) ; then
         echo 'Snapper configs found:'
@@ -582,21 +581,9 @@ generate_temp_snapraid_conf() {
 # given the snapraid.conf name for a disk (e.g. d1 in disk d1 /foo/bar),
 # find the corresponding snapper config name, if any
 get_snapper_config_name() {
-    local subvol=
-    local field1 field2 field3 i
-    while IFS=$' \t' read -r field1 field2 field3 ; do
-        case $field1 in
-            data|disk)
-                if [[ "$field2" = "$1" ]] ; then
-                    subvol="${field3%$'\r'}"
-                    subvol="${subvol%/}"
-                    break
-                fi ;;
-        esac
-    done < "$config_file"
-    [[ "$subvol" ]] || return
+    local i
     for i in "${snapper_configs[@]}" ; do
-        if [[ "${snapper_subvols[$i]}" -ef "$subvol" ]] ; then
+        if [[ "$1" = "${snapraid_names[$i]}" ]] ; then
             printf -- '%s\n' "$i"
             break
         fi
@@ -713,12 +700,16 @@ main() {
     local -i verbose=0
     # These associative arrays are indexed by snapper configs in the
     # snapper_configs array, and hold the following data:
-    # pre_snapshot - number of pre snapshot created, to use when creating post
-    # snapper_subvols - subvolume corresponding to the snapper config
-    # use_snapshot - which snapshot should be used for the snapper config
-    # use_snapshot_missing - values of use_snapshot which find_snapshots()
-    #     replaced with the empty string
-    local -A pre_snapshot snapper_subvols use_snapshot use_snapshot_missing
+    # number of pre snapshot created, to use when creating post
+    local -A pre_snapshot
+    # subvolume corresponding to the snapper config
+    local -A snapper_subvols
+    # snapraid disk name corresponding to the snapper config
+    local -A snapraid_names
+    # which snapshot should be used for the snapper config
+    local -A use_snapshot
+    # values of use_snapshot not found by find_snapshots()
+    local -A use_snapshot_missing
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
@@ -946,8 +937,10 @@ _EOF_
 }
 
 print_command() {
-    printf -- '%q ' "$@"
-    echo
+    local cmd
+    printf -v cmd -- '%q ' "$@"
+    cmd="${cmd% }"
+    printf -- '%s\n' "$cmd"
 }
 
 print_version() {
@@ -1138,11 +1131,6 @@ setup_config() {
         done
     fi
     apply_pre_post_options
-    setup_use_snapshot "$@"
-}
-
-# Initialize ${use_snapshot[@]} with command-specific defaults
-setup_use_snapshot() {
     case $1 in
         cleanup)
             use_snapshot_all sync ;;&
