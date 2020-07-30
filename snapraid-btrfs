@@ -1526,7 +1526,6 @@ use_snapshot_fix() {
     if ((configs_found > 0)) ; then
         # for disks we are not fixing, use the last synced snapshot
         use_snapshot_default sync
-        find_snapshots fix
     else
         # --filter-disk was not specified
         # snapraid will try to fix all disks, so use the live filesystem
