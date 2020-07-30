@@ -567,8 +567,8 @@ generate_temp_snapraid_conf() {
             fi
             # Escape special characters in paths so that they can be
             # passed to sed as literal strings
-            sed_find="$(sed 's/[].*$^/\[]/\\&/g' <<< "${snapper_subvols[$i]}")"
-            sed_replace="$(sed 's/[&/\]/\\&/g' <<< "$new_path")"
+            sed_find="$(sed_escape_bre <<< "${snapper_subvols[$i]}")"
+            sed_replace="$(sed_escape_replacement <<< "$new_path")"
             match_line="$data_line$sed_find"$'[/]\{0,1\}[\r]\{0,1\}$'
             # also match the deprecated token 'disk' using separate sed
             # expression to avoid depending on the GNU extension \|
@@ -1044,6 +1044,16 @@ run_snapraid() {
             fi ;;
     esac
     return $ret
+}
+
+# make input suitable to be used in sed BRE as fixed string
+sed_escape_bre() {
+    sed 's/[].*$^/\[]/\\&/g'
+}
+
+# make input suitable to be used in sed replacement text as fixed string
+sed_escape_replacement() {
+    sed 's/[&/\]/\\&/g'
 }
 
 # $1 is option being set, $2 is argument. If no argument,
