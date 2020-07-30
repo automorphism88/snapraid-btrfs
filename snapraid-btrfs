@@ -1596,7 +1596,7 @@ use_snapshot_fix() {
                     esac
                 done ;;
             *)
-                fatal_error "$E_INTERNAL_ERROR" \
+                fatal_error $E_INTERNAL_ERROR \
                     'The following could not be interpreted as valid' \
                     'snapraid arguments:' $'\n' "$@" ;;
         esac
@@ -1633,7 +1633,7 @@ verbose_command() {
 # returns 0 if $1 >= $2
 version_is_at_least() {
     if (($# != 2)) ; then
-        fatal_error "$E_INTERNAL_ERROR" \
+        fatal_error $E_INTERNAL_ERROR \
             'version_is_at_least() requires 2 arguments'
     fi
     local -i i
