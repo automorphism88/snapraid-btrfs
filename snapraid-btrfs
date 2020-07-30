@@ -25,7 +25,6 @@ readonly E_INVALID_CONFIG=66
 readonly E_NO_PERMISSION=67
 readonly E_SNAPSHOT_NOT_FOUND=68
 readonly E_INTERACTIVE_NO=69
-readonly LOWER=abcdefghijklmnopqrstuvwxyz
 readonly MY_VERSION='0.9.10+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
@@ -317,63 +316,9 @@ _EOF_
 }
 
 declare-p_vars_debug() {
-    declare-p_vars "[$LOWER]" 'BASH' '(MY|SNAPRAID)_' \
+    declare-p_vars '[abcdefghijklmnopqrstuvwxyz]' 'BASH' '(MY|SNAPRAID)_' \
         '(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)='
 }
-
-declare-p_vars_shell() {
-    declare-p_vars "[$LOWER]" 'LOWER=' '(E|MY|SNAPRAID)_'
-}
-
-# start interactive shell in context of script,
-# with variables and functions exported
-do_shell() (
-    cleanup_coproc
-    # unset variables that will be invalid
-    unset -v debug_fd sed_escape_debug sed_escape_debug_PID
-    # shellcheck disable=2030
-    rm_on_exit=()
-    local funcs vars
-    # shellcheck disable=2046
-    vars="$(IFS=' ' declare -p $(declare-p_vars_shell))"
-    shopt -u extdebug
-    funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
-    export BASHOPTS SHELLOPTS funcs vars
-    # shellcheck disable=2086,2163
-    IFS=' ' export -f $funcs
-    set +o errexit
-    set +o nounset
-    exec "$BASH" --rcfile \
-        <(cat <<'_EOF_'
-if [[ -e "$HOME/.bashrc" ]] ; then
-    source "$HOME/.bashrc"
-fi
-eval "$vars"
-IFS=' ' export -fn $funcs
-export -n BASHOPTS SHELLOPTS
-unset -v funcs vars
-exit() {
-    printf -- 'Hooked exit command with status %s\n' "${1:-$?}"
-    printf -- 'Use quit to exit the %s interactive shell\n' "$my_name"
-}
-quit() {
-    command exit "${@:-0}"
-}
-vars() {
-    IFS=' ' declare -p $(declare-p_vars_debug)
-}
-trap 'exit_trap' EXIT
-if ((verbose >= 0)) ; then
-    cat <<__EOF__
-Started bash session in $my_name context.
-Commands:
-    quit - exit the interactive shell
-    vars - display variable values
-__EOF__
-fi
-_EOF_
-         ) -O extglob -i -s "$@"
-)
 
 # run the specified snapper command on each config
 do_snapper() {
@@ -733,7 +678,6 @@ main() {
             # Option processing is also complete for other commands which
             # accept arguments
             ls|list) ;&
-            shell) ;&
             snapper) ;&
             undochange)
                 break ;;
@@ -965,9 +909,6 @@ run_command() {
             snapper_ls "$@" ;;
         rollback)
             snapper_rollback && true ;;
-        shell)
-            shift
-            do_shell "$@" ;;
         snapper)
             shift
             do_snapper "$@" ;;
@@ -1143,11 +1084,11 @@ setup_config() {
             use_snapshot_fix "$@" ;;&
         resume)
             use_snapshot_default resume ;;&
-        shell|snapper)
+        snapper)
             use_snapshot_default '' ;;&
         !(cleanup-all|ls|list|snapper|touch))
             find_snapshots "$1" ;;&
-        !(cleanup?(-all)|ls|list|shell|snapper|touch))
+        !(cleanup?(-all)|ls|list|snapper|touch))
             use_snapshot_check ;;
     esac
 }
