@@ -1529,6 +1529,8 @@ use_snapshot_fix() {
     while (($# > 0)) ; do
         disk=
         case $1 in
+            --)
+                break ;;
             --filter-disk=*)
                 disk="${1#--filter-disk=}"
                 shift ;;
@@ -1536,6 +1538,14 @@ use_snapshot_fix() {
                 option_requires_argument "$@"
                 disk="$2"
                 shift 2 ;;
+            --!(=)*)
+                if snapraid_opt_has_arg "$@" ; then
+                    shift 2
+                else
+                    shift
+                fi ;;
+            --*)
+                shift ;;
             -!(-)*)
                 opt_str="${1#-}"
                 length="${#opt_str}"
@@ -1558,8 +1568,9 @@ use_snapshot_fix() {
                     esac
                 done ;;
             *)
-                fatal_error $E_INTERNAL_ERROR \
-                    "error parsing snapraid fix arguments" ;;
+                fatal_error "$E_INTERNAL_ERROR" \
+                    'The following could not be interpreted as valid' \
+                    'snapraid arguments:' $'\n' "$@" ;;
         esac
         if [[ "$disk" ]] ; then
             snapper_config_name="$(get_snapper_config_name "$disk")"
