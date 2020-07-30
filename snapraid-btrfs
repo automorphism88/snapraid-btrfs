@@ -102,28 +102,36 @@ apply_use_snapshot_option() {
 # Sanity checks to run after reading configuration from
 # snapraid.conf and snapper list-configs
 check_config() {
-    # Make sure we found some configs
-    if ((${#snapper_configs[@]} == 0)) ; then
-        fatal_error $E_INVALID_CONFIG \
-            "No snapper configs found for any data drives in $config_file"
-    fi
-    # We don't want to snapshot the content files. So, check the directories of
-    # the content files, and compare their mount points with those of the
-    # subvolumes we are snapshotting, to see if any match
     local field1 field2 content_dir content_mount i
-    while IFS=$' \t' read -r field1 field2 ; do
-        if [[ "$field1" = content ]] ; then
-            content_dir="$(dirname -- "$field2")"
-            content_mount="$(stat --format=%m -- "$content_dir")"
-            for i in "${snapper_configs[@]}" ; do
-                if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]] ; then
-                    fatal_error $E_INVALID_CONFIG \
-                        "$field2 found in subvolume ${snapper_subvols[$i]}" \
-                        "- content files must be in separate subvolume"
-                fi
-            done
+    if ((${#snapper_configs[@]} == 0)) ; then
+        # We don't want to snapshot the content files. So, check the
+        # directories of the content files, and compare their mount points with
+        # those of the subvolumes we are snapshotting, to see if any match
+        while IFS=$' \t' read -r field1 field2 ; do
+            if [[ "$field1" = content ]] ; then
+                content_dir="$(dirname -- "$field2")"
+                content_mount="$(stat --format=%m -- "$content_dir")"
+                for i in "${snapper_configs[@]}" ; do
+                    if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]]
+                    then
+                        fatal_error $E_INVALID_CONFIG \
+                            "$field2 found in subvolume" \
+                            "${snapper_subvols[$i]}" \
+                            '- content files must be in separate subvolume'
+                    fi
+                done
+            fi
+        done < "$config_file"
+    else
+        if [[ "$1" = "shell" ]] ; then
+            printf -- '%s - %s\n' \
+                "No snapper configs found for any data drives in $config_file" \
+                'ignoring to start interactive shell' >&2
+        else
+            fatal_error $E_INVALID_CONFIG \
+                "No snapper configs found for any data drives in $config_file"
         fi
-    done < "$config_file"
+    fi
     for i in "${snapper_configs[@]}" ; do
         # Check that .snapshots subvolume exists
         if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
@@ -145,8 +153,15 @@ check_config() {
 # Sanity checks to run before reading snapraid.conf file
 check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
-        fatal_error $E_INVALID_ARGUMENT \
-            "Could not read snapraid config file at $config_file"
+        if [[ "$1" = "shell" ]] ; then
+            printf -- '%s - %s\n' \
+                "Could not read snapraid config file at $config_file" \
+                'ignoring to start interactive shell' >&2
+            return
+        else
+            fatal_error $E_INVALID_ARGUMENT \
+                "Could not read snapraid config file at $config_file"
+        fi
     elif ((verbose > 0)) ; then
         printf -- 'Using snapraid config file %s\n' "$config_file"
     fi
@@ -1129,9 +1144,9 @@ setup_config() {
             snapper_ls_quota_support_disable=1
         fi
     fi
-    check_config_file
+    check_config_file "$@"
     find_configs
-    check_config
+    check_config "$@"
     if [[ "$use_snapshot_option" ]] ; then
         apply_use_snapshot_option "$use_snapshot_option"
     fi
