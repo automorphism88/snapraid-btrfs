@@ -687,8 +687,6 @@ main() {
     local snapper_userdata="$snapper_userdata_key=created"
     # directory to create temporary snapraid.conf file in
     local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
-    # --use-filter-disk option argument
-    local -i use_filter_disk=0
     # --use-snapshot-all option argument
     local use_snapshot_all_option=
     # --use-snapshot option argument
@@ -757,6 +755,7 @@ main() {
             --help) ;&
             --interactive) ;&
             --quiet) ;&
+            # option now default, preserved as no-op
             --use-filter-disk) ;&
             --used-space) ;&
             --verbose) ;&
@@ -1095,8 +1094,6 @@ set_option() {
         --snapraid-path)
             must_be_executable "$2"
             my_snapraid="$2" ;;
-        --use-filter-disk)
-            ((++use_filter_disk)) ;;
         --used-space)
             ((++used_space_option)) ;;
         *)
@@ -1391,11 +1388,6 @@ $my_name:
                                 key1=value1,key2=value2)
   --snapraid-path PATH          Path to the snapraid executable (defaults to
                                 first found in \$PATH)
-  --use-filter-disk             If running a fix with the snapraid -d/
-                                --filter-disk option, use the live filesystem
-                                by default for all disks specified as arguments
-                                to the --filter-disk option, and the last
-                                synced snapshot for all disks not so specified.
   --used-space                  Don't pass the --disable-used-space option to
                                 snapper ls.
 
@@ -1522,18 +1514,14 @@ use_snapshot_default() {
     done
 }
 
-# When running a fix operation, parse the -d/--filter-disk snapraid option if
-# specified, and set ${use_snapshot[@]} accordingly
+# When running a fix operation, parse the -d/--filter-disk snapraid option and
+# set ${use_snapshot[@]} accordingly
 use_snapshot_fix() {
     if [[ "${1-}" = fix ]] ; then
         shift
     else
         fatal_error $E_INTERNAL_ERROR \
             "use_snapshot_fix() called with unexpected arguments"
-    fi
-    if ((use_filter_disk == 0)) ; then
-        use_snapshot_default 0
-        return
     fi
     local disk opt_str snapper_config_name
     local -i length i
@@ -1590,7 +1578,7 @@ use_snapshot_fix() {
     else
         # --filter-disk was not specified
         # snapraid will try to fix all disks, so use the live filesystem
-        use_snapshot_default 0
+        use_snapshot_all 0
     fi
 }
 
