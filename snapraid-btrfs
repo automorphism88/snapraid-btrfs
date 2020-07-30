@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-export LC_ALL=C
-
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
@@ -242,7 +240,7 @@ cleanup_snapshots() {
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$(snapper_ls_wrapper "$i" |
+            <<< "$(snapper_ls_wrapper "$i" 'C' |
             parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
@@ -517,11 +515,11 @@ find_snapshots() {
             0|'')
                 continue ;;
             diff)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" diff |
                     tail -n 1)" ;;
             last)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             new)
@@ -532,15 +530,15 @@ find_snapshots() {
                         "${use_snapshot[$i]}" "$i"
                 fi ;;
             res?(ume))
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
                     tail -n 1)" ;;
             sync)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" |
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)" ;;
             +([0123456789]))
-                if ! { snapper_ls_wrapper "$i" |
+                if ! { snapper_ls_wrapper "$i" 'C' |
                            parse_snapper_ls |
                            grep -Fx "${use_snapshot[$i]}" > /dev/null ; }
                 then
@@ -1188,15 +1186,15 @@ setup_config() {
 # additionally identify which snapshots we found with userdata
 # key $snapper_userdata_key matching the arguments
 snapper_ls() {
-    local snapshot_list i j
+    local i j
     for i in "${snapper_configs[@]}" ; do
-        snapshot_list="$(snapper_ls_wrapper "$i")"
-        printf -- '\n%s %s\n%s\n' "$i" "${snapper_subvols[$i]}" "$snapshot_list"
+        printf -- '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
+        snapper_ls_wrapper "$i"
         for j in "$@" ; do
             printf -- 'Snapshots with userdata key %s=%s:\n' \
                 "$snapper_userdata_key" "$j"
-            parse_snapper_ls "$snapper_userdata_key" "$j" ' ' \
-                <<< "$snapshot_list"
+            snapper_ls_wrapper "$i" 'C' |
+                parse_snapper_ls "$snapper_userdata_key" "$j" ' '
             echo
         done
     done
@@ -1208,16 +1206,18 @@ snapper_ls() {
 snapper_ls_sync_acl() {
     local cmd
     printf -v cmd -- '%q ' "$my_snapper" -c "$1" ls
-    cmd="${cmd}${snapper_ls_quota_support:+--disable-used-space}"
+    cmd="LC_ALL=C ${cmd}${snapper_ls_quota_support:+--disable-used-space}"
     eval "$cmd" > /dev/null
 }
 
 # Run snapper ls on config $1, using --disable-used-space option if supported
 # by snapper version in use and if --used-space option wasn't specified
+# if $2 is set, use LC_ALL=$2
 snapper_ls_wrapper() {
     local cmd
     printf -v cmd -- '%q ' "$my_snapper" -c "$1" ls
     cmd="${cmd}${snapper_ls_quota_support_disable:+--disable-used-space}"
+    cmd="${2+LC_ALL=$2 }${cmd}"
     eval "$cmd"
 }
 
@@ -1322,14 +1322,13 @@ snapraid_opt_has_arg() {
 
 # if snapshot not found for a config, prompt the user to choose a different one
 snapshot_not_found() {
-    local choice snapshot_list
+    local choice
     printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
         "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
     if ((verbose < 0)) ; then
         exit $E_SNAPSHOT_NOT_FOUND
     else
-        snapshot_list="$(snapper_ls_wrapper "$1")"
-        printf -- '%s\n' "$snapshot_list"
+        snapper_ls_wrapper "$1"
     fi
     while true ; do
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
@@ -1343,7 +1342,8 @@ snapshot_not_found() {
                 break ;;
             +([0123456789]))
                 if [[ "$choice" = 0 ]] ||
-                       { parse_snapper_ls <<< "$snapshot_list" |
+                       { snapper_ls_wrapper "$1" 'C' |
+                             parse_snapper_ls |
                              grep -Fx "$choice" > /dev/null ; }
                 then
                     use_snapshot[$1]="$choice"
