@@ -1062,11 +1062,15 @@ run_snapraid() {
 }
 
 # make input suitable to be used in sed BRE as fixed string
+# in sed BRE, outside a bracket expression, the following must be escaped:
+# . * $ ^ [ / \
 sed_escape_bre() {
     sed 's/[.*$^/\[]/\\&/g'
 }
 
 # make input suitable to be used in sed replacement text as fixed string
+# in sed replacement text, the following must be escaped:
+# & / \
 sed_escape_replacement() {
     sed 's/[&/\]/\\&/g'
 }
