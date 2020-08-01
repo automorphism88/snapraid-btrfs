@@ -56,7 +56,8 @@ for the sync. For more details on using `snapraid-btrfs`, see the output of
 
 ## Dependencies
 
-- [SnapRAID](http://www.snapraid.it/) and [snapper](http://snapper.io/)
+- [SnapRAID](http://www.snapraid.it/)
+- [snapper](http://snapper.io/)
 - [bash](https://www.gnu.org/software/bash/) (version 4.1+)
 - awk, sed, grep, and coreutils (should all be installed by default in any
   modern distro, and any POSIX-compliant versions should work, as nonportable
