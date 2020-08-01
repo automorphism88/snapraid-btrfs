@@ -127,7 +127,7 @@ should be retained until a sync is completed, at which point all previous
 snapshots can be safely cleaned up. A snapper userdata key is used to keep
 track of whether a `snapraid sync` run on a set of snapshots completes
 successfully (i.e., returns exit status 0) to ensure that
- `snapraid-btrfs cleanup` can handle this situation properly.
+`snapraid-btrfs cleanup` can handle this situation properly.
 
 It is recommended that you use ext4 for the parity drives, since the metadata
 overhead is extremely small with the right mkfs settings (minimum possible
