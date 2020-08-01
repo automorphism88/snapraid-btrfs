@@ -1542,7 +1542,7 @@ use_snapshot_check() {
     done
 }
 
-# For any configs where use_snapshot is undefined, set it to $1
+# For any configs where use_snapshot is undefined or empty, set it to $1
 use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
