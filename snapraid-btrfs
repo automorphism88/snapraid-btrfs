@@ -1172,6 +1172,10 @@ setup_config() {
             use_snapshot_default last ;;&
         check|pool|rollback|scrub|undochange)
             use_snapshot_default sync ;;&
+        # for readonly commands, use the live filesystem as a backup default
+        check|config|scrub)
+            find_snapshots "$1"
+            use_snapshot_default 0 ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
         fix)
@@ -1546,8 +1550,15 @@ use_snapshot_check() {
 use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]-}" ]] ||
+        if [[ -z "${use_snapshot[$i]-}" ]] ; then
+            if [[ "$1" = '0' ]] && ((verbose >= 0)) ; then
+                printf -- '%s %s - %s\n' \
+                    'WARNING: Could not find snapshot for snapper config' \
+                    "$i" \
+                    'using live filesystem instead for readonly command' >&2
+            fi
             use_snapshot[$i]="$1"
+        fi
     done
 }
 
