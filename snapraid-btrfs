@@ -493,6 +493,7 @@ find_configs() {
         for i in "${snapper_configs[@]}" ; do
             printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
         done
+        echo
     fi
 }
 
