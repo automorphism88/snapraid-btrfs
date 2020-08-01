@@ -1620,7 +1620,7 @@ use_snapshot_fix() {
         # for disks we are not fixing, use the last synced snapshot
         use_snapshot_default sync
     else
-        # --filter-disk was not specified
+        # snapraid fix --filter-disk option was not specified
         # snapraid will try to fix all disks, so use the live filesystem
         use_snapshot_all 0
     fi
