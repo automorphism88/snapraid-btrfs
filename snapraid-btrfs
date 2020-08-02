@@ -124,9 +124,8 @@ check_config() {
         done < "$config_file"
     else
         if [[ "$1" = "shell" ]] ; then
-            printf -- '%s - %s\n' \
-                "No snapper configs found for any data drives in $config_file" \
-                'ignoring to start interactive shell' >&2
+            warn "No snapper configs found for any data drives in" \
+                "$config_file" '- ignoring to start interactive shell'
         else
             fatal_error $E_INVALID_CONFIG \
                 "No snapper configs found for any data drives in $config_file"
@@ -154,9 +153,8 @@ check_config() {
 check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
         if [[ "$1" = "shell" ]] ; then
-            printf -- '%s - %s\n' \
-                "Could not read snapraid config file at $config_file" \
-                'ignoring to start interactive shell' >&2
+            warn 'Could not read snapraid config file at' "$config_file" \
+                '- ignoring to start interactive shell'
             return
         else
             fatal_error $E_INVALID_ARGUMENT \
@@ -170,10 +168,7 @@ check_config_file() {
     # file with read. Therefore, if there is no trailing newline, create a
     # temporary config file with a newline added and use that instead.
     if [[ "$(tail -c 1 "$config_file")" ]] ; then
-        if ((verbose >= 0)) ; then
-            printf -- '%s: Warning: No newline at end of %s\n' "$my_name" \
-                "$config_file" >&2
-        fi
+        warn 'No newline at end of' "$config_file"
         local new_config_file
         new_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
         rm_on_exit+=( "$new_config_file" )
@@ -233,10 +228,7 @@ cleanup_snapshots() {
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            if ((verbose >= 0)) ; then
-                printf -- 'No synced snapshot found for config %s, skipping\n' \
-                    "$i" >&2
-            fi
+            warn 'No synced snapshot found for config' "$i" ' - skipping'
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
@@ -1553,10 +1545,8 @@ use_snapshot_default() {
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]-}" ]] ; then
             if [[ "$1" = '0' ]] && ((verbose >= 0)) ; then
-                printf -- '%s %s - %s\n' \
-                    'WARNING: Could not find snapshot for snapper config' \
-                    "$i" \
-                    'using live filesystem instead for readonly command' >&2
+                warn 'Could not find snapshot for snapper config' "$i" \
+                    '- using live filesystem instead for readonly command'
             fi
             use_snapshot[$i]="$1"
         fi
@@ -1680,5 +1670,13 @@ version_is_at_least() {
     # (possibly with ver1 having extra components)
     return 0
 }
+
+warn() {
+    if ((verbose >= 0)) ; then
+        printf -- '%s: WARNING: ' "$my_name"
+        printf -- '%s ' "$@"
+        echo
+    fi
+} >&2
 
 main "$@"
