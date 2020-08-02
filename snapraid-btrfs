@@ -1603,7 +1603,7 @@ use_snapshot_fix() {
                     esac
                 done ;;
             *)
-                fatal_error $E_INTERNAL_ERROR \
+                fatal_error $E_INVALID_ARGUMENT \
                     'The following could not be interpreted as valid' \
                     'snapraid arguments:' $'\n' "$@" ;;
         esac
