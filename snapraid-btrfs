@@ -1558,7 +1558,7 @@ use_snapshot_fix() {
         shift
     else
         fatal_error $E_INTERNAL_ERROR \
-            "use_snapshot_fix() called with unexpected arguments"
+            'use_snapshot_fix() called with unexpected arguments'
     fi
     local disk opt_str snapper_config_name
     local -i length i
