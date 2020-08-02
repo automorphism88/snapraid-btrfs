@@ -1379,7 +1379,7 @@ $my_name:
                                 snapshots created
   -i, --interactive             Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
-                                cleanup(-all), rollback, or undochange
+                                cleanup(-all), snapper, rollback, or undochange
                                 commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
   -u, --use-snapshot-all ARG    Use one of the following arguments:
