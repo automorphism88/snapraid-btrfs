@@ -768,8 +768,7 @@ main() {
             --help) ;&
             --interactive) ;&
             --quiet) ;&
-            # option now default, preserved as no-op
-            --use-filter-disk) ;&
+            --use-filter-disk) ;& # option now default, preserved as no-op
             --used-space) ;&
             --verbose) ;&
             --version)
