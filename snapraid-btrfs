@@ -1414,7 +1414,7 @@ $my_name:
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
   --snapper-path PATH           Path to the snapper executable (defaults to
-                                first found in \$PATH)
+                                first found in PATH)
   --snapper-userdata ARG        Specify snapper userdata to set for any
                                 snapshots created in addition to the
                                 $my_name attribute, which is set by
@@ -1423,7 +1423,7 @@ $my_name:
                                 with multiple keys separated by commas (e.g.
                                 key1=value1,key2=value2)
   --snapraid-path PATH          Path to the snapraid executable (defaults to
-                                first found in \$PATH)
+                                first found in PATH)
   --used-space                  Don't pass the --disable-used-space option to
                                 snapper ls.
 
