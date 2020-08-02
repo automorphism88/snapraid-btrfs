@@ -1204,22 +1204,21 @@ snapper_ls() {
 # Run snapper ls &> /dev/null on config $1 to sync ACLs, using
 # --disable-used-space option if supported by snapper version in use
 snapper_ls_sync_acl() {
-    local cmd
-    printf -v cmd -- '%q ' "$my_snapper" -c "$1" ls
-    cmd="LC_ALL=C ${cmd}${snapper_ls_quota_support:+--disable-used-space}"
-    eval "$cmd" > /dev/null
+    LC_ALL=C "$my_snapper" -c "$1" \
+        ls${snapper_ls_quota_support:+ --disable-used-space} > /dev/null
 }
 
 # Run snapper ls on config $1, using --disable-used-space option if supported
 # by snapper version in use and if --used-space option wasn't specified
 # if $2 is set, use LC_ALL=$2
 snapper_ls_wrapper() {
-    local cmd
-    printf -v cmd -- '%q ' "$my_snapper" -c "$1" ls
-    cmd="${cmd}${snapper_ls_quota_support_disable:+--disable-used-space}"
-    # shellcheck disable=1003,2016
-    cmd="${2+LC_ALL='${2//'/'\\''}' }${cmd}"
-    eval "$cmd"
+    if [[ "${2-}" ]] ; then
+        LC_ALL="$2" "$my_snapper" -c "$1" \
+            ls${snapper_ls_quota_support_disable:+ --disable-used-space}
+    else
+        "$my_snapper" -c "$1" \
+            ls${snapper_ls_quota_support_disable:+ --disable-used-space}
+    fi
 }
 
 # Run snapper rollback in each snapper config
