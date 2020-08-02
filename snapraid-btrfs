@@ -301,9 +301,8 @@ debug_trap() {
         printf -- '%q ' "$@"
     fi
     echo
-    declare -p IFS
     # shellcheck disable=2046
-    IFS=' ' declare -p $(declare-p_vars_debug)
+    declare -p $(declare-p_vars_debug)
     printf -- '%s\n' "$div"
 } >&"$debug_fd"
 
@@ -330,7 +329,7 @@ _EOF_
 
 declare-p_vars_debug() {
     declare-p_vars "[$LOWER]" 'BASH' '(MY|SNAPRAID)_' \
-        '(DEBUG_FD|FUNCNAME|PIPESTATUS|TMPDIR)='
+        '(DEBUG_FD|FUNCNAME|IFS|PIPESTATUS|TMPDIR)='
 }
 
 declare-p_vars_shell() {
@@ -347,12 +346,12 @@ do_shell() (
     rm_on_exit=()
     local funcs vars
     # shellcheck disable=2046
-    vars="$(IFS=' ' declare -p $(declare-p_vars_shell))"
+    vars="$(declare -p $(declare-p_vars_shell))"
     shopt -u extdebug
     funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
     export BASHOPTS SHELLOPTS funcs vars
     # shellcheck disable=2086,2163
-    IFS=' ' export -f $funcs
+    export -f $funcs
     set +o errexit
     set +o nounset
     exec "$BASH" --rcfile \
@@ -361,7 +360,7 @@ if [[ -e "$HOME/.bashrc" ]] ; then
     source "$HOME/.bashrc"
 fi
 eval "$vars"
-IFS=' ' export -fn $funcs
+export -fn $funcs
 export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
 exit() {
@@ -372,7 +371,7 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    IFS=' ' declare -p $(declare-p_vars_debug)
+    declare -p $(declare-p_vars_debug)
 }
 trap 'exit_trap' EXIT
 if ((verbose >= 0)) ; then
