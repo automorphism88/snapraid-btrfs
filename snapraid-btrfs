@@ -1226,7 +1226,8 @@ snapper_ls_wrapper() {
     local cmd
     printf -v cmd -- '%q ' "$my_snapper" -c "$1" ls
     cmd="${cmd}${snapper_ls_quota_support_disable:+--disable-used-space}"
-    cmd="${2+LC_ALL=$2 }${cmd}"
+    # shellcheck disable=1003,2016
+    cmd="${2+LC_ALL='${2//'/'\\''}' }${cmd}"
     eval "$cmd"
 }
 
