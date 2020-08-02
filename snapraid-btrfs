@@ -686,11 +686,11 @@ main() {
     # description to specify to snapper when creating new snapshots
     local snapper_description=
     # variable to be set if snapper ls supports --disable-used-space
+    # (version 0.6.0 or newer) and --used-space option was not specified
+    local snapper_ls_quota_disable=
+    # variable to be set if snapper ls supports --disable-used-space
     # (version 0.6.0 or newer)
     local snapper_ls_quota_support=
-    # variable to be set if snapper ls supports --disable-used-space and
-    # --used-space option was not specified
-    local snapper_ls_quota_support_disable=
     # snapper userdata key that will be specified to track created snapshots
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local \
@@ -1137,7 +1137,7 @@ setup_config() {
     if version_is_at_least "$(get_snapper_version)" 0.6.0 ; then
         snapper_ls_quota_support=1
         if ((used_space_option == 0)) ; then
-            snapper_ls_quota_support_disable=1
+            snapper_ls_quota_disable=1
         fi
     fi
     check_config_file "$@"
@@ -1214,10 +1214,10 @@ snapper_ls_sync_acl() {
 snapper_ls_wrapper() {
     if [[ "${2-}" ]] ; then
         LC_ALL="$2" "$my_snapper" -c "$1" \
-            ls${snapper_ls_quota_support_disable:+ --disable-used-space}
+            ls${snapper_ls_quota_disable:+ --disable-used-space}
     else
         "$my_snapper" -c "$1" \
-            ls${snapper_ls_quota_support_disable:+ --disable-used-space}
+            ls${snapper_ls_quota_disable:+ --disable-used-space}
     fi
 }
 
