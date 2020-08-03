@@ -1025,10 +1025,7 @@ run_snapraid() {
     temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
     rm_on_exit+=( "$temp_config_file" )
     generate_temp_snapraid_conf > "$temp_config_file"
-    if ((verbose >= 0)) ; then
-        echo 'Using snapraid config file:'
-        cat < "$temp_config_file"
-    fi
+    show_temp_snapraid_conf
     case $1 in
         fix|touch)
             create_pre_post_snapshots "$1" ;;
@@ -1190,6 +1187,14 @@ setup_config() {
             use_snapshot_check ;;
     esac
 }
+
+show_temp_snapraid_conf() {
+    if ((verbose >= 0)) ; then
+        echo 'Using snapraid config file:'
+        cat < "$temp_config_file"
+        echo
+    fi
+} >&2
 
 # Do a snapper ls in all configs, and if argument(s) are specified,
 # additionally identify which snapshots we found with userdata
