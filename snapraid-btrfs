@@ -339,25 +339,22 @@ declare-p_vars_shell() {
 
 # start interactive shell in context of script,
 # with variables and functions exported
-do_shell() (
+do_shell() {
     cleanup_coproc
-    # unset variables that will be invalid
-    unset -v debug_fd sed_escape_debug sed_escape_debug_PID
-    # shellcheck disable=2030
-    rm_on_exit=()
-    local funcs vars
-    local -a funcs_arr vars_arr
-    IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_shell)"
-    vars="$(declare -p "${vars_arr[@]}")"
-    funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
-    IFS=' ' read -r -a funcs_arr <<< "$funcs"
-    export BASHOPTS SHELLOPTS funcs vars
-    export -f "${funcs_arr[@]}"
-    shopt -u extdebug
-    set +o errexit
-    set +o nounset
-    exec "$BASH" --rcfile \
-        <(cat <<'_EOF_'
+    (
+        local funcs vars
+        local -a funcs_arr vars_arr
+        IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_shell)"
+        vars="$(declare -p "${vars_arr[@]}")"
+        funcs="$(declare -F |
+            awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
+        IFS=' ' read -r -a funcs_arr <<< "$funcs"
+        export BASHOPTS SHELLOPTS funcs vars
+        export -f "${funcs_arr[@]}"
+        set +o errexit
+        set +o nounset
+        exec "$BASH" --rcfile \
+            <(cat <<'_EOF_'
 eval "$vars"
 _unexport_funcs() {
     local -a func_arr
@@ -386,15 +383,16 @@ if [[ -e "$HOME/.bashrc" ]] ; then
 fi
 if ((verbose >= 0)) ; then
     cat <<__EOF__
-Started bash session in $my_name context.
+Started interactive bash session in $my_name context.
 Commands:
     quit - exit the interactive shell
     vars - display variable values
 __EOF__
 fi
 _EOF_
-         ) -O extglob -i -s "$@"
-)
+             ) -O extglob -i -s "$@"
+    )
+}
 
 # run the specified snapper command on each config
 do_snapper() {
