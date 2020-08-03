@@ -1479,6 +1479,9 @@ or one of the following $my_name specific commands:
         is specified). WARNING: Do not use this command unless you are familiar
         with the snapper rollback command and its effects. Instead consider
         using the undochange command.
+  'shell':
+        Start an interactive bash session in $my_name context. Useful for
+        testing and debugging.
   'snapper':
         Run the given snapper command in all configs, unless they are disabled
         by --use-snapshot exampleconfig=0 - for example:
