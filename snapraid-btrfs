@@ -789,7 +789,7 @@ main() {
                 opt_str="${1%%=*}"
                 if [[ "$opt_str" = "$1" ]] ; then
                     set_option "$opt_str" "${2-}"
-                    shift 2 || shift
+                    shift 2
                 else
                     set_option "$opt_str" "${1#$opt_str=}"
                     shift
@@ -812,7 +812,7 @@ main() {
                         [CUcdu])
                             if ((i == length-1)) ; then
                                 set_option "-${opt_str:$i:1}" "${2-}"
-                                shift 2 || shift
+                                shift 2
                             else
                                 set_option "-${opt_str:$i:1}" \
                                     "${opt_str:$((i+1))}"
