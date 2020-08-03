@@ -1564,8 +1564,7 @@ use_snapshot_fix() {
         fatal_error $E_INTERNAL_ERROR \
             'use_snapshot_fix() called with unexpected arguments'
     fi
-    local disk opt_str snapper_config_name
-    local -i length i
+    local disk snapper_config_name
     local -i configs_found=0
     while (($# > 0)) ; do
         disk=
@@ -1579,33 +1578,15 @@ use_snapshot_fix() {
                 option_requires_argument "$@"
                 disk="$2"
                 shift 2 ;;
-            --*)
+            -*(["$SNAPRAID_OPTS_NOARG"])d*)
+                disk="${1#*([$SNAPRAID_OPTS_NOARG])d}"
+                shift ;;
+            -*)
                 if snapraid_opt_has_arg "$@" ; then
                     shift 2
                 else
                     shift
                 fi ;;
-            -*)
-                opt_str="${1#-}"
-                length="${#opt_str}"
-                for ((i=0;i<length;i++)) ; do
-                    case ${opt_str:$i:1} in
-                        d)
-                            if ((length == i+1)) ; then
-                                option_requires_argument "$@"
-                                disk="$2"
-                            else
-                                disk="${opt_str:$((i+1))}"
-                            fi ;&
-                        ["$SNAPRAID_OPTS_ARG"])
-                            if ((length == i+1)) ; then
-                                shift 2 || shift
-                            else
-                                shift
-                            fi
-                            break ;;
-                    esac
-                done ;;
             *)
                 fatal_error $E_INVALID_ARGUMENT \
                     'The following could not be interpreted as valid' \
