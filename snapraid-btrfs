@@ -646,16 +646,6 @@ is_btrfs_subvolume() {
     esac
 }
 
-list_configs() {
-    if ((verbose >= 0)) ; then
-        echo 'Snapper configs found:'
-        for i in "${snapper_configs[@]}" ; do
-            printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
-        done
-        echo
-    fi
-} >&2
-
 main() {
     check_dependencies awk basename cat dirname grep mktemp rm sed stat tail
 
@@ -1147,7 +1137,7 @@ setup_config() {
     fi
     check_config_file "$@"
     find_configs
-    list_configs
+    show_configs
     check_config "$@"
     if [[ "$use_snapshot_option" ]] ; then
         apply_use_snapshot_option "$use_snapshot_option"
@@ -1187,6 +1177,16 @@ setup_config() {
             use_snapshot_check ;;
     esac
 }
+
+show_configs() {
+    if ((verbose >= 0)) ; then
+        echo 'Snapper configs found:'
+        for i in "${snapper_configs[@]}" ; do
+            printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
+        done
+        echo
+    fi
+} >&2
 
 show_temp_snapraid_conf() {
     if ((verbose >= 0)) ; then
