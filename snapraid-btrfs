@@ -301,8 +301,9 @@ debug_trap() {
         printf -- '%q ' "$@"
     fi
     echo
-    # shellcheck disable=2046
-    declare -p $(declare-p_vars_debug)
+    local -a debug_vars
+    IFS=' ' read -r -a debug_vars <<< "$(declare-p_vars_debug)"
+    declare -p "${debug_vars[@]}"
     printf -- '%s\n' "$div"
 } >&"$debug_fd"
 
@@ -345,24 +346,29 @@ do_shell() (
     # shellcheck disable=2030
     rm_on_exit=()
     local funcs vars
-    # shellcheck disable=2046
-    vars="$(declare -p $(declare-p_vars_shell))"
-    shopt -u extdebug
+    local -a funcs_arr vars_arr
+    IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_shell)"
+    vars="$(declare -p "${vars_arr[@]}")"
     funcs="$(declare -F | awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
+    IFS=' ' read -r -a funcs_arr <<< "$funcs"
     export BASHOPTS SHELLOPTS funcs vars
-    # shellcheck disable=2086,2163
-    export -f $funcs
+    export -f "${funcs_arr[@]}"
+    shopt -u extdebug
     set +o errexit
     set +o nounset
     exec "$BASH" --rcfile \
         <(cat <<'_EOF_'
-if [[ -e "$HOME/.bashrc" ]] ; then
-    source "$HOME/.bashrc"
-fi
 eval "$vars"
-export -fn $funcs
+_unexport_funcs() {
+    local -a func_arr
+    IFS=' ' read -r -a func_arr <<< "$1"
+    export -fn "${func_arr[@]}"
+}
+_unexport_funcs "$funcs"
+unset -f _unexport_funcs
 export -n BASHOPTS SHELLOPTS
 unset -v funcs vars
+trap 'exit_trap' EXIT
 exit() {
     printf -- 'Hooked exit command with status %s\n' "${1:-$?}"
     printf -- 'Use quit to exit the %s interactive shell\n' "$my_name"
@@ -371,9 +377,13 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    declare -p $(declare-p_vars_debug)
+    local -a vars_arr
+    IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_debug)"
+    declare -p "${vars_arr[@]}"
 }
-trap 'exit_trap' EXIT
+if [[ -e "$HOME/.bashrc" ]] ; then
+    source "$HOME/.bashrc"
+fi
 if ((verbose >= 0)) ; then
     cat <<__EOF__
 Started bash session in $my_name context.
@@ -434,7 +444,6 @@ err_trap() {
 # Intended to be called by EXIT trap
 # Removes rm_on_exit if nonempty and cleans up coprocess if necessary
 exit_trap() {
-    # shellcheck disable=2031
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" || true
     fi
