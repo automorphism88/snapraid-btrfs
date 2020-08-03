@@ -1204,7 +1204,7 @@ snapper_ls() {
     echo
 }
 
-# Run snapper ls &> /dev/null on config $1 to sync ACLs, using
+# Run snapper ls > /dev/null on config $1 to sync ACLs, using
 # --disable-used-space option if supported by snapper version in use
 snapper_ls_sync_acl() {
     LC_ALL=C "$my_snapper" -c "$1" \
