@@ -337,8 +337,7 @@ declare-p_vars_shell() {
     declare-p_vars "[$LOWER]" 'LOWER=' '(E|MY|SNAPRAID)_'
 }
 
-# start interactive shell in context of script,
-# with variables and functions exported
+# start interactive shell in context of script
 do_shell() {
     cleanup_coproc
     (
