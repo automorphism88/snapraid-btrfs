@@ -114,7 +114,7 @@ check_config() {
                 for i in "${snapper_configs[@]}" ; do
                     if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]]
                     then
-                        fatal_error $E_INVALID_CONFIG \
+                        error $E_INVALID_CONFIG \
                             "$field2 found in subvolume" \
                             "${snapper_subvols[$i]}" \
                             '- content files must be in separate subvolume'
@@ -127,14 +127,14 @@ check_config() {
             warn "No snapper configs found for any data drives in" \
                 "$config_file" '- ignoring to start interactive shell'
         else
-            fatal_error $E_INVALID_CONFIG \
+            error $E_INVALID_CONFIG \
                 "No snapper configs found for any data drives in $config_file"
         fi
     fi
     for i in "${snapper_configs[@]}" ; do
         # Check that .snapshots subvolume exists
         if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
-            fatal_error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
+            error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
                 'is not a valid btrfs subvolume'
         # Check that we have read permission for the .snapshots subvolume
         # If not, try running snapper ls, in case ACLs need to be synced
@@ -142,7 +142,7 @@ check_config() {
                      { snapper_ls_sync_acl "$i" &&
                            [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; } ; }
         then
-            fatal_error $E_NO_PERMISSION 'No read permission for' \
+            error $E_NO_PERMISSION 'No read permission for' \
                 "${snapper_subvols[$i]}/.snapshots" \
                 '- is SYNC_ACL set in snapper configuration?'
         fi
@@ -157,7 +157,7 @@ check_config_file() {
                 '- ignoring to start interactive shell'
             return
         else
-            fatal_error $E_INVALID_ARGUMENT \
+            error $E_INVALID_ARGUMENT \
                 "Could not read snapraid config file at $config_file"
         fi
     elif ((verbose > 0)) ; then
@@ -182,7 +182,7 @@ check_config_file() {
 check_dependencies() {
     while (($# > 0)) ; do
         if ! type "$1" &> /dev/null ; then
-            fatal_error $E_MISSING_DEPENDENCY "Could not find $1 in PATH"
+            error $E_MISSING_DEPENDENCY "Could not find $1 in PATH"
         fi
         shift
     done
@@ -195,7 +195,7 @@ check_snapraid_arguments() {
             --)
                 break ;;
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
-                fatal_error $E_INVALID_ARGUMENT \
+                error $E_INVALID_ARGUMENT \
                     'The -c/--conf option' \
                     'may not be passed through to snapraid' ;;
         esac
@@ -251,7 +251,7 @@ cleanup_snapshots() {
 # that a subvolume is set for the config name
 config_must_exist() {
     [[ "${snapper_subvols[$1]-}" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "Invalid snapper configuration $1"
+        error $E_INVALID_ARGUMENT "Invalid snapper configuration $1"
 }
 
 # Calling once creates pre snapshots, calling again creates corresponding post
@@ -440,22 +440,12 @@ err_trap() {
     exit "${3:-$E_INTERNAL_ERROR}"
 } >&2
 
-# Intended to be called by EXIT trap
-# Removes rm_on_exit if nonempty and cleans up coprocess if necessary
-exit_trap() {
-    # shellcheck disable=2031
-    if ((${#rm_on_exit[@]} > 0)) ; then
-        rm -f -- "${rm_on_exit[@]}" || true
-    fi
-    cleanup_coproc
-}
-
 # $1 - exit status to exit with
 # $2,$3,... - error message to print as $* after shifting
-fatal_error() {
+error() {
     local -i errno="${1-}"
     if ((errno < 1)) || ((errno > 255)) ; then
-        printf -- 'fatal_error called with invalid exit status %s\n' \
+        printf -- 'error called with invalid exit status %s\n' \
             "${1:-(none)}"
         errno="$E_INTERNAL_ERROR"
     fi
@@ -469,6 +459,16 @@ fatal_error() {
     esac
     exit "$errno"
 } >&2
+
+# Intended to be called by EXIT trap
+# Removes rm_on_exit if nonempty and cleans up coprocess if necessary
+exit_trap() {
+    # shellcheck disable=2031
+    if ((${#rm_on_exit[@]} > 0)) ; then
+        rm -f -- "${rm_on_exit[@]}" || true
+    fi
+    cleanup_coproc
+}
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
@@ -539,7 +539,7 @@ find_snapshots() {
                     use_snapshot[$i]=
                 fi ;;
             *)
-                fatal_error $E_INVALID_ARGUMENT \
+                error $E_INVALID_ARGUMENT \
                     'Could not understand snapshot selection' \
                     "${use_snapshot[$i]} for config $i" ;;
         esac
@@ -569,9 +569,9 @@ generate_temp_snapraid_conf() {
             new_path="${snapper_subvols[$i]}/.snapshots/"
             new_path+="${use_snapshot[$i]}/snapshot"
             if ! is_btrfs_subvolume "$new_path" ; then
-                fatal_error $E_SNAPSHOT_NOT_FOUND "Invalid snapshot $new_path"
+                error $E_SNAPSHOT_NOT_FOUND "Invalid snapshot $new_path"
             elif ! [[ -r "$new_path" ]] ; then
-                fatal_error $E_NO_PERMISSION "No read permission for $new_path"
+                error $E_NO_PERMISSION "No read permission for $new_path"
             fi
             # Escape special characters in paths so that they can be
             # passed to sed as literal strings
@@ -625,7 +625,7 @@ interactive_ask() {
 } >&2
 
 invalid_argument() {
-    fatal_error $E_INVALID_ARGUMENT "Invalid argument $1"
+    error $E_INVALID_ARGUMENT "Invalid argument $1"
 }
 
 # Returns:
@@ -837,7 +837,7 @@ main() {
         setup_config "$@"
         run_command "$@"
     else
-        fatal_error $E_INVALID_ARGUMENT "No command specified"
+        error $E_INVALID_ARGUMENT "No command specified"
     fi
 }
 
@@ -859,20 +859,20 @@ modify_userdata() {
 
 must_be_executable() {
     [[ -x "$1" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "$1 is not an executable file"
+        error $E_INVALID_ARGUMENT "$1 is not an executable file"
 }
 
 must_be_writable_dir() {
     [[ -d "$1" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
+        error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
     [[ -w "$1" ]] ||
-        fatal_error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
+        error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
 }
 
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
     [[ "${2-}" ]] ||
-        fatal_error $E_INVALID_ARGUMENT "Option $1 requires an argument"
+        error $E_INVALID_ARGUMENT "Option $1 requires an argument"
 }
 
 # use awk to parse piped snapper ls output and find snapshot numbers
@@ -1224,7 +1224,7 @@ snapper_ls() {
 snapper_ls_sync_acl() {
     LC_ALL=C "$my_snapper" -c "$1" \
         ls${snapper_ls_quota_support:+ --disable-used-space} > /dev/null ||
-        fatal_error $E_NO_PERMISSION 'Failed to sync ACLs with snapper ls'
+        error $E_NO_PERMISSION 'Failed to sync ACLs with snapper ls'
 }
 
 # Run snapper ls on config $1, using --disable-used-space option if supported
@@ -1534,7 +1534,7 @@ use_snapper_userdata() {
     for i in "${args[@]}" ; do
         IFS='=' read -r key value <<< "$i"
         if [[ "$key" = "$snapper_userdata_key" ]] ; then
-            fatal_error $E_INVALID_ARGUMENT \
+            error $E_INVALID_ARGUMENT \
                 "Cannot set reserved userdata key $key"
         else
             snapper_userdata+=",$key=$value"
@@ -1579,7 +1579,7 @@ use_snapshot_fix() {
     if [[ "${1-}" = fix ]] ; then
         shift
     else
-        fatal_error $E_INTERNAL_ERROR \
+        error $E_INTERNAL_ERROR \
             'use_snapshot_fix() called with unexpected arguments'
     fi
     local disk snapper_config_name
@@ -1606,7 +1606,7 @@ use_snapshot_fix() {
                     shift
                 fi ;;
             *)
-                fatal_error $E_INVALID_ARGUMENT \
+                error $E_INVALID_ARGUMENT \
                     'The following could not be interpreted as valid' \
                     'snapraid arguments:' $'\n' "$@" ;;
         esac
@@ -1643,7 +1643,7 @@ verbose_command() {
 # returns 0 if $1 >= $2
 version_is_at_least() {
     if (($# != 2)) ; then
-        fatal_error $E_INTERNAL_ERROR \
+        error $E_INTERNAL_ERROR \
             'version_is_at_least() requires 2 arguments'
     fi
     local -i i
