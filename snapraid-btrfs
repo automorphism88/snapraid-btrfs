@@ -771,7 +771,6 @@ main() {
             --help) ;&
             --interactive) ;&
             --quiet) ;&
-            --use-filter-disk) ;& # option now default, preserved as no-op
             --used-space) ;&
             --verbose) ;&
             --version)
@@ -1120,8 +1119,6 @@ set_option() {
         --snapraid-path)
             must_be_executable "$2"
             my_snapraid="$2" ;;
-        --use-filter-disk) # option now default, accepted as no-op
-            return ;;
         --used-space)
             ((++used_space_option)) ;;
         *)
