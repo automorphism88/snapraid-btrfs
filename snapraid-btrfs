@@ -492,7 +492,7 @@ find_configs() {
                    [[ "${field3}" -ef "$subvol" ]]
             then
                 snapper_configs+=( "$config" )
-                snapper_subvols[$config]="${field3}"
+                snapper_subvols[$config]="$field3"
                 snapraid_names[$config]="$field2"
             fi
         done < "$config_file"
