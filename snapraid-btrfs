@@ -123,13 +123,8 @@ check_config() {
             fi
         done < "$config_file"
     else
-        if [[ "$1" = "shell" ]] ; then
-            warn "No snapper configs found for any data drives in" \
-                "$config_file" '- ignoring to start interactive shell'
-        else
-            error $E_INVALID_CONFIG \
-                "No snapper configs found for any data drives in $config_file"
-        fi
+        error_nonshell "$1" $E_INVALID_CONFIG \
+            "No snapper configs found for any data drives in $config_file"
     fi
     for i in "${snapper_configs[@]}" ; do
         # Check that .snapshots subvolume exists
@@ -152,14 +147,9 @@ check_config() {
 # Sanity checks to run before reading snapraid.conf file
 check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
-        if [[ "$1" = "shell" ]] ; then
-            warn 'Could not read snapraid config file at' "$config_file" \
-                '- ignoring to start interactive shell'
-            return
-        else
-            error $E_INVALID_ARGUMENT \
-                "Could not read snapraid config file at $config_file"
-        fi
+        error_nonshell "$1" $E_INVALID_ARGUMENT \
+            "Could not read snapraid config file at $config_file"
+        return
     elif ((verbose > 0)) ; then
         printf -- 'Using snapraid config file %s\n' "$config_file"
     fi
@@ -459,6 +449,25 @@ error() {
     esac
     exit "$errno"
 } >&2
+
+# error if not running the shell command, otherwise warning
+# $1 - command being run
+# $2,$3,... - args to pass to error() if $1 != shell
+error_nonshell() {
+    if ! { (($# > 2)) &&
+               [[ "$1" =~ [a-z]* ]] &&
+               [[ "$2" =~ [0-9]* ]] ; }
+    then
+        error $E_INTERNAL_ERROR \
+            'error_nonshell() called with invalid arguments'
+    elif [[ "$1" = 'shell' ]] ; then
+        shift 2
+        warn "$@" '- ignoring to start interactive shell'
+    else
+        shift
+        error "$@"
+    fi
+}
 
 # Intended to be called by EXIT trap
 # Removes rm_on_exit if nonempty and cleans up coprocess if necessary
