@@ -1273,7 +1273,7 @@ snapper_rollback() {
 }
 
 # Run snapper undochange in each snapper config to revert to the state at the
-# time ${use_snapshot[$i]} was created, creating before and after snapshots
+# time ${use_snapshot[$i]} was created, creating snapshots before and after
 snapper_undochange() {
     local i
     local -i ret=0
