@@ -89,6 +89,7 @@ apply_pre_post_options() {
 
 # Set use_snapshot from comma-separated key=value pairs specified in $1
 apply_use_snapshot_option() {
+    check_func_args '==1' "$@"
     local -a args
     local config config_using i
     IFS=',' read -r -a args <<< "$1"
@@ -102,6 +103,7 @@ apply_use_snapshot_option() {
 # Sanity checks to run after reading configuration from
 # snapraid.conf and snapper list-configs
 check_config() {
+    check_func_args '>0' "$@"
     local field1 field2 content_dir content_mount i
     if ((${#snapper_configs[@]} > 0)) ; then
         # We don't want to snapshot the content files. So, check the
@@ -146,6 +148,7 @@ check_config() {
 
 # Sanity checks to run before reading snapraid.conf file
 check_config_file() {
+    check_func_args '>0' "$@"
     if ! [[ -r "$config_file" ]] ; then
         error_nonshell "$1" $E_INVALID_ARGUMENT \
             "Could not read snapraid config file at $config_file"
@@ -176,6 +179,19 @@ check_dependencies() {
         fi
         shift
     done
+}
+
+# check that the condition specified in $1 is true
+# for the number of remaining arguments
+check_func_args() {
+    (($# > 0)) ||
+        error $E_INTERNAL_ERROR 'No arguments given to check_func_args()'
+    local condition="$1"
+    shift
+    eval "(($# $condition))" ||
+        error $E_INTERNAL_ERROR \
+            "${FUNCNAME[1]} called with invalid number of arguments" \
+            '- expected (($# '"$condition"'))'
 }
 
 # Make sure the user hasn't tried to pass through the -c option to snapraid
@@ -240,12 +256,14 @@ cleanup_snapshots() {
 # Check that the user didn't specify a nonexistent snapper config by ensuring
 # that a subvolume is set for the config name
 config_must_exist() {
+    check_func_args '==1' "$@"
     [[ "${snapper_subvols[$1]-}" ]] ||
         error $E_INVALID_ARGUMENT "Invalid snapper configuration $1"
 }
 
 # Calling once creates pre snapshots, calling again creates corresponding post
 create_pre_post_snapshots() {
+    check_func_args '==1' "$@"
     local -a snapper_cmd
     local i
     for i in "${pre_post_configs[@]}" ; do
@@ -454,10 +472,8 @@ error() {
 # $1 - command being run
 # $2,$3,... - args to pass to error() if $1 != shell
 error_nonshell() {
-    if ! { (($# > 2)) &&
-               [[ "$1" =~ [a-z]* ]] &&
-               [[ "$2" =~ [0-9]* ]] ; }
-    then
+    check_func_args '>2' "$@"
+    if ! { [[ "$1" =~ [a-z]* ]] && [[ "$2" =~ [0-9]* ]] ; } ; then
         error $E_INTERNAL_ERROR \
             'error_nonshell() called with invalid arguments'
     elif [[ "$1" = 'shell' ]] ; then
@@ -502,6 +518,7 @@ find_configs() {
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
+    check_func_args '==1' "$@"
     local snapper_create_opts=( -u "$snapper_userdata" )
     if [[ "$snapper_cleanup" ]] ; then
         snapper_create_opts+=( -c "$snapper_cleanup" )
@@ -603,6 +620,7 @@ generate_temp_snapraid_conf() {
 # given the snapraid.conf name for a disk (e.g. d1 in disk d1 /foo/bar),
 # find the corresponding snapper config name, if any
 get_snapper_config_name() {
+    check_func_args '==1' "$@"
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ "$1" = "${snapraid_names[$i]}" ]] ; then
@@ -634,6 +652,7 @@ interactive_ask() {
 } >&2
 
 invalid_argument() {
+    check_func_args '==1' "$@"
     error $E_INVALID_ARGUMENT "Invalid argument $1"
 }
 
@@ -644,6 +663,7 @@ invalid_argument() {
 # 3 if $1 is not a directory
 # 4 if we couldn't determine the inode number with stat
 is_btrfs_subvolume() {
+    check_func_args '==1' "$@"
     [[ -d "$1" ]] || return 3
     case $(stat --format=%i -- "$1") in
         256)
@@ -852,6 +872,7 @@ main() {
 
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
+    check_func_args '==1' "$@"
     local i
     local -i ret=0
     local -i snapper_ret
@@ -867,11 +888,13 @@ modify_userdata() {
 }
 
 must_be_executable() {
+    check_func_args '==1' "$@"
     [[ -x "$1" ]] ||
         error $E_INVALID_ARGUMENT "$1 is not an executable file"
 }
 
 must_be_writable_dir() {
+    check_func_args '>0' "$@"
     [[ -d "$1" ]] ||
         error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
     [[ -w "$1" ]] ||
@@ -880,6 +903,7 @@ must_be_writable_dir() {
 
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
+    check_func_args '>0' "$@"
     [[ "${2-}" ]] ||
         error $E_INVALID_ARGUMENT "Option $1 requires an argument"
 }
@@ -959,6 +983,7 @@ _EOF_
 }
 
 print_command() {
+    check_func_args '>0' "$@"
     local cmd
     printf -v cmd -- '%q ' "$@"
     cmd="${cmd% }"
@@ -977,6 +1002,7 @@ _EOF_
 
 # Run the command given in $1
 run_command() {
+    check_func_args '>0' "$@"
     case $1 in
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
@@ -1022,6 +1048,7 @@ run_command() {
 # Returns exit status of snapraid, postfix calls with '&& true' to avoid
 # triggering errexit if snapraid's return status is nonzero
 run_snapraid() {
+    check_func_args '>0' "$@"
     check_snapraid_arguments "$@"
     local -i ret
     local temp_config_file
@@ -1078,6 +1105,7 @@ sed_escape_replacement() {
 # $1 is option being set, $2 is argument. If no argument,
 # $2 can be either undefined or empty
 set_option() {
+    check_func_args '>0' "$@"
     case $1 in
         --conf) ;&
         --cleanup) ;&
@@ -1139,6 +1167,7 @@ set_option() {
 # read snapraid configuration file and initialize the arrays local to main()
 # which track the configuration
 setup_config() {
+    check_func_args '>0' "$@"
     must_be_writable_dir "$temp_dir" 'is TMPDIR set correctly?'
     check_dependencies "$my_snapper" "$my_snapraid"
     readonly my_snapper my_snapraid
@@ -1231,6 +1260,7 @@ snapper_ls() {
 # Run snapper ls > /dev/null on config $1 to sync ACLs, using
 # --disable-used-space option if supported by snapper version in use
 snapper_ls_sync_acl() {
+    check_func_args '==1' "$@"
     LC_ALL=C "$my_snapper" -c "$1" \
         ls${snapper_ls_quota_support:+ --disable-used-space} > /dev/null ||
         error $E_NO_PERMISSION 'Failed to sync ACLs with snapper ls'
@@ -1240,6 +1270,7 @@ snapper_ls_sync_acl() {
 # by snapper version in use and if --used-space option wasn't specified
 # if $2 is set, use LC_ALL=$2
 snapper_ls_wrapper() {
+    check_func_args '>0' "$@"
     if [[ "${2-}" ]] ; then
         LC_ALL="$2" "$my_snapper" -c "$1" \
             ls${snapper_ls_quota_disable:+ --disable-used-space}
@@ -1350,6 +1381,7 @@ snapraid_opt_has_arg() {
 
 # if snapshot not found for a config, prompt the user to choose a different one
 snapshot_not_found() {
+    check_func_args '==1' "$@"
     local choice
     printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
         "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
@@ -1537,6 +1569,7 @@ _EOF_
 # Add key/value pairs from $1 to snapper_userdata, unless key is
 # $snapper_userdata_key
 use_snapper_userdata() {
+    check_func_args '==1' "$@"
     local key value i
     local -a args
     IFS=',' read -r -a args <<< "$1"
@@ -1553,6 +1586,7 @@ use_snapper_userdata() {
 
 # Set use_snapshot to $1 for all configs, overriding any previous values
 use_snapshot_all() {
+    check_func_args '==1' "$@"
     local i
     for i in "${snapper_configs[@]}" ; do
         use_snapshot[$i]="$1"
@@ -1570,6 +1604,7 @@ use_snapshot_check() {
 
 # For any configs where use_snapshot is undefined or empty, set it to $1
 use_snapshot_default() {
+    check_func_args '==1' "$@"
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]-}" ]] ; then
@@ -1640,6 +1675,7 @@ use_snapshot_fix() {
 }
 
 verbose_command() {
+    check_func_args '>0' "$@"
     if ((interactive > 0)) ; then
         interactive_ask "$@"
     elif ((verbose >= 0)) ; then
@@ -1651,10 +1687,7 @@ verbose_command() {
 # compares version numbers specified in $1 and $2
 # returns 0 if $1 >= $2
 version_is_at_least() {
-    if (($# != 2)) ; then
-        error $E_INTERNAL_ERROR \
-            'version_is_at_least() requires 2 arguments'
-    fi
+    check_func_args '==2' "$@"
     local -i i
     local -a ver1 ver2
     IFS='.' read -r -a ver1 <<< "$1"
@@ -1682,6 +1715,7 @@ version_is_at_least() {
 }
 
 warn() {
+    check_func_args '>0' "$@"
     if ((verbose >= 0)) ; then
         printf -- '%s: WARNING: ' "$my_name"
         printf -- '%s ' "$@"
