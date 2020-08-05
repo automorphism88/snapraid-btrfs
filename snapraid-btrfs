@@ -881,7 +881,7 @@ option_requires_argument() {
 # else if $1 is nonempty, match snapshots with userdata key $1 defined
 # else match all snapshots
 # if multiple snapshots match, separate their numbers with $3, or
-# if $3 is undefined, separate the snapshot numbers with newlines
+# if $3 is undefined or empty, separate the snapshot numbers with newlines
 parse_snapper_ls() {
     awk -F '|' \
         -v key="${1-}" \
