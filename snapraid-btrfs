@@ -168,7 +168,7 @@ check_config_file() {
     # file with read. Therefore, if there is no trailing newline, create a
     # temporary config file with a newline added and use that instead.
     if [[ "$(tail -c 1 "$config_file")" ]] ; then
-        warn 'No newline at end of' "$config_file"
+        warn "No newline at end of $config_file"
         local new_config_file
         new_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")"
         rm_on_exit+=( "$new_config_file" )
