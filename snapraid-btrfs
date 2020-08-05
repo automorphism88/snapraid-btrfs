@@ -955,7 +955,7 @@ print_command() {
     printf -v cmd -- '%q ' "$@"
     cmd="${cmd% }"
     printf -- '%s\n\n' "$cmd"
-}
+} >&2
 
 print_version() {
     cat <<_EOF_
