@@ -184,7 +184,7 @@ check_dependencies() {
 # check that the condition specified in $1 is true
 # for the number of remaining arguments
 check_func_args() {
-    (($# > 0)) ||
+    (($# > 1)) ||
         error $E_INTERNAL_ERROR 'No arguments given to check_func_args()'
     local condition="$1"
     shift
