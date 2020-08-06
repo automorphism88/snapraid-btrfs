@@ -342,7 +342,7 @@ declare-p_vars_debug() {
 }
 
 declare-p_vars_shell() {
-    declare-p_vars "[$LOWER]" 'LOWER=' '(DEFAULT|E|MY|SNAPRAID)_'
+    declare-p_vars "[_$LOWER]" 'LOWER=' '(DEFAULT|E|MY|SNAPRAID)_'
 }
 
 # start interactive shell in context of script
@@ -351,29 +351,23 @@ do_shell() {
     (
         # shellcheck disable=2030
         rm_on_exit=()
-        local funcs vars
-        local -a funcs_arr vars_arr
-        IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_shell)"
-        vars="$(declare -p "${vars_arr[@]}")"
-        funcs="$(declare -F |
+        local _funcs _vars
+        local -a _funcs_arr _vars_arr
+        _funcs="$(declare -F |
             awk -v ORS=' ' "/^declare -f [$LOWER]/{print \$3}")"
-        IFS=' ' read -r -a funcs_arr <<< "$funcs"
-        export BASHOPTS SHELLOPTS funcs vars
-        export -f "${funcs_arr[@]}"
+        IFS=' ' read -r -a _funcs_arr <<< "$_funcs"
+        IFS=' ' read -r -a _vars_arr <<< "$(declare-p_vars_shell)"
+        _vars="$(declare -p "${_vars_arr[@]}")"
+        export BASHOPTS SHELLOPTS _funcs _vars
+        export -f "${_funcs_arr[@]}"
         set +o errexit
         set +o nounset
         exec "$BASH" --rcfile \
             <(cat <<'_EOF_'
-eval "$vars"
-_unexport_funcs() {
-    local -a func_arr
-    IFS=' ' read -r -a func_arr <<< "$1"
-    export -fn "${func_arr[@]}"
-}
-_unexport_funcs "$funcs"
-unset -f _unexport_funcs
+eval "$_vars"
+export -fn "${_funcs_arr[@]}"
 export -n BASHOPTS SHELLOPTS
-unset -v funcs vars
+unset -v _funcs _vars _funcs_arr _vars_arr
 trap 'exit_trap' EXIT
 exit() {
     printf -- 'Hooked exit command with status %s\n' "${1:-$?}"
@@ -383,9 +377,9 @@ quit() {
     command exit "${@:-0}"
 }
 vars() {
-    local -a vars_arr
-    IFS=' ' read -r -a vars_arr <<< "$(declare-p_vars_debug)"
-    declare -p "${vars_arr[@]}"
+    local -a _vars_arr
+    IFS=' ' read -r -a _vars_arr <<< "$(declare-p_vars_debug)"
+    declare -p "${_vars_arr[@]}"
 }
 if [[ -e "$HOME/.bashrc" ]] ; then
     source "$HOME/.bashrc"
