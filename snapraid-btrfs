@@ -871,6 +871,7 @@ modify_userdata() {
     local -i ret=0
     local -i snapper_ret
     for i in "${snapper_configs[@]}" ; do
+        [[ "${use_snapshot[$i]}" = 0 ]] && continue
         "$my_snapper" -c "$i" modify -u "$snapper_userdata_key=$1" \
             "${use_snapshot[$i]}" && true
         snapper_ret=$?
