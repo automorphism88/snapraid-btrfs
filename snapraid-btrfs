@@ -1008,7 +1008,7 @@ run_command() {
             shift
             snapper_ls "$@" ;;
         rollback)
-            snapper_rollback && true ;;
+            snapper_rollback ;;
         shell)
             shift
             do_shell "$@" ;;
