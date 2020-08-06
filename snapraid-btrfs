@@ -1017,7 +1017,7 @@ run_command() {
             do_snapper "$@" ;;
         undochange)
             shift
-            snapper_undochange "$@" && true ;;
+            snapper_undochange "$@" ;;
         # Implementation of commands that invoke snapraid
         check|diff|fix|pool|scrub|sync|touch)
             run_snapraid "$@" && true ;;
