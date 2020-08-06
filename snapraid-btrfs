@@ -982,7 +982,7 @@ print_command() {
     local cmd
     printf -v cmd -- '%q ' "$@"
     cmd="${cmd% }"
-    printf -- '%s\n\n' "$cmd"
+    printf -- '%s\n' "$cmd"
 } >&2
 
 print_version() {
