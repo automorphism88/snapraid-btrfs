@@ -499,7 +499,7 @@ find_configs() {
         subvol="${subvol%%*( )}"
         while IFS=$' \t' read -r field1 field2 field3 ; do
             if [[ "$field1" =~ (data|disk) ]] &&
-                   [[ "${field3}" -ef "$subvol" ]]
+                   [[ "$field3" -ef "$subvol" ]]
             then
                 snapper_configs+=( "$config" )
                 snapper_subvols[$config]="$field3"
