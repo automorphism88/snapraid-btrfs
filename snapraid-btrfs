@@ -60,7 +60,7 @@ shopt -u checkwinsize &> /dev/null || true
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
-# Ensure new bash 5.0 option is disabled if present
+# We want the pre-bash-5 behavior
 if ((BASH_VERSINFO[0] >= 5)) ; then
     shopt -u localvar_inherit
 fi
