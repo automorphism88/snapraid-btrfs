@@ -27,13 +27,24 @@ implements additional commands, such as `cleanup`, for managing its snapshots.
 
 To start using `snapraid-btrfs`, you need to set up
 [snapper](http://snapper.io/) configurations for each data drive that you want
-`snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will
-compare the output of `snapper list-configs` with the SnapRAID configuration
-file, and will ignore any data drives which do not have corresponding snapper
-configurations (in other words, the live filesystem will be used for all
-operations and no snapshots will be created). Just like SnapRAID,
+`snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will follow
+the following procedure to find snapper configs:
+
+1. Look at filenames in `/etc/snapper/configs` (or an alternate directory
+specified by setting the `SNAPPER_CONFIG_DIR` environment variable) to get the
+names of snapper configs. This directory should be readable by the user running
+`snapraid-btrfs`, but the files inside it need not be.
+2. For each config found, attempt to read the `SUBVOLUME` variable using
+`snapper get-config`. If this command fails (generally because the user is not
+included in `ALLOW_USERS` or `ALLOW_GROUPS`), skip the config.
+3. If successful in reading `SUBVOLUME`, attempt to find a matching data drive
+in the SnapRAID configuration file.
+
+`snapraid-btrfs` will ignore any data drives which it does not find
+corresponding snapper configs for (in other words, the live filesystem will be
+used for all operations and no snapshots will be created. Just like SnapRAID,
 `snapraid-btrfs` will use `/etc/snapraid.conf` by default, but another
-configuration file can be specified using the `-c`/`--conf` option or by
+configuration file can be specified using the `-c`/`--conf` option, or by
 setting the `SNAPRAID_CONFIG_FILE` environment variable.
 
 All files on the data drives which are not excluded by the SnapRAID
@@ -48,11 +59,12 @@ it to run out of parity space.
 See the FAQ below for more details. To verify that snapper has been set up
 correctly, you can use the `snapraid-btrfs ls` command, which will run
 `snapper ls` for all of the snapper configurations that it recognizes as
-matching data drives in your SnapRAID configuration file. If you are satisfied
-that it has found them all, you are ready to run your first
-`snapraid-btrfs sync` which will, by default, create new snapshots and use them
-for the sync. For more details on using `snapraid-btrfs`, see the output of
-`snapraid-btrfs --help`.
+matching data drives in your SnapRAID configuration file. If `snapraid-btrfs`
+does not find all of the snapper configs you were expecting, try using the
+`--verbose` option. Once you are satisfied that `snapraid-btrfs` has found all
+of your configs, you are ready to run your first `snapraid-btrfs sync` which
+will, by default, create new snapshots and use them for the sync. For more
+details on using `snapraid-btrfs`, see the output of `snapraid-btrfs --help`.
 
 ## Dependencies
 
@@ -72,6 +84,7 @@ options can be specified.
 `#!/bin/bash` is used as the shebang (as the `#!/usr/bin/env bash` trick has
 disadvantages), so if a compatible version of bash cannot be found there, one
 of the following workarounds must be used:
+
 - Create a symlink. This is generally already done on distros that have done
   the `/usr` merge and install bash in `/usr/bin` instead of `/bin`.
 - Run `snapraid-btrfs` using `/path/to/right/bash /path/to/snapraid-btrfs`,
@@ -185,15 +198,9 @@ configure snapper correctly. See "How do I set up snapper for use with
 
 ### Q: How do I configure snapper for use with snapraid-btrfs?
 A: Create a snapper configuration for each data drive you want to use
-`snapraid-btrfs` for. `snapraid-btrfs` will compare the output of
-`snapper list-configs` with the list of data directories found in the SnapRAID
-config file (as with SnapRAID, by default, `/etc/snapraid.conf`, but an
-alternate location can be specified with the `-c` or `--conf` command line
-argument or by setting the `SNAPRAID_CONFIG_FILE` environment variable).
-
-**To avoid permission errors, be sure to set `SYNC_ACL=yes` in addition to
+`snapraid-btrfs` for, and make sure to set `SYNC_ACL=yes` in addition to
 `ALLOW_USERS` or `ALLOW_GROUPS` for the user(s) and/or group(s) which will run
-snapraid-btrfs in your snapper configurations.** You may wish to make a snapper
+snapraid-btrfs in your snapper configurations. You may wish to make a snapper
 template with the options you want to use for your SnapRAID drive
 configurations and set these variables at that level. For further details, see
 the snapper documentation.

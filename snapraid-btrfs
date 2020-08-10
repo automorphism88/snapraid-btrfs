@@ -16,6 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
+readonly DEFAULT_SNAPPER_CONFIG_DIR=/etc/snapper/configs
 readonly DEFAULT_TMPDIR=/tmp
 readonly DEFAULT_USERDATA_KEY=snapraid-btrfs
 readonly E_MISSING_DEPENDENCY=63
@@ -52,6 +53,7 @@ set +o noclobber
 set +o posix
 shopt -s extglob
 shopt -s extquote
+shopt -s nullglob
 shopt -u nocasematch
 # Option added in bash 4.3, default in 5.0, not needed and reduces performance
 shopt -u checkwinsize &> /dev/null || true
@@ -488,24 +490,45 @@ exit_trap() {
     cleanup_coproc
 }
 
-# compare output of snapper list-configs with snapraid.conf
+# try snapper get-config for all configs found in /etc/snapper/configs
+# and look for SUBVOLUME matching /etc/snapraid.conf
 find_configs() {
-    local config field1 field2 field3 subvol
-    while IFS='|' read -r config subvol ; do
-        # Remove padding spaces
-        config="${config%%*( )}"
-        subvol="${subvol##*( )}"
-        subvol="${subvol%%*( )}"
-        while IFS=$' \t' read -r field1 field2 field3 ; do
-            if [[ "$field1" =~ (data|disk) ]] &&
-                   [[ "$field3" -ef "$subvol" ]]
-            then
-                snapper_configs+=( "$config" )
-                snapper_subvols[$config]="$field3"
-                snapraid_names[$config]="$field2"
+    local config dir field1 field2 field3 found subvol i
+    dir="${SNAPPER_CONFIG_DIR-$DEFAULT_SNAPPER_CONFIG_DIR}"
+    if ! [[ -d "$dir" ]] ; then
+        error $E_INVALID_CONFIG "$dir is not a directory"
+    elif ! [[ -r "$dir" ]] ; then
+        error $E_NO_PERMISSION "No read permission for $dir"
+    fi
+    set +o noglob
+    for i in "$dir"/* ; do
+        config="$(basename -- "$i")"
+        found=
+        verbose "Checking snapper config $config for matching SUBVOLUME"
+        if subvol="$("$my_snapper" -c "$config" get-config 2>/dev/null |
+           sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //')"
+        then
+            while IFS=$' \t' read -r field1 field2 field3 ; do
+                if [[ "$field1" =~ (data|disk) ]] &&
+                       [[ "$field3" -ef "$subvol" ]]
+                then
+                    found=1
+                    snapper_configs+=( "$config" )
+                    snapper_subvols[$config]="$field3"
+                    snapraid_names[$config]="$field2"
+                fi
+            done < "$config_file"
+            if [[ "$found" ]] ; then
+                verbose "Found $subvol in snapraid.conf"
+            else
+                verbose "Did not find $subvol in snapraid.conf"
             fi
-        done < "$config_file"
-    done < <("$my_snapper" list-configs | tail -n +3)
+        else
+            verbose "Failed to run snapper get-config for config $config"
+        fi
+    done
+    set -o noglob
+    verbose
 }
 
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
@@ -1552,6 +1575,9 @@ Environment variables:
         send debug output to /tmp/debug while displaying only the normal output
         of "$my_name -h" on the console. If unset, the default behavior
         is to send debug output to stderr.
+  SNAPPER_CONFIG_DIR -
+        Location of snapper config files. If unset, it defaults to
+        $DEFAULT_SNAPPER_CONFIG_DIR.
   SNAPRAID_CONFIG_FILE -
         Default location of the snapraid.conf file if -c/--conf option is not
         used. If unset, it defaults to $DEFAULT_CONFIG_FILE.
