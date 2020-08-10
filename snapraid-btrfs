@@ -1225,6 +1225,7 @@ setup_config() {
 
 show_configs() {
     if ((verbose >= 0)) ; then
+        local i
         echo 'Snapper configs found:'
         for i in "${snapper_configs[@]}" ; do
             printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
