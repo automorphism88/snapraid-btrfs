@@ -153,9 +153,8 @@ check_config_file() {
         error_nonshell "$1" $E_INVALID_ARGUMENT \
             "Could not read snapraid config file at $config_file"
         return
-    elif ((verbose > 0)) ; then
-        printf -- 'Using snapraid config file %s\n' "$config_file"
     fi
+    verbose "Using snapraid config file $config_file"$'\n'
     # check for trailing newline in snapraid.conf
     # Lack of a trailing newline will cause problems when parsing the config
     # file with read. Therefore, if there is no trailing newline, create a
@@ -539,10 +538,8 @@ find_snapshots() {
             new)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")"
-                if ((verbose > 0)) ; then
-                    printf -- 'Created new snapshot %s for config %s\n' \
-                        "${use_snapshot[$i]}" "$i"
-                fi ;;
+                verbose "Created new snapshot ${use_snapshot[$i]}" \
+                    "for config $i" ;;
             res?(ume))
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
@@ -565,12 +562,10 @@ find_snapshots() {
         esac
         if [[ "${use_snapshot[$i]}" ]] ; then
             use_snapshot_missing[$i]=
-            if ((verbose > 0)) ; then
-                printf -- 'Using snapshot %s for config %s\n' \
-                    "${use_snapshot[$i]}" "$i"
-            fi
+            verbose "Using snapshot ${use_snapshot[$i]} for config $i"
         fi
     done
+    verbose
 }
 
 # generate sed script to replace subvolume paths with corresponding snapshots
@@ -1674,6 +1669,13 @@ use_snapshot_fix() {
         # snapraid fix --filter-disk option was not specified
         # snapraid will try to fix all disks, so use the live filesystem
         use_snapshot_default 0
+    fi
+}
+
+verbose() {
+    if ((verbose > 0)) ; then
+        printf -- '%s ' "$@"
+        echo
     fi
 }
 
