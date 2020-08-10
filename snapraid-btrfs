@@ -491,7 +491,7 @@ exit_trap() {
 
 # compare output of snapper list-configs with snapraid.conf
 find_configs() {
-    local config field1 field2 field3 subvol i
+    local config field1 field2 field3 subvol
     while IFS='|' read -r config subvol ; do
         # Remove padding spaces
         config="${config%%*( )}"
