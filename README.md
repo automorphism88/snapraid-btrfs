@@ -30,15 +30,21 @@ To start using `snapraid-btrfs`, you need to set up
 `snapraid-btrfs` to make snapshots of. At runtime, `snapraid-btrfs` will follow
 the following procedure to find snapper configs:
 
-1. Look at filenames in `/etc/snapper/configs` (or an alternate directory
-specified by setting the `SNAPPER_CONFIG_DIR` environment variable) to get the
-names of snapper configs. This directory should be readable by the user running
-`snapraid-btrfs`, but the files inside it need not be.
-2. For each config found, attempt to read the `SUBVOLUME` variable using
-`snapper get-config`. If this command fails (generally because the user is not
-included in `ALLOW_USERS` or `ALLOW_GROUPS`), skip the config.
-3. If successful in reading `SUBVOLUME`, attempt to find a matching data drive
-in the SnapRAID configuration file.
+- If the `--snapper-configs` or `--snapper-configs-file` command-line options
+  are set, look at only the configs specified there, and no others.
+- Else, look at filenames in `/etc/snapper/configs` (or an alternate directory
+  specified by setting the `SNAPPER_CONFIG_DIR` environment variable) to get
+  the names of snapper configs. This directory should be readable by the user
+  running `snapraid-btrfs`, but the files inside it need not be.
+- For each config found, attempt to read the `SUBVOLUME` variable using
+  `snapper get-config`. If this command fails (generally because the user is
+  not included in `ALLOW_USERS` or `ALLOW_GROUPS`), skip the config.
+- If successful in reading `SUBVOLUME`, attempt to find a matching data drive
+  in the SnapRAID configuration file.
+- If configs are specified with `--snapper-configs` or `--snapper-configs-file`
+  then `snapraid-btrfs` expects them all to match data drives in the SnapRAID
+  configuration file, and will display an error message and exit if
+  `snapper get-config` fails or `SUBVOLUME` does not match.
 
 `snapraid-btrfs` will ignore any data drives which it does not find
 corresponding snapper configs for (in other words, the live filesystem will be

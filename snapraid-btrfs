@@ -65,6 +65,14 @@ if ((BASH_VERSINFO[0] >= 5)) ; then
     shopt -u localvar_inherit
 fi
 
+# Add $1 to snapper_configs_specified array if not duplicate
+add_snapper_config() {
+    check_func_args '==1' "$@"
+    [[ "${snapper_configs_specified_seen[$1]+x}" ]] ||
+        snapper_configs_specified+=( "$1" )
+    snapper_configs_specified_seen[$1]=1
+}
+
 # Apply the --pre-post and --no-pre-post command line options
 apply_pre_post_options() {
     local i j
@@ -87,6 +95,28 @@ apply_pre_post_options() {
             pre_post_configs=( "${temp_array[@]}" )
         done
     fi
+}
+
+# apply the --snapper-configs-file command line option
+apply_snapper_configs_file_option() {
+    check_func_args '==1' "$@"
+    [[ -r "$1" ]] ||
+        error $E_INVALID_CONFIG "$1 is not a readable file"
+    local config=
+    while IFS= read -r config || [[ "$config" ]] ; do
+        add_snapper_config "$config"
+    done < "$1"
+}
+
+# apply the --snapper-configs command line option
+apply_snapper_configs_option() {
+    check_func_args '==1' "$@"
+    local -a configs
+    IFS=',' read -r -a configs <<< "$1"
+    local i
+    for i in "${configs[@]}" ; do
+        add_snapper_config "$i"
+    done
 }
 
 # Set use_snapshot from comma-separated key=value pairs specified in $1
@@ -490,10 +520,36 @@ exit_trap() {
     cleanup_coproc
 }
 
+find_configs() {
+    if ((${#snapper_configs_specified[@]} > 0)) ; then
+        find_configs_specified
+    else
+        find_configs_snapper_get-config
+    fi
+}
+
+# if the user has specified --snapper-configs and/or --snapper-configs-file
+# command line options, use them to find snapper configs
+find_configs_specified() {
+    local i
+    for i in "${snapper_configs_specified[@]}" ; do
+        find_configs_try "$i" && true
+        case $? in
+            1)
+                error $E_INVALID_CONFIG \
+                    "SUBVOLUME for config $i not found in $config_file" ;;
+            2)
+                error $E_INVALID_CONFIG \
+                    "Failed to run snapper get-config for config $i" ;;
+        esac
+    done
+    verbose
+}
+
 # try snapper get-config for all configs found in /etc/snapper/configs
 # and look for SUBVOLUME matching /etc/snapraid.conf
-find_configs() {
-    local config dir field1 field2 field3 found subvol i
+find_configs_snapper_get-config() {
+    local config dir i
     dir="${SNAPPER_CONFIG_DIR-$DEFAULT_SNAPPER_CONFIG_DIR}"
     if ! [[ -d "$dir" ]] ; then
         error $E_INVALID_CONFIG "$dir is not a directory"
@@ -503,32 +559,53 @@ find_configs() {
     set +o noglob
     for i in "$dir"/* ; do
         config="$(basename -- "$i")"
-        found=
-        verbose "Checking snapper config $config for matching SUBVOLUME"
-        if subvol="$("$my_snapper" -c "$config" get-config 2>/dev/null |
-           sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //')"
-        then
-            while IFS=$' \t' read -r field1 field2 field3 ; do
-                if [[ "$field1" =~ (data|disk) ]] &&
-                       [[ "$field3" -ef "$subvol" ]]
-                then
-                    found=1
-                    snapper_configs+=( "$config" )
-                    snapper_subvols[$config]="$field3"
-                    snapraid_names[$config]="$field2"
-                fi
-            done < "$config_file"
-            if [[ "$found" ]] ; then
-                verbose "Found $subvol in snapraid.conf"
-            else
-                verbose "Did not find $subvol in snapraid.conf"
-            fi
-        else
-            verbose "Failed to run snapper get-config for config $config"
-        fi
+        find_configs_try "$config" && true
+        case $? in
+            1)
+                verbose \
+                    "SUBVOLUME for config $config not found in $config_file" ;;
+            2)
+                verbose \
+                    "Failed to run snapper get-config for config $config" ;;
+        esac
     done
     set -o noglob
     verbose
+}
+
+# Try to find a match between the snapper config $1 and snapraid.conf and
+# add it to snapper_configs array if successful
+# return 0 if $1 matches snapraid.conf
+# return 1 if $1 doesn't match snapraid.conf
+# return 2 if we couldn't run snapper get-config for $1
+find_configs_try() {
+    check_func_args '==1' "$@"
+    local config field1 field2 field3 found subvol
+    config="$1"
+    found=
+    if subvol="$("$my_snapper" -c "$config" get-config 2>/dev/null |
+       sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //')"
+    then
+        while IFS=$' \t' read -r field1 field2 field3 ; do
+            if [[ "$field1" =~ (data|disk) ]] &&
+                   [[ "$field3" -ef "$subvol" ]]
+            then
+                found=1
+                snapper_configs+=( "$config" )
+                snapper_subvols[$config]="$field3"
+                snapraid_names[$config]="$field2"
+            fi
+        done < "$config_file"
+        if [[ "$found" ]] ; then
+            verbose \
+                "Found $subvol in $config_file - using snapper config $config"
+            return 0
+        else
+            return 1
+        fi
+    else
+        return 2
+    fi
 }
 
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
@@ -724,6 +801,12 @@ main() {
     local snapper_cleanup=
     # names of all snapper configs that match snapraid.conf
     local snapper_configs=()
+    # indexes are configs specified with either the
+    # --snapper-configs or --snapper-configs-file options
+    # associative array used to track duplicates,
+    # regular array to preserve the order configs were specified
+    local snapper_configs_specified=()
+    local -A snapper_configs_specified_seen
     # description to specify to snapper when creating new snapshots
     local snapper_description=
     # variable to be set if snapper ls supports --disable-used-space
@@ -823,6 +906,7 @@ main() {
             --description?(=*)) ;&
             --pool-dir?(=*)) ;&
             --?(no-)pre-post?(=*)) ;&
+            --snapper-configs?(-file)?(=*)) ;&
             --snapper-@(path|userdata)?(=*)) ;&
             --snapraid-path?(=*)) ;&
             --use-snapshot?(-all)?(=*))
@@ -1169,6 +1253,10 @@ set_option() {
             pool_dir="$2" ;;
         --pre-post)
             IFS=',' read -r -a pre_post_option <<< "$2" ;;
+        --snapper-configs)
+            apply_snapper_configs_option "$2" ;;
+        --snapper-configs-file)
+            apply_snapper_configs_file_option "$2" ;;
         --snapper-path)
             must_be_executable "$2"
             my_snapper="$2" ;;
@@ -1490,6 +1578,14 @@ $my_name:
   --pre-post ARG                Create pre/post snapshots only for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
+  --snapper-configs ARG         Comma-separated list of snapper configs to
+                                try matching with snapraid.conf file instead
+                                of looking in $DEFAULT_SNAPPER_CONFIG_DIR.
+                                Can be specified multiple times.
+  --snapper-configs-file FILE   Newline-separated list of snapper configs to
+                                try matching with snapraid.conf file instead
+                                of looking in $DEFAULT_SNAPPER_CONFIG_DIR.
+                                Can be specified multiple times.
   --snapper-path PATH           Path to the snapper executable (defaults to
                                 first found in PATH)
   --snapper-userdata ARG        Specify snapper userdata to set for any
