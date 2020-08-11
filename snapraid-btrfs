@@ -158,8 +158,8 @@ check_config_file() {
     fi
     verbose "Using snapraid config file $config_file"$'\n'
     # check for trailing newline in snapraid.conf
-    # Lack of a trailing newline will cause problems when parsing the config
-    # file with read. Therefore, if there is no trailing newline, create a
+    # Lack of a trailing newline will cause problems.
+    # Therefore, if there is no trailing newline, create a
     # temporary config file with a newline added and use that instead.
     if [[ "$(tail -c 1 "$config_file")" ]] ; then
         warn "No newline at end of $config_file"
