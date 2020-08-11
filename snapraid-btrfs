@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+readonly COPYRIGHT_YEARS='2017-2020'
 readonly DEFAULT_CONFIG_FILE=/etc/snapraid.conf
 readonly DEFAULT_SNAPPER_CONFIG_DIR=/etc/snapper/configs
 readonly DEFAULT_TMPDIR=/tmp
@@ -373,7 +374,7 @@ declare-p_vars_debug() {
 }
 
 declare-p_vars_shell() {
-    declare-p_vars "[_$LOWER]" 'LOWER=' '(DEFAULT|E|MY|SNAPRAID)_'
+    declare-p_vars "[_$LOWER]" 'LOWER=' '(COPYRIGHT|DEFAULT|E|MY|SNAPRAID)_'
 }
 
 # start interactive shell in context of script
@@ -1090,7 +1091,7 @@ print_command() {
 print_version() {
     cat <<_EOF_
 snapraid-btrfs $MY_VERSION
-Copyright (C) 2017-2020 Alex deBeus
+Copyright (C) $COPYRIGHT_YEARS Alex deBeus
 License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>
 This is free software; you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.
