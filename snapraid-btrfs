@@ -1114,6 +1114,8 @@ run_command() {
 
 # Returns exit status of snapraid, postfix calls with '&& true' to avoid
 # triggering errexit if snapraid's return status is nonzero
+# Because errexit will not trigger within this function, we postfix anything
+# inside it which cannot fail with || err_trap to trigger ERR trap manually
 run_snapraid() {
     check_snapraid_arguments "$@"
     local -i ret
