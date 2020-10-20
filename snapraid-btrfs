@@ -239,6 +239,16 @@ cleanup_coproc() {
     debug_fd=
 }
 
+# clean up snapshot $2 in config $1
+cleanup_snapshot() {
+    if ((interactive > 0)) ; then
+        snapper_ls_wrapper "$1"
+        echo
+    fi
+    verbose_command "$my_snapper" -c "$1" rm "$2"
+    echo
+} >&2
+
 # In each config, delete snapshots with userdata key $snapper_userdata_key
 # except use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
@@ -257,7 +267,7 @@ cleanup_snapshots() {
             parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
             if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
-                verbose_command "$my_snapper" -c "$i" rm "$j"
+                cleanup_snapshot "$i" "$j"
                 snapper_ret=$?
                 if ((snapper_ret != 0)) ; then
                     ret=$snapper_ret
