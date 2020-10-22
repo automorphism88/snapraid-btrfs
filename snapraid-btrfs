@@ -259,7 +259,7 @@ cleanup_snapshots() {
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            warn 'No synced snapshot found for config' "$i" ' - skipping'
+            warn 'No synced snapshot found for config' "$i" '- skipping'
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
