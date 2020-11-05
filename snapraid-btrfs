@@ -1701,7 +1701,7 @@ use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]-}" ]] ; then
-            if [[ "$1" = '0' ]] && ((verbose >= 0)) ; then
+            if [[ "$1" = '0' ]] ; then
                 warn 'Could not find snapshot for snapper config' "$i" \
                     '- using live filesystem instead for readonly command'
             fi
