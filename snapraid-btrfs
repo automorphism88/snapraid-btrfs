@@ -1697,13 +1697,18 @@ use_snapshot_check() {
 }
 
 # For any configs where use_snapshot is undefined or empty, set it to $1
+# If $2 = "fix", don't display warning
 use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]-}" ]] ; then
             if [[ "$1" = '0' ]] ; then
-                warn 'Could not find snapshot for snapper config' "$i" \
-                    '- using live filesystem instead for readonly command'
+                if [[ "${2-}" = 'fix' ]] ; then
+                    verbose "Using live filesystem to fix snapper config $i"
+                else
+                    warn 'Could not find snapshot for snapper config' "$i" \
+                        '- using live filesystem instead for readonly command'
+                fi
             fi
             use_snapshot[$i]="$1"
         fi
@@ -1759,11 +1764,11 @@ use_snapshot_fix() {
     done
     if ((configs_found > 0)) ; then
         # for disks we are not fixing, use the last synced snapshot
-        use_snapshot_default sync
+        use_snapshot_default sync fix
     else
         # snapraid fix --filter-disk option was not specified
         # snapraid will try to fix all disks, so use the live filesystem
-        use_snapshot_default 0
+        use_snapshot_default 0 fix
     fi
 }
 
