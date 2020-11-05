@@ -246,7 +246,9 @@ cleanup_snapshot() {
         echo
     fi
     verbose_command "$my_snapper" -c "$1" rm "$2"
-    echo
+    if ((interactive > 0)) ; then
+        echo
+    fi
 } >&2
 
 # In each config, delete snapshots with userdata key $snapper_userdata_key
