@@ -1323,7 +1323,7 @@ show_configs() {
 
 show_temp_snapraid_conf() {
     if ((verbose >= 0)) ; then
-        echo 'Using snapraid config file:'
+        echo 'Using temporary snapraid config file:'
         cat < "$temp_config_file" && echo
     fi
 } >&2
