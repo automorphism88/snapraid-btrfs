@@ -60,7 +60,9 @@ them so that they are not snapshotted.** It is also recommended that you add
 the line `exclude /.snapshots/` to your SnapRAID configuration file, so that if
 you ever run `snapraid sync` instead of `snapraid-btrfs sync`, SnapRAID will
 not try to sync both the live filesystem and the read-only snapshots, causing
-it to run out of parity space.
+it to display a warning message about the snapshots being in a different
+filesystem (since SnapRAID sees subvolumes as different filesystems, it will
+not try to sync the snapshots in any case, so actual behavior is unaffected).
 
 See the FAQ below for more details. To verify that snapper has been set up
 correctly, you can use the `snapraid-btrfs ls` command, which will run
