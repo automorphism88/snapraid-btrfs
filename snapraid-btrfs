@@ -837,7 +837,7 @@ main() {
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
 
-    if [[ "$UID" = 0 ]] ; then
+    if [[ "$EUID" = 0 ]] ; then
         warn "Running $my_name as root is not recommended"
     fi
     # Iterate through command line arguments and process snapraid-btrfs options
