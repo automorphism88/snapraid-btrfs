@@ -150,19 +150,27 @@ check_config() {
         # those of the subvolumes we are snapshotting, to see if any match
         while IFS=$' \t' read -r field1 field2 ; do
             if [[ "$field1" = content ]] ; then
-                [[ -f "$field2" ]] ||
-                    error $E_INVALID_CONFIG "content file $field2 not found"
-                content_dir="$(dirname -- "$field2")"
-                content_mount="$(stat --format=%m -- "$content_dir")"
-                for i in "${snapper_configs[@]}" ; do
-                    if [[ "$content_mount" -ef "${snapper_subvols[$i]}" ]]
-                    then
-                        error $E_INVALID_CONFIG \
-                            "$field2 found in subvolume" \
-                            "${snapper_subvols[$i]}" \
-                            '- content files must be in separate subvolume'
+                if [[ -f "$field2" ]] ; then
+                    content_dir="$(dirname -- "$field2")"
+                    if [[ -d "$content_dir" ]] ; then
+                        content_mount="$(stat --format=%m -- "$content_dir")"
+                        for i in "${snapper_configs[@]}" ; do
+                            if [[ "$content_mount" -ef \
+                                "${snapper_subvols[$i]}" ]]
+                            then
+                                error $E_INVALID_CONFIG \
+                                    "$field2 found in subvolume" \
+                                    "${snapper_subvols[$i]}" \
+                                    '- content files must be in' \
+                                    'separate subvolume'
+                            fi
+                        done
+                    else
+                        warn "content directory $content_dir not found"
                     fi
-                done
+                else
+                    warn "content file $field2 not found"
+                fi
             fi
         done < "$config_file"
     else
