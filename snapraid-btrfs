@@ -591,7 +591,7 @@ find_configs_try() {
             then
                 found=1
                 snapper_configs+=( "$config" )
-                snapper_subvols[$config]="$field3"
+                snapper_subvols[$config]="$subvol"
                 snapraid_names[$config]="$field2"
             fi
         done < "$config_file"
