@@ -567,7 +567,15 @@ find_configs_snapper_get-config() {
     set +o noglob
     for i in "$dir"/* ; do
         config="$(basename -- "$i")"
-        find_configs_try "$config"
+        find_configs_try "$config" && true
+        case $? in
+            1)
+                verbose \
+                    "SUBVOLUME for config $config not found in $config_file" ;;
+            2)
+                verbose \
+                    "Failed to run snapper get-config for config $config" ;;
+        esac
     done
     set -o noglob
     verbose
@@ -598,11 +606,12 @@ find_configs_try() {
         if [[ "$found" ]] ; then
             verbose \
                 "Found $subvol in $config_file - using snapper config $config"
+            return 0
         else
-            verbose "SUBVOLUME for config $config not found in $config_file"
+            return 1
         fi
     else
-        verbose "Failed to run snapper get-config for config $config"
+        return 2
     fi
 }
 
