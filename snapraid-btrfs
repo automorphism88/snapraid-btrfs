@@ -438,7 +438,7 @@ Commands:
 __EOF__
 fi
 _EOF_
-             ) -O extglob -i -s "$@"
+             ) -O extglob -i "$@"
     )
 }
 
