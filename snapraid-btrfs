@@ -1743,7 +1743,7 @@ use_snapshot_fix() {
             'use_snapshot_fix() called with unexpected arguments'
     fi
     local disk snapper_config_name
-    local -i configs_found=0
+    local -i disks_found=0
     while (($# > 0)) ; do
         disk=
         case $1 in
@@ -1771,16 +1771,16 @@ use_snapshot_fix() {
                     'snapraid arguments:' $'\n' "$@" ;;
         esac
         if [[ "$disk" ]] ; then
+            ((++disks_found))
             snapper_config_name="$(get_snapper_config_name "$disk")"
             if [[ "$snapper_config_name" ]] ; then
-                ((++configs_found))
                 # for disks we are fixing, use the live filesystem
                 [[ "${use_snapshot[$snapper_config_name]-}" ]] ||
                     use_snapshot[$snapper_config_name]=0
             fi
         fi
     done
-    if ((configs_found > 0)) ; then
+    if ((disks_found > 0)) ; then
         # for disks we are not fixing, use the last synced snapshot
         use_snapshot_default sync fix
     else
