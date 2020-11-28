@@ -1309,7 +1309,8 @@ setup_config() {
             use_snapshot_default sync ;;&
         # for readonly commands, use the live filesystem as a backup default
         check|config|scrub)
-            find_snapshots "$1"
+            # avoid duplicate output when --verbose is enabled
+            find_snapshots "$1" > /dev/null
             use_snapshot_default 0 ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
