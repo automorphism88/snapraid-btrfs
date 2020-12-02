@@ -506,7 +506,7 @@ error() {
 # $1 - command being run
 # $2,$3,... - args to pass to error() if $1 != shell
 error_nonshell() {
-    if ! { [[ "$1" =~ [a-z]* ]] && [[ "$2" =~ [0-9]* ]] ; } ; then
+    if ! { [[ "$1" =~ ^[a-z-]*$ ]] && [[ "$2" =~ ^[0-9]*$ ]] ; } ; then
         error $E_INTERNAL_ERROR \
             'error_nonshell() called with invalid arguments'
     elif [[ "$1" = 'shell' ]] ; then
