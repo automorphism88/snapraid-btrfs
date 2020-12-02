@@ -1519,6 +1519,7 @@ snapshot_not_found() {
                 printf -- 'Invalid selection %s\n' "$choice" ;;
         esac
     done
+    echo
 } >&2
 
 usage() {
