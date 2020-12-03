@@ -271,7 +271,7 @@ cleanup_snapshot() {
 } >&2
 
 # In each config, delete snapshots with userdata key $snapper_userdata_key
-# except use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+# older than use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
 cleanup_snapshots() {
     local i j
     local -i ret=0
@@ -287,7 +287,9 @@ cleanup_snapshots() {
             <<< "$(snapper_ls_wrapper "$i" 'C' |
             parse_snapper_ls "$snapper_userdata_key" '' ' ')"
         for j in "${snapshots_to_consider[@]}" ; do
-            if [[ "${use_snapshot[$i]}" != "$j" ]] ; then
+            if [[ "${use_snapshot[$i]}" -gt "$j" ]] ||
+                   [[ "${use_snapshot[$i]}" = 0 ]]
+            then
                 cleanup_snapshot "$i" "$j"
                 snapper_ret=$?
                 if ((snapper_ret != 0)) ; then
@@ -1620,7 +1622,7 @@ or one of the following $my_name specific commands:
         Create a new snapshot for all snapper configs corresponding to data
         drives found in snapraid config file.
   'cleanup':
-        Delete all snapshots created by $my_name except the last one a
+        Delete all snapshots created by $my_name before the last one a
         successful sync has been completed with.
   'cleanup-all':
         Delete all snapshots created by $my_name.
