@@ -977,6 +977,20 @@ main() {
     fi
 }
 
+# Print the largest positive integer in $@, if any
+max() {
+    local -i ret=0
+    while (($# > 0)) ; do
+        if [[ "$1" -gt "$ret" ]] ; then
+            ret="$1"
+        fi
+        shift
+    done
+    if ((ret > 0)) ; then
+        printf -- '%s\n' "$ret"
+    fi
+}
+
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
     local i
