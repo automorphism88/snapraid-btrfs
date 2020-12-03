@@ -319,7 +319,6 @@ create_pre_post_snapshots() {
         if [[ "$snapper_cleanup" ]] ; then
             snapper_cmd+=( -c "$snapper_cleanup" )
         fi
-        snapper_cmd+=( -u "$snapper_userdata" )
         # Check if we've already done a pre snapshot
         if [[ "${pre_snapshot[$i]-}" ]] ; then
             # We've already done pre snapshots, so create corresponding post
@@ -328,7 +327,10 @@ create_pre_post_snapshots() {
             else
                 snapper_cmd+=( -d "$my_name post-$1" )
             fi
-            snapper_cmd+=( -t post --pre-number "${pre_snapshot[$i]}" )
+            snapper_cmd+=(
+                -u "$snapper_userdata$snapper_userdata_key=post-$1"
+                -t post --pre-number "${pre_snapshot[$i]}"
+            )
             "${snapper_cmd[@]}" || true
         else
             # We haven't created pre snapshots yet, so create them and store
@@ -338,7 +340,10 @@ create_pre_post_snapshots() {
             else
                 snapper_cmd+=( -d "$my_name pre-$1" )
             fi
-            snapper_cmd+=( -t pre -p )
+            snapper_cmd+=(
+                -u "$snapper_userdata$snapper_userdata_key=pre-$1"
+                -t pre -p
+            )
             pre_snapshot[$i]="$("${snapper_cmd[@]}")"
         fi
     done
@@ -619,7 +624,9 @@ find_configs_try() {
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
-    local snapper_create_opts=( -u "$snapper_userdata" )
+    local snapper_create_opts=(
+        -u "$snapper_userdata$snapper_userdata_key=created"
+    )
     if [[ "$snapper_cleanup" ]] ; then
         snapper_create_opts+=( -c "$snapper_cleanup" )
     fi
@@ -823,9 +830,8 @@ main() {
     # can be changed by setting the SNAPRAID_USERDATA_KEY environment variable
     local \
         snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
-    # default userdata to set for newly created snapshots
-    # additional userdata can be specified with the --snapper-userdata option
-    local snapper_userdata="$snapper_userdata_key=created"
+    # additional userdata to set, specified with the --snapper-userdata option
+    local snapper_userdata=
     # directory to create temporary snapraid.conf file in
     local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     # --use-snapshot-all option argument
@@ -1391,7 +1397,9 @@ snapper_rollback() {
     local i
     local -i ret=0
     local -i snapper_ret
-    local snapper_rollback_opts=( -u "$snapper_userdata" )
+    local snapper_rollback_opts=(
+        -u "$snapper_userdata$snapper_userdata_key=rollback"
+    )
     if [[ "$snapper_cleanup" ]] ; then
         snapper_rollback_opts+=( -c "$snapper_cleanup" )
     fi
@@ -1695,7 +1703,7 @@ use_snapper_userdata() {
             error $E_INVALID_ARGUMENT \
                 "Cannot set reserved userdata key $key"
         else
-            snapper_userdata+=",$key=$value"
+            snapper_userdata+="$key=$value,"
         fi
     done
 }
