@@ -655,9 +655,11 @@ find_snapshots() {
                 verbose "Created new snapshot ${use_snapshot[$i]}" \
                     "for config $i" ;;
             res?(ume))
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
+                use_snapshot[$i]="$(max "$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" syncing |
-                    tail -n 1)" ;;
+                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" synced |
+                    tail -n 1)")" ;;
             sync)
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
@@ -1578,7 +1580,8 @@ $my_name:
                                     last - Use last snapshots created
                                     new  - Create new snapshots
                                     res  - Resume using snapshots from an
-                                           interrupted sync
+                                           interrupted sync, or last completed
+                                           sync if more recent
                                     sync - Use last snapshots a successful sync
                                            was completed with
                                 or specify the snapshot number (0 for the live
