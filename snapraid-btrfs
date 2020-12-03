@@ -660,6 +660,14 @@ find_snapshots() {
                     tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
                     tail -n 1)")" ;;
+            scrub)
+                use_snapshot[$i]="$(max "$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" syncing |
+                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" synced |
+                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" post-fix |
+                    tail -n 1)")" ;;
             sync)
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
@@ -1575,15 +1583,18 @@ $my_name:
                                 commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
   -u, --use-snapshot-all ARG    Use one of the following arguments:
-                                    diff - Use last snapshot a diff was
-                                           completed with
-                                    last - Use last snapshots created
-                                    new  - Create new snapshots
-                                    res  - Resume using snapshots from an
-                                           interrupted sync, or last completed
-                                           sync if more recent
-                                    sync - Use last snapshots a successful sync
-                                           was completed with
+                                    diff  - Use last snapshot a diff was
+                                            completed with
+                                    last  - Use last snapshots created
+                                    new   - Create new snapshots
+                                    res   - Resume using snapshots from an
+                                            interrupted sync, or last completed
+                                            sync if more recent
+                                    scrub - Same as res, unless a fix was done
+                                            more recently than sync, then use
+                                            post-fix snapshot
+                                    sync  - Use last snapshots a successful
+                                            sync was completed with
                                 or specify the snapshot number (0 for the live
                                 filesystem, following snapper syntax)
                                 Default is:
