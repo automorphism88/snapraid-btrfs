@@ -31,7 +31,7 @@ readonly LOWER=abcdefghijklmnopqrstuvwxyz
 readonly MY_VERSION='0.11.4+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
-readonly SNAPRAID_OPTS_NOARG=DEFHLNRUVZaehmqv
+readonly SNAPRAID_OPTS_NOARG=DEFGHLNRTUVZaehmqv
 
 # bash version 4+ required for associative arrays, coprocesses, and
 # ;& and ;;& terminators in case statements
@@ -1486,6 +1486,12 @@ snapraid_opt_has_arg() {
         --older-than) ;&
         --percentage) ;&
         --plan) ;&
+        --test-fmt) ;&
+        --test-force-@(autosave|scrub)-at) ;&
+        --test-import-content) ;&
+        --test-io-cache) ;&
+        --test-parity-limit) ;&
+        --test-run) ;&
         # snapraid short-form options that require arguments
         -*(["$SNAPRAID_OPTS_NOARG"])["$SNAPRAID_OPTS_ARG"])
             return 0 ;;
