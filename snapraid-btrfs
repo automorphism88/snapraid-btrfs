@@ -1778,8 +1778,14 @@ use_snapshot_fix() {
             snapper_config_name="$(get_snapper_config_name "$disk")"
             if [[ "$snapper_config_name" ]] ; then
                 # for disks we are fixing, use the live filesystem
-                [[ "${use_snapshot[$snapper_config_name]-}" ]] ||
-                    use_snapshot[$snapper_config_name]=0
+                if ! [[ "${use_snapshot[$snapper_config_name]-}" =~ ^0?$ ]]
+                then
+                    error $E_INVALID_ARGUMENT \
+                        "Must use live filesystem for $snapper_config_name" \
+                        'since it is being fixed, but' \
+                        "${use_snapshot[$snapper_config_name]} was specified"
+                fi
+                use_snapshot[$snapper_config_name]=0
             fi
         fi
     done
