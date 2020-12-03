@@ -1330,25 +1330,18 @@ setup_config() {
     fi
     apply_pre_post_options
     case $1 in
+        check|pool|resume|rollback|scrub|undochange)
+            use_snapshot_default scrub ;;&
         cleanup)
             use_snapshot_all sync ;;&
         cleanup-all|touch)
             use_snapshot_all 0 ;;&
         config)
             use_snapshot_default last ;;&
-        check|pool|rollback|scrub|undochange)
-            use_snapshot_default sync ;;&
-        # for readonly commands, use the live filesystem as a backup default
-        check|config|scrub)
-            # avoid duplicate output when --verbose is enabled
-            find_snapshots "$1" > /dev/null
-            use_snapshot_default 0 ;;&
         create|diff|?(d|diff-)sync)
             use_snapshot_default new ;;&
         fix)
             use_snapshot_fix "$@" ;;&
-        resume)
-            use_snapshot_default resume ;;&
         shell|snapper)
             use_snapshot_default '' ;;&
         !(cleanup-all|ls|list|snapper|touch))
@@ -1600,8 +1593,7 @@ $my_name:
                                 Default is:
                                     'new' for diff|dsync|sync
                                     'last' for config
-                                    'res' for resume
-                                    'sync' for all other readonly commands
+                                    'scrub' for all other readonly commands
   -U, --use-snapshot ARG        Specify snapshots to use for specific snapper
                                 configurations, using the snapper config name
                                 followed by an equals sign. Multiple
@@ -1654,7 +1646,7 @@ Commands are either one of the following snapraid commands:
         Run the snapraid command given, creating a set of pre/post snapshots
         before and after (for fix, if the snapraid -d/--filter-disk option is
         specified, create pre/post snapshots only for the specified disk(s),
-        and use the last-synced snapshot for the rest).
+        and use the 'scrub' snapshot for the rest (see -u option above)).
 
 or one of the following $my_name specific commands:
   'config':
@@ -1832,8 +1824,8 @@ use_snapshot_fix() {
         fi
     done
     if ((disks_found > 0)) ; then
-        # for disks we are not fixing, use the last synced snapshot
-        use_snapshot_default sync fix
+        # for disks we are not fixing, use the 'scrub' snapshot
+        use_snapshot_default scrub fix
     else
         # snapraid fix --filter-disk option was not specified
         # snapraid will try to fix all disks, so use the live filesystem
