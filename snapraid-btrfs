@@ -649,6 +649,8 @@ find_snapshots() {
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
+            menu)
+                snapshot_menu "$i" ;;
             new)
                 use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
                     "${snapper_create_opts[@]}")"
@@ -1516,16 +1518,11 @@ snapraid_opt_has_arg() {
     return 1
 }
 
-# if snapshot not found for a config, prompt the user to choose a different one
-snapshot_not_found() {
+# Display a menu of snapshots for config $1 using snapper ls, and
+# let the user pick which one to use
+snapshot_menu() {
     local choice
-    printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
-        "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
-    if ((verbose < 0)) ; then
-        exit $E_SNAPSHOT_NOT_FOUND
-    else
-        snapper_ls_wrapper "$1"
-    fi
+    snapper_ls_wrapper "$1"
     while true ; do
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
             choice
@@ -1552,6 +1549,17 @@ snapshot_not_found() {
         esac
     done
     echo
+}
+
+#if snapshot not found for a config, prompt the user to choose a different one
+snapshot_not_found() {
+    printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
+        "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
+    if ((verbose < 0)) ; then
+        exit $E_SNAPSHOT_NOT_FOUND
+    else
+        snapshot_menu "$1"
+    fi
 } >&2
 
 usage() {
@@ -1579,6 +1587,8 @@ $my_name:
                                     diff  - Use last snapshot a diff was
                                             completed with
                                     last  - Use last snapshots created
+                                    menu  - Select the snapshot to use
+                                            interactively from a menu
                                     new   - Create new snapshots
                                     res   - Resume using snapshots from an
                                             interrupted sync, or last completed
