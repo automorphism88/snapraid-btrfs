@@ -951,7 +951,7 @@ main() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         # short options that don't take arguments
-                        [VXhiqv])
+                        [VXhiqvx])
                             set_option "-${opt_str:$i:1}"
                             if ((i == length-1)) ; then
                                 shift
@@ -1275,6 +1275,8 @@ set_option() {
         -V|--version)
             print_version
             exit ;;
+        -x|--xtrace)
+            set -o xtrace ;;
         -X|--debug)
             enable_debug_mode ;;
         --no-pre-post)
@@ -1610,6 +1612,7 @@ $my_name:
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
   -v, --verbose                 Increase verbosity of output
+  -x, --xtrace                  Enable bash xtrace
   -X, --debug                   Enable debugging output
   --no-pre-post ARG             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
