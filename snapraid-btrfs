@@ -951,7 +951,7 @@ main() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         # short options that don't take arguments
-                        [Vhiqvx])
+                        [VXhiqv])
                             set_option "-${opt_str:$i:1}"
                             if ((i == length-1)) ; then
                                 shift
@@ -1275,7 +1275,7 @@ set_option() {
         -V|--version)
             print_version
             exit ;;
-        -x|--debug)
+        -X|--debug)
             enable_debug_mode ;;
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
@@ -1610,7 +1610,7 @@ $my_name:
                                 configurations should be separated by commas,
                                 e.g. 'config1=5,config2=last'. Overrides -u
   -v, --verbose                 Increase verbosity of output
-  -x, --debug                   Enable debugging output
+  -X, --debug                   Enable debugging output
   --no-pre-post ARG             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
@@ -1707,8 +1707,8 @@ or one of the following $my_name specific commands:
 
 Environment variables:
   DEBUG_FD -
-        File descriptor to send debug output to if -x/--debug is used. For
-        example, running "DEBUG_FD=3 $my_name -xh 3>/tmp/debug" would
+        File descriptor to send debug output to if -X/--debug is used. For
+        example, running "DEBUG_FD=3 $my_name -Xh 3>/tmp/debug" would
         send debug output to /tmp/debug while displaying only the normal output
         of "$my_name -h" on the console. If unset, the default behavior
         is to send debug output to stderr.
