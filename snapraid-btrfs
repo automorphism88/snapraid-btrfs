@@ -247,6 +247,39 @@ check_snapraid_arguments() {
     done
 }
 
+# In each config, delete snapshots with userdata key $snapper_userdata_key
+# older than use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+cleanup() {
+    local i j
+    local -i ret=0
+    local -i snapper_ret
+    local -a snapshots_to_consider snapshots_to_delete
+    for i in "${snapper_configs[@]}" ; do
+        # skip this config if we couldn't find a synced snapshot
+        if [[ -z "${use_snapshot[$i]}" ]] ; then
+            warn 'No synced snapshot found for config' "$i" '- skipping'
+            continue
+        fi
+        IFS=' ' read -r -a snapshots_to_consider \
+            <<< "$(snapper_ls_wrapper "$i" 'C' |
+            parse_snapper_ls "$snapper_userdata_key" '' ' ')"
+        snapshots_to_delete=()
+        for j in "${snapshots_to_consider[@]}" ; do
+            if [[ "${use_snapshot[$i]}" -gt "$j" ]] ||
+                   [[ "${use_snapshot[$i]}" = 0 ]]
+            then
+                snapshots_to_delete+=( "$j" )
+            fi
+        done
+        cleanup_snapshots "$i" "${snapshots_to_delete[@]}" && true
+        snapper_ret=$?
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
+    done
+    return $ret
+}
+
 cleanup_coproc() {
     trap - DEBUG
     eval "${debug_fd:+exec ${debug_fd}>&-}"
@@ -258,46 +291,23 @@ cleanup_coproc() {
     debug_fd=
 }
 
-# clean up snapshot $2 in config $1
-cleanup_snapshot() {
-    if ((interactive > 0)) ; then
-        snapper_ls_wrapper "$1"
-        echo
-    fi
-    verbose_command "$my_snapper" -c "$1" rm "$2"
-    if ((interactive > 0)) ; then
-        echo
-    fi
-} >&2
-
-# In each config, delete snapshots with userdata key $snapper_userdata_key
-# older than use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+# Run snapper rm on config $1, with $2, $3, ... specifying snapshots to delete
 cleanup_snapshots() {
-    local i j
-    local -i ret=0
-    local -i snapper_ret
-    local -a snapshots_to_consider
-    for i in "${snapper_configs[@]}" ; do
-        # skip this config if we couldn't find a synced snapshot
-        if [[ -z "${use_snapshot[$i]}" ]] ; then
-            warn 'No synced snapshot found for config' "$i" '- skipping'
-            continue
-        fi
-        IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$(snapper_ls_wrapper "$i" 'C' |
-            parse_snapper_ls "$snapper_userdata_key" '' ' ')"
-        for j in "${snapshots_to_consider[@]}" ; do
-            if [[ "${use_snapshot[$i]}" -gt "$j" ]] ||
-                   [[ "${use_snapshot[$i]}" = 0 ]]
-            then
-                cleanup_snapshot "$i" "$j"
-                snapper_ret=$?
-                if ((snapper_ret != 0)) ; then
-                    ret=$snapper_ret
-                fi
-            fi
-        done
-    done
+    if (($# < 2)) ; then
+        return 0
+    fi
+    local config="$1"
+    shift
+    local -i ret
+    if ((interactive > 0)) ; then
+        snapper_ls_wrapper "$config" >&2
+        echo >&2
+    fi
+    verbose_command "$my_snapper" -c "$config" rm "$@" && true
+    ret=$?
+    if ((interactive > 0)) ; then
+        echo >&2
+    fi
     return $ret
 }
 
@@ -1134,7 +1144,7 @@ run_command() {
     case $1 in
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
-            cleanup_snapshots ;;
+            cleanup ;;
         config)
             generate_temp_snapraid_conf ;;
         ls|list)
