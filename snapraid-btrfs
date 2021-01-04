@@ -667,19 +667,26 @@ find_snapshots() {
                 verbose "Created new snapshot ${use_snapshot[$i]}" \
                     "for config $i" ;;
             res?(ume))
-                use_snapshot[$i]="$(max "$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" syncing |
-                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" synced |
-                    tail -n 1)")" ;;
+                use_snapshot[$i]="$(max \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" syncing |
+                        tail -n 1)" \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" synced |
+                        tail -n 1)" \
+                    )" ;;
             scrub)
-                use_snapshot[$i]="$(max "$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" syncing |
-                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" synced |
-                    tail -n 1)" "$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" post-fix |
-                    tail -n 1)")" ;;
+                use_snapshot[$i]="$(max \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" syncing |
+                        tail -n 1)" \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" synced |
+                        tail -n 1)" \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" post-fix |
+                        tail -n 1)" \
+                    )" ;;
             sync)
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
