@@ -686,6 +686,9 @@ find_snapshots() {
                     "$(snapper_ls_wrapper "$i" 'C' |
                         parse_snapper_ls "$snapper_userdata_key" post-fix |
                         tail -n 1)" \
+                    "$(snapper_ls_wrapper "$i" 'C' |
+                        parse_snapper_ls "$snapper_userdata_key" post-touch |
+                        tail -n 1)" \
                     )" ;;
             sync)
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
@@ -1612,9 +1615,9 @@ $my_name:
                                     res   - Resume using snapshots from an
                                             interrupted sync, or last completed
                                             sync if more recent
-                                    scrub - Same as res, unless a fix was done
-                                            more recently than sync, then use
-                                            post-fix snapshot
+                                    scrub - Same as res, unless a fix/touch was
+                                            done more recently than sync, then
+                                            use post-fix/touch snapshot
                                     sync  - Use last snapshots a successful
                                             sync was completed with
                                 or specify the snapshot number (0 for the live
