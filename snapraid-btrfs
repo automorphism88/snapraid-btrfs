@@ -1197,6 +1197,10 @@ run_command() {
             shift
             run_snapraid sync "$@" && true ;;
         @(d|diff-)sync)
+            if ((interactive < 0)) ; then
+                error $E_INVALID_ARGUMENT \
+                    'diff-sync and --noninteractive are incompatible'
+            fi
             shift
             local -i diff_ret
             run_snapraid diff "$@" && true
