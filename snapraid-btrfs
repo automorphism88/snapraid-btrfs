@@ -696,29 +696,14 @@ find_snapshots() {
                 verbose "Created new snapshot ${use_snapshot[$i]}" \
                     "for config $i" ;;
             res?(ume))
-                use_snapshot[$i]="$(max \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" syncing |
-                        tail -n 1)" \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" synced |
-                        tail -n 1)" \
-                    )" ;;
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" syncing,synced |
+                    tail -n 1)" ;;
             scrub)
-                use_snapshot[$i]="$(max \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" syncing |
-                        tail -n 1)" \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" synced |
-                        tail -n 1)" \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" post-fix |
-                        tail -n 1)" \
-                    "$(snapper_ls_wrapper "$i" 'C' |
-                        parse_snapper_ls "$snapper_userdata_key" post-touch |
-                        tail -n 1)" \
-                    )" ;;
+                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
+                    parse_snapper_ls "$snapper_userdata_key" \
+                        syncing,synced,post-fix,post-touch |
+                    tail -n 1)" ;;
             sync)
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" synced |
@@ -1045,20 +1030,6 @@ main() {
     fi
 }
 
-# Print the largest positive integer in $@, if any
-max() {
-    local -i ret=0
-    while (($# > 0)) ; do
-        if [[ "$1" -gt "$ret" ]] ; then
-            ret="$1"
-        fi
-        shift
-    done
-    if ((ret > 0)) ; then
-        printf -- '%s\n' "$ret"
-    fi
-}
-
 # set $snapper_userdata_key userdata key to $1
 modify_userdata() {
     local i
@@ -1097,6 +1068,7 @@ option_requires_argument() {
 # use awk to parse piped snapper ls output and find snapshot numbers
 # matching the specified userdata constraints:
 # if $1 and $2 are nonempty, match snapshots with userdata key $1=$2
+# (multiple userdata values can be comma-separated in $2 to match any of them)
 # else if $1 is nonempty, match snapshots with userdata key $1 defined
 # else match all snapshots
 # if multiple snapshots match, separate their numbers with $3, or
@@ -1107,6 +1079,12 @@ parse_snapper_ls() {
         -v value="${2-}" \
         -v ORS="${3:-$'\n'}" \
         -f <(cat <<'_EOF_'
+# create array of values to match from comma-separated variable
+BEGIN {
+    if (value != "") {
+        split(value,values,",")
+    }
+}
 # read column titles in header, so as to work with different versions of
 # snapper that reorder columns
 NR==1 {
@@ -1151,12 +1129,17 @@ NR>=3 {
         }
         # find and print our matches
         if (value == "") {
+            # match key only
             if (key in v) {
                 print $column["#"]
             }
         } else {
-            if (key "=" value in v) {
-                print $column["#"]
+            # match both key and value
+            for (i in values) {
+                if (key "=" values[i] in v) {
+                    print $column["#"]
+                    break
+                }
             }
         }
         # Wipe v so one match doesn't result in matching all subsequent lines
