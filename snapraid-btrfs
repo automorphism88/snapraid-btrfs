@@ -360,7 +360,8 @@ create_pre_post_snapshots() {
             fi
             snapper_cmd+=(
                 -u "$snapper_userdata$snapper_userdata_key=post-$1"
-                -t post --pre-number "${pre_snapshot[$i]}"
+                -t post
+                --pre-number "${pre_snapshot[$i]}"
             )
             "${snapper_cmd[@]}" || true
         else
@@ -373,7 +374,8 @@ create_pre_post_snapshots() {
             fi
             snapper_cmd+=(
                 -u "$snapper_userdata$snapper_userdata_key=pre-$1"
-                -t pre -p
+                -t pre
+                -p
             )
             pre_snapshot[$i]="$("${snapper_cmd[@]}")"
         fi
