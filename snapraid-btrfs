@@ -201,7 +201,7 @@ check_config_file() {
     if ! [[ -r "$config_file" ]] ; then
         error_nonshell "$1" $E_INVALID_ARGUMENT \
             "Could not read snapraid config file at $config_file"
-        return
+        return 0
     fi
     verbose "Using snapraid config file $config_file"$'\n'
     # check for trailing newline in snapraid.conf
