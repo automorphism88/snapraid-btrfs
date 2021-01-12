@@ -893,6 +893,8 @@ main() {
         snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     # additional userdata to set, specified with the --snapper-userdata option
     local snapper_userdata=
+    # location of temporary snapraid.conf
+    local temp_config_file=
     # directory to create temporary snapraid.conf file in
     local temp_dir="${TMPDIR:-$DEFAULT_TMPDIR}"
     # --use-snapshot-all option argument
@@ -1234,14 +1236,20 @@ run_command() {
 run_snapraid() {
     check_snapraid_arguments "$@"
     local -i ret
-    local temp_config_file
-    temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")" ||
-        err_trap $LINENO mktemp $?
-    rm_on_exit+=( "$temp_config_file" )
-    generate_temp_snapraid_conf > "$temp_config_file" ||
-        err_trap $LINENO generate_temp_snapraid_conf $?
-    show_temp_snapraid_conf ||
-        err_trap $LINENO show_temp_snapraid_conf $?
+    if [[ -z "${temp_config_file}" ]] ; then
+        temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")" ||
+            err_trap $LINENO mktemp $?
+        rm_on_exit+=( "$temp_config_file" )
+        generate_temp_snapraid_conf > "$temp_config_file" ||
+            err_trap $LINENO generate_temp_snapraid_conf $?
+        show_temp_snapraid_conf \
+            "Using temporary snapraid config file ${temp_config_file}:" ||
+            err_trap $LINENO show_temp_snapraid_conf $?
+    else
+        show_temp_snapraid_conf \
+            "(Re)using temporary snapraid config file ${temp_config_file}:" ||
+            err_trap $LINENO show_temp_snapraid_conf $?
+    fi
     case $1 in
         fix|touch)
             create_pre_post_snapshots "$1" ||
@@ -1430,7 +1438,7 @@ show_configs() {
 
 show_temp_snapraid_conf() {
     if ((verbose >= 0)) ; then
-        echo 'Using temporary snapraid config file:'
+        printf '%s\n' "$*"
         cat < "$temp_config_file" && echo
     fi
 } >&2
