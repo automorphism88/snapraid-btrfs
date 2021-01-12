@@ -940,7 +940,8 @@ main() {
             --quiet) ;&
             --used-space) ;&
             --verbose) ;&
-            --version)
+            --version) ;&
+            --xtrace)
                 set_option "$1"
                 shift ;;
             # long form options that require arguments
