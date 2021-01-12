@@ -35,7 +35,8 @@ readonly SNAPRAID_OPTS_NOARG=DEFGHLNRTUVZaehmqv
 
 # bash version 4+ required for associative arrays, coprocesses, and
 # ;& and ;;& terminators in case statements
-# 4.1+ required for ACL support and <{var} fd variable assignment
+# 4.1+ required for ACL support, <{var} fd variable assignment, and
+# BASH_XTRACEFD
 if [ -z "${BASH_VERSION-}" ] ||
        ! { ((BASH_VERSINFO[0] > 4)) ||
                { ((BASH_VERSINFO[0] == 4)) && ((BASH_VERSINFO[1] >= 1)) ; } ; }
@@ -280,7 +281,8 @@ cleanup() {
     return $ret
 }
 
-cleanup_coproc() {
+cleanup_coproc_debug() {
+    [[ "${debug_fd}" ]] || return 0
     trap - DEBUG
     eval "${debug_fd:+exec ${debug_fd}>&-}"
     eval "${sed_escape_debug[1]:+exec ${sed_escape_debug[1]}>&-}"
@@ -289,6 +291,25 @@ cleanup_coproc() {
     # See https://github.com/koalaman/shellcheck/issues/1066
     eval "${sed_escape_debug_PID:+wait $sed_escape_debug_PID}"
     debug_fd=
+}
+
+cleanup_coproc_xtrace() {
+    [[ "${xtrace_fd}" ]] || return 0
+    set +o xtrace
+    BASH_XTRACEFD="${xtrace_fd_old:-2}"
+    eval "${xtrace_fd:+exec ${xtrace_fd}>&-}"
+    eval "${sed_escape_xtrace[1]:+exec ${sed_escape_xtrace[1]}>&-}"
+    # shellcheck disable=2154
+    # Shellcheck doesn't understand named coprocesses
+    # See https://github.com/koalaman/shellcheck/issues/1066
+    eval "${sed_escape_xtrace_PID:+wait $sed_escape_xtrace_PID}"
+    xtrace_fd=
+    xtrace_fd_old=
+}
+
+cleanup_coprocs() {
+    cleanup_coproc_debug
+    cleanup_coproc_xtrace
 }
 
 # Run snapper rm on config $1, with $2, $3, ... specifying snapshots to delete
@@ -409,7 +430,7 @@ declare-p_vars_shell() {
 
 # start interactive shell in context of script
 do_shell() {
-    cleanup_coproc
+    cleanup_coprocs
     (
         # shellcheck disable=2030
         rm_on_exit=()
@@ -473,18 +494,26 @@ do_snapper() {
 
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
-    if [[ "${debug_fd-}" ]] ; then
-        cleanup_coproc
-    fi
+    cleanup_coproc_debug
     coproc sed_escape_debug {
-        sed -e $'s/\e/\e[7m\\\\e\e[0m/g' \
-            -e $'s/\r/\e[7m\\\\r\e[0m/g' \
-            -e $'s/\t/\e[7m\\\\t\e[0m/g'
+        sed_escape_output
     } >&"${DEBUG_FD:-2}"
     exec {debug_fd}<&"${sed_escape_debug[1]}"
     # shellcheck disable=1004
     trap 'debug_trap "$LINENO" "$BASH_COMMAND" \
         "${FUNCNAME[0]:+${FUNCNAME[0]}(): }" "$@"' DEBUG
+}
+
+# Use sed coproc to escape BASH_XTRACEFD
+enable_xtrace_mode() {
+    cleanup_coproc_xtrace
+    xtrace_fd_old="${BASH_XTRACEFD:-2}"
+    coproc sed_escape_xtrace {
+        sed_escape_output
+    } >&"${BASH_XTRACEFD:-2}"
+    exec {xtrace_fd}<&"${sed_escape_xtrace[1]}"
+    BASH_XTRACEFD="$xtrace_fd"
+    set -o xtrace
 }
 
 # Intended to be called by ERR trap. Accepts the following arguments:
@@ -541,7 +570,7 @@ exit_trap() {
     if ((${#rm_on_exit[@]} > 0)) ; then
         rm -f -- "${rm_on_exit[@]}" || true
     fi
-    cleanup_coproc
+    cleanup_coprocs
 }
 
 find_configs() {
@@ -875,6 +904,10 @@ main() {
     # controls verbosity, incremented by -v/--verbose or
     # decremented by -q/--quiet command line option
     local -i verbose=0
+    # fd to send xtrace output to if -x/--xtrace is enabled
+    local xtrace_fd=
+    # backup of original BASH_XTRACEFD
+    local xtrace_fd_old=
     # These associative arrays are indexed by snapper configs in the
     # snapper_configs array, and hold the following data:
     # number of pre snapshot created, to use when creating post
@@ -1253,6 +1286,14 @@ sed_escape_bre() {
     sed 's/[.*$^/\[]/\\&/g'
 }
 
+# escape output containing the following literal nonprintable ASCII characters:
+# \e \r \t
+sed_escape_output() {
+    sed -e $'s/\e/\e[7m\\\\e\e[0m/g' \
+        -e $'s/\r/\e[7m\\\\r\e[0m/g' \
+        -e $'s/\t/\e[7m\\\\t\e[0m/g'
+}
+
 # make input suitable to be used in sed replacement text as fixed string
 # in sed replacement text, the following must be escaped:
 # & / \
@@ -1297,7 +1338,7 @@ set_option() {
             print_version
             exit ;;
         -x|--xtrace)
-            set -o xtrace ;;
+            enable_xtrace_mode ;;
         -X|--debug)
             enable_debug_mode ;;
         --no-pre-post)
