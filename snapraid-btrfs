@@ -1417,21 +1417,19 @@ setup_config() {
 }
 
 show_configs() {
-    if ((verbose >= 0)) ; then
-        local i
-        echo 'Snapper configs found:'
-        for i in "${snapper_configs[@]}" ; do
-            printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
-        done
-        echo
-    fi
+    ((verbose >= 0)) || return 0
+    local i
+    echo 'Snapper configs found:'
+    for i in "${snapper_configs[@]}" ; do
+        printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
+    done
+    echo
 } >&2
 
 show_temp_snapraid_conf() {
-    if ((verbose >= 0)) ; then
-        printf '%s\n' "$*"
-        cat < "$temp_config_file" && echo
-    fi
+    ((verbose >= 0)) || return 0
+    printf '%s\n' "$*"
+    cat < "$temp_config_file" && echo
 } >&2
 
 # Do a snapper ls in all configs, and if argument(s) are specified,
@@ -1909,10 +1907,9 @@ use_snapshot_fix() {
 }
 
 verbose() {
-    if ((verbose > 0)) ; then
-        printf -- '%s ' "$@"
-        echo
-    fi
+    ((verbose > 0)) || return 0
+    printf -- '%s ' "$@"
+    echo
 }
 
 verbose_command() {
@@ -1954,11 +1951,10 @@ version_is_at_least() {
 }
 
 warn() {
-    if ((verbose >= 0)) ; then
-        printf -- '%s: WARNING: ' "$my_name"
-        printf -- '%s ' "$@"
-        echo
-    fi
+    ((verbose >= 0)) || return 0
+    printf -- '%s: WARNING: ' "$my_name"
+    printf -- '%s ' "$@"
+    echo
 } >&2
 
 if [[ "$0" = "${BASH_SOURCE[0]}" ]] ; then
