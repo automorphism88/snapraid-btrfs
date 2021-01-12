@@ -237,8 +237,8 @@ check_snapraid_arguments() {
                 break ;;
             --conf|-*(["$SNAPRAID_OPTS_NOARG"])c*)
                 error $E_INVALID_ARGUMENT \
-                    'The -c/--conf option' \
-                    'may not be passed through to snapraid' ;;
+                    "The -c/--conf option can't be passed through to snapraid"
+                ;;
         esac
         if snapraid_opt_has_arg "$@" ; then
             shift 2
@@ -258,7 +258,7 @@ cleanup() {
     for i in "${snapper_configs[@]}" ; do
         # skip this config if we couldn't find a synced snapshot
         if [[ -z "${use_snapshot[$i]}" ]] ; then
-            warn 'No synced snapshot found for config' "$i" '- skipping'
+            warn "No synced snapshot found for config $i - skipping"
             continue
         fi
         IFS=' ' read -r -a snapshots_to_consider \
@@ -914,8 +914,8 @@ main() {
     trap 'exit_trap' EXIT
 
     if [[ "$EUID" = 0 ]] ; then
-        warn "Running $my_name as root is not recommended" \
-            '(nor is running snapraid as root)'
+        warn "Running $my_name as root is not recommended"
+        warn '(nor is running snapraid as root)'
     fi
     # Iterate through command line arguments and process snapraid-btrfs options
     # until a command is reached, then run the specified command, passing
