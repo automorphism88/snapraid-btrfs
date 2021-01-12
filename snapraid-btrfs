@@ -144,56 +144,13 @@ call_stack() {
 # Sanity checks to run after reading configuration from
 # snapraid.conf and snapper list-configs
 check_config() {
-    local field1 field2 content_dir content_mount i
     if ((${#snapper_configs[@]} > 0)) ; then
-        # We don't want to snapshot the content files. So, check the
-        # directories of the content files, and compare their mount points with
-        # those of the subvolumes we are snapshotting, to see if any match
-        while IFS=$' \t' read -r field1 field2 ; do
-            if [[ "$field1" = content ]] ; then
-                if [[ -f "$field2" ]] ; then
-                    content_dir="$(dirname -- "$field2")"
-                    if [[ -d "$content_dir" ]] ; then
-                        content_mount="$(stat --format=%m -- "$content_dir")"
-                        for i in "${snapper_configs[@]}" ; do
-                            if [[ "$content_mount" -ef \
-                                "${snapper_subvols[$i]}" ]]
-                            then
-                                error $E_INVALID_CONFIG \
-                                    "$field2 found in subvolume" \
-                                    "${snapper_subvols[$i]}" \
-                                    '- content files must be in' \
-                                    'separate subvolume'
-                            fi
-                        done
-                    else
-                        warn "content directory $content_dir not found"
-                    fi
-                else
-                    warn "content file $field2 not found"
-                fi
-            fi
-        done < "$config_file"
+        check_content_files
+        check_snapper_configs
     else
         error_nonshell "$1" $E_INVALID_CONFIG \
             "No snapper configs found for any data drives in $config_file"
     fi
-    for i in "${snapper_configs[@]}" ; do
-        # Check that .snapshots subvolume exists
-        if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
-            error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
-                'is not a valid btrfs subvolume'
-        # Check that we have read permission for the .snapshots subvolume
-        # If not, try running snapper ls, in case ACLs need to be synced
-        elif ! { [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ||
-                     { snapper_ls_sync_acl "$i" &&
-                           [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; } ; }
-        then
-            error $E_NO_PERMISSION 'No read permission for' \
-                "${snapper_subvols[$i]}/.snapshots" \
-                '- is SYNC_ACL set in snapper configuration?'
-        fi
-    done
 }
 
 # Sanity checks to run before reading snapraid.conf file
@@ -219,6 +176,37 @@ check_config_file() {
     fi
 }
 
+# We don't want to snapshot the content files. So, check the
+# directories of the content files, and compare their mount points with
+# those of the subvolumes we are snapshotting, to see if any match
+check_content_files() {
+    local field1 field2 content_dir content_mount i
+    while IFS=$' \t' read -r field1 field2 ; do
+        if [[ "$field1" = content ]] ; then
+            if [[ -f "$field2" ]] ; then
+                content_dir="$(dirname -- "$field2")"
+                if [[ -d "$content_dir" ]] ; then
+                    content_mount="$(stat --format=%m -- "$content_dir")"
+                    for i in "${snapper_configs[@]}" ; do
+                        if [[ "$content_mount" -ef \
+                            "${snapper_subvols[$i]}" ]]
+                        then
+                            error $E_INVALID_CONFIG \
+                                "$field2 found in subvolume" \
+                                "${snapper_subvols[$i]}" \
+                                '- content files must be in separate subvolume'
+                        fi
+                    done
+                else
+                    warn "content directory $content_dir not found"
+                fi
+            else
+                warn "content file $field2 not found"
+            fi
+        fi
+    done < "$config_file"
+}
+
 # Make sure all external binaries in $@ can be found in $PATH
 check_dependencies() {
     while (($# > 0)) ; do
@@ -226,6 +214,26 @@ check_dependencies() {
             error $E_MISSING_DEPENDENCY "Could not find $1 in PATH"
         fi
         shift
+    done
+}
+
+check_snapper_configs() {
+    local i
+    for i in "${snapper_configs[@]}" ; do
+        # Check that .snapshots subvolume exists
+        if ! is_btrfs_subvolume "${snapper_subvols[$i]}/.snapshots" ; then
+            error $E_INVALID_CONFIG "${snapper_subvols[$i]}/.snapshots" \
+                'is not a valid btrfs subvolume'
+        # Check that we have read permission for the .snapshots subvolume
+        # If not, try running snapper ls, in case ACLs need to be synced
+        elif ! { [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ||
+                     { snapper_ls_sync_acl "$i" &&
+                           [[ -r "${snapper_subvols[$i]}/.snapshots" ]] ; } ; }
+        then
+            error $E_NO_PERMISSION 'No read permission for' \
+                "${snapper_subvols[$i]}/.snapshots" \
+                '- is SYNC_ACL set in snapper configuration?'
+        fi
     done
 }
 
