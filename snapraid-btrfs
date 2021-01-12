@@ -1428,7 +1428,8 @@ show_configs() {
 
 show_temp_snapraid_conf() {
     ((verbose >= 0)) || return 0
-    printf '%s\n' "$*"
+    printf -- '%s ' "$@"
+    echo
     cat < "$temp_config_file" && echo
 } >&2
 
