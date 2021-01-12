@@ -1578,6 +1578,10 @@ snapraid_opt_has_arg() {
 # Display a menu of snapshots for config $1 using snapper ls, and
 # let the user pick which one to use
 snapshot_menu() {
+    if ((interactive < 0)) ; then
+        error $E_SNAPSHOT_NOT_FOUND \
+            'not displaying snapshot menu since --noninteractive'
+    fi
     local choice
     snapper_ls_wrapper "$1"
     while true ; do
@@ -1612,11 +1616,7 @@ snapshot_menu() {
 snapshot_not_found() {
     printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
         "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
-    if ((interactive < 0)) || ((verbose < 0)) ; then
-        exit $E_SNAPSHOT_NOT_FOUND
-    else
-        snapshot_menu "$1"
-    fi
+    snapshot_menu "$i"
 } >&2
 
 usage() {
