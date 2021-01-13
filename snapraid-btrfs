@@ -920,10 +920,6 @@ main() {
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
 
-    if [[ "$EUID" = 0 ]] ; then
-        warn "Running $my_name as root is not recommended"
-        warn '(nor is running snapraid as root)'
-    fi
     # Iterate through command line arguments and process snapraid-btrfs options
     # until a command is reached, then run the specified command, passing
     # through any remaining command line arguments appearing after the command
@@ -1028,6 +1024,7 @@ main() {
     if [[ "${command-}" ]] ; then
         set -- "$command"
     fi
+    warn_if_root
     if (($# > 0)) ; then
         # These variables are intended to be truly local, unlike the "global"
         # variables declared as local to main(), so we unset them when done
@@ -1963,6 +1960,12 @@ warn() {
     printf -- '%s ' "$@"
     echo
 } >&2
+
+warn_if_root() {
+    [[ "$EUID" = 0 ]] || return 0
+    warn "Running $my_name as root is not recommended"
+    warn '(nor is running snapraid as root)'
+}
 
 if [[ "$0" = "${BASH_SOURCE[0]}" ]] ; then
     main "$@"
