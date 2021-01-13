@@ -1129,8 +1129,8 @@ NR>=3 {
             if (value == "") {
                 # we don't care about the value of the userdata key, so
                 # split key=value pairs and store only the key
-                split(pairs[i],key,"=")
-                userdata[key[1]]
+                split(pairs[i],k,"=")
+                userdata[k[1]]
             } else {
                 # we care about both halves of the userdata key=value
                 # pair, so store the whole key=value string
