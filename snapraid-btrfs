@@ -1120,41 +1120,40 @@ NR>=3 {
     } else {
         # split userdata column into key=value pairs in case
         # multiple userdata keys are defined for a snapshot
-        split($column["Userdata"],u,",")
-        # construct a new array v where the keys are the values from u
-        for (i in u) {
+        split($column["Userdata"],pairs,",")
+        # construct an array 'userdata' whose indices we will search in
+        for (i in pairs) {
             # remove padding spaces
-            gsub(/^[ ]+/,"",u[i])
-            gsub(/[ ]+$/,"",u[i])
+            gsub(/^[ ]+/,"",pairs[i])
+            gsub(/[ ]+$/,"",pairs[i])
             if (value == "") {
-                # We don't care about the value of the userdata key, so
-                # split key=value pairs and store only the key as a key in v
-                split(u[i],w,"=")
-                v[w[1]]
+                # we don't care about the value of the userdata key, so
+                # split key=value pairs and store only the key
+                split(pairs[i],keys,"=")
+                userdata[keys[1]]
             } else {
-                # We care about both halves of the userdata key=value
-                # pair, so store the whole key=value string as a key in v
-                v[u[i]]
+                # we care about both halves of the userdata key=value
+                # pair, so store the whole key=value string
+                userdata[pairs[i]]
             }
         }
         # find and print our matches
         if (value == "") {
             # match key only
-            if (key in v) {
+            if (key in userdata) {
                 print $column["#"]
             }
         } else {
             # match both key and value
             for (i in values) {
-                if (key "=" values[i] in v) {
+                if (key "=" values[i] in userdata) {
                     print $column["#"]
                     break
                 }
             }
         }
-        # Wipe v so one match doesn't result in matching all subsequent lines
-        # delete v only works in gawk
-        split("",v," ")
+        # (portably) clear userdata before moving on to next snapshot
+        split("",userdata)
     }
 }
 _EOF_
