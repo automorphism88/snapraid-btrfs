@@ -349,7 +349,7 @@ config_must_exist() {
 # Calling once creates pre snapshots, calling again creates corresponding post
 create_pre_post_snapshots() {
     local -a snapper_cmd
-    local i
+    local post_snapshot i
     for i in "${pre_post_configs[@]}" ; do
         # skip configs where we're using a readonly snapshot
         [[ "${use_snapshot[$i]}" = 0 ]] || continue
@@ -369,8 +369,15 @@ create_pre_post_snapshots() {
                 -u "$snapper_userdata$snapper_userdata_key=post-$1"
                 -t post
                 --pre-number "${pre_snapshot[$i]}"
+                -p
             )
-            "${snapper_cmd[@]}" || true
+            if post_snapshot="$("${snapper_cmd[@]}")" ; then
+                verbose "Created post snapshot" \
+                    "${snapper_subvols[$i]}/.snapshots/$post_snapshot"
+            else
+                warn "Failed to create post snapshot for pre snapshot" \
+                    "${snapper_subvols[$i]}/.snapshots/${pre_snapshot[$i]}"
+            fi
         else
             # We haven't created pre snapshots yet, so create them and store
             # the snapshot numbers from snapper -p option in ${pre_snapshot[@]}
@@ -385,6 +392,8 @@ create_pre_post_snapshots() {
                 -p
             )
             pre_snapshot[$i]="$("${snapper_cmd[@]}")"
+            verbose "Created pre snapshot" \
+                "${snapper_subvols[$i]}/.snapshots/${pre_snapshot[$i]}"
         fi
     done
 }
