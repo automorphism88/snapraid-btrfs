@@ -53,6 +53,7 @@ set -o nounset
 set -o pipefail
 set +o noclobber
 set +o posix
+shopt -s dotglob
 shopt -s extglob
 shopt -s extquote
 shopt -s nullglob
