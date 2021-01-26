@@ -612,6 +612,7 @@ find_configs_specified() {
 # and look for SUBVOLUME matching /etc/snapraid.conf
 find_configs_snapper_get-config() {
     local config dir i
+    local -a files
     dir="${SNAPPER_CONFIG_DIR-$DEFAULT_SNAPPER_CONFIG_DIR}"
     if ! [[ -d "$dir" ]] ; then
         error $E_INVALID_CONFIG "$dir is not a directory"
@@ -619,7 +620,12 @@ find_configs_snapper_get-config() {
         error $E_NO_PERMISSION "No read permission for $dir"
     fi
     set +o noglob
-    for i in "$dir"/* ; do
+    files=( "$dir"/* )
+    set -o noglob
+    if (("${#files[@]}" == 0)) ; then
+        error_nonshell $E_INVALID_CONFIG "No files in $dir"
+    fi
+    for i in "${files[@]}" ; do
         config="$(basename -- "$i")"
         find_configs_try "$config" && true
         case $? in
@@ -631,7 +637,6 @@ find_configs_snapper_get-config() {
                     "Failed to run snapper get-config for config $config" ;;
         esac
     done
-    set -o noglob
     verbose
 }
 
