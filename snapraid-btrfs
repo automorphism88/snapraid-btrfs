@@ -867,6 +867,18 @@ main() {
     local snapper_cleanup=
     # names of all snapper configs that match snapraid.conf
     local snapper_configs=()
+    # These associative arrays are indexed by snapper configs in the
+    # snapper_configs array, and hold the following data:
+    # number of pre snapshot created, to use when creating post
+    local -A pre_snapshot
+    # subvolume corresponding to the snapper config
+    local -A snapper_subvols
+    # snapraid disk name corresponding to the snapper config
+    local -A snapraid_names
+    # which snapshot should be used for the snapper config
+    local -A use_snapshot
+    # values of use_snapshot not found by find_snapshots()
+    local -A use_snapshot_missing
     # indexes are configs specified with either the
     # --snapper-configs or --snapper-configs-file options
     # associative array used to track duplicates,
@@ -904,18 +916,6 @@ main() {
     local xtrace_fd=
     # backup of original BASH_XTRACEFD
     local xtrace_fd_old=
-    # These associative arrays are indexed by snapper configs in the
-    # snapper_configs array, and hold the following data:
-    # number of pre snapshot created, to use when creating post
-    local -A pre_snapshot
-    # subvolume corresponding to the snapper config
-    local -A snapper_subvols
-    # snapraid disk name corresponding to the snapper config
-    local -A snapraid_names
-    # which snapshot should be used for the snapper config
-    local -A use_snapshot
-    # values of use_snapshot not found by find_snapshots()
-    local -A use_snapshot_missing
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
@@ -923,6 +923,9 @@ main() {
     # Iterate through command line arguments and process snapraid-btrfs options
     # until a command is reached, then run the specified command, passing
     # through any remaining command line arguments appearing after the command
+
+    # These are genuinely local variables used for option processing
+    # and will be unset after use
     local opt_str
     local -i length i
     local command=
@@ -1024,11 +1027,10 @@ main() {
     if [[ "${command-}" ]] ; then
         set -- "$command"
     fi
+    # done processing arguments, so unset truly local variables and run command
+    unset -v command length opt_str i
     warn_if_root
     if (($# > 0)) ; then
-        # These variables are intended to be truly local, unlike the "global"
-        # variables declared as local to main(), so we unset them when done
-        unset -v command length opt_str i
         setup_config "$@"
         run_command "$@"
     else
