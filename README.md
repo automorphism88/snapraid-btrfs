@@ -221,9 +221,7 @@ your SnapRAID configuration without using `snapraid-btrfs` (or disable it for
 specific drives using the command-line options), SnapRAID will see the
 `.snapshots` subvolume as a separate filesystem and warn you that it won't be
 included in the parity. Excluding it explicitly will prevent you from receiving
-this warning message from SnapRAID. Also, if you want to run `snapraid diff`
-(as opposed to `snapraid-btrfs diff`), this will prevent SnapRAID from thinking
-all the snapshots are new files.
+this warning message from SnapRAID.
 
 When using `snapraid-btrfs` to sync, the `.snapshots` subvolume will appear as
 an empty directory in the read-only snapshots, so excluding it in the SnapRAID
