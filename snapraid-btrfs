@@ -966,8 +966,7 @@ main() {
             # for commands which don't invoke snapraid or accept argument
             cleanup?(-all)) ;&
             config) ;&
-            create) ;&
-            rollback)
+            create)
                 if [[ -z "$command" ]] ; then
                     command="$1"
                     shift
@@ -1200,8 +1199,6 @@ run_command() {
         ls|list)
             shift
             snapper_ls "$@" ;;
-        rollback)
-            snapper_rollback ;;
         shell)
             shift
             do_shell "$@" ;;
@@ -1414,7 +1411,7 @@ setup_config() {
     fi
     apply_pre_post_options
     case $1 in
-        check|pool|resume|rollback|scrub|undochange)
+        check|pool|resume|scrub|undochange)
             use_snapshot_default scrub ;;&
         cleanup)
             use_snapshot_all sync ;;&
@@ -1490,37 +1487,6 @@ snapper_ls_wrapper() {
         "$my_snapper" -c "$1" \
             ls${snapper_ls_quota_disable:+ --disable-used-space}
     fi
-}
-
-# Run snapper rollback in each snapper config
-snapper_rollback() {
-    local i
-    local -i ret=0
-    local -i snapper_ret
-    local snapper_rollback_opts=(
-        -u "$snapper_userdata$snapper_userdata_key=rollback"
-    )
-    if [[ "$snapper_cleanup" ]] ; then
-        snapper_rollback_opts+=( -c "$snapper_cleanup" )
-    fi
-    if [[ "$snapper_description" ]] ; then
-        snapper_rollback_opts+=( -d "$snapper_description" )
-    else
-        snapper_rollback_opts+=( -d "$my_name rollback" )
-    fi
-    for i in "${snapper_configs[@]}" ; do
-        if [[ "${use_snapshot[$i]}" = 0 ]] ; then
-            continue
-        else
-            verbose_command "$my_snapper" -c "$i" rollback \
-                "${snapper_rollback_opts[@]}" "${use_snapshot[$i]}"
-            snapper_ret=$?
-            if ((snapper_ret != 0)) ; then
-                ret=$snapper_ret
-            fi
-        fi
-    done
-    return $ret
 }
 
 # Run snapper undochange in each snapper config to revert to the state at the
@@ -1661,8 +1627,7 @@ $my_name:
                                 snapshots created
   -i, --interactive             Ask before running snapraid or any potentially
                                 destructive snapper commands (when using the
-                                cleanup(-all), snapper, rollback, or undochange
-                                commands)
+                                cleanup(-all), snapper, or undochange commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
   -u, --use-snapshot-all ARG    Use one of the following arguments:
                                     diff  - Use last snapshot a diff was
@@ -1764,12 +1729,6 @@ or one of the following $my_name specific commands:
         identified as having snapper userdata key equal to the argument.
   'resume':
         Resume an interrupted sync, using the same set of snapshots.
-  'rollback':
-        Run snapper rollback in all snapper configs using the snapshots from
-        the last successful sync (or another snapshot if the -u or -U option
-        is specified). WARNING: Do not use this command unless you are familiar
-        with the snapper rollback command and its effects. Instead consider
-        using the undochange command.
   'shell':
         Start an interactive bash session in $my_name context. Useful for
         testing and debugging.
