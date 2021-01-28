@@ -199,6 +199,12 @@ until the parity has been brought up to date.
 A: No, and it is recommended that you do not do so, just as you should not run
 SnapRAID as root.
 
+### Q: Is there a snapraid-btrfs configuration file?
+A: No. An explicit design goal of `snapraid-btrfs` is to not require a
+configuration file of its own. Nor does it require a file to store state
+information and keep track of its snapshots, because that information is stored
+as snapper userdata.
+
 ### Q: How do I make sure my user (or group) has the necessary permissions?
 A: Assuming you already have a working SnapRAID configuration, you just need to
 configure snapper correctly. See "How do I set up snapper for use with
