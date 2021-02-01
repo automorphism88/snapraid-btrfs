@@ -331,7 +331,7 @@ cleanup_snapshots() {
         snapper_ls_wrapper "$config" >&2
         echo >&2
     fi
-    verbose_command "$my_snapper" -c "$config" rm "$@" && true
+    verbose_command_run "$my_snapper" -c "$config" rm "$@" && true
     ret=$?
     if ((interactive > 0)) ; then
         echo >&2
@@ -505,7 +505,7 @@ do_snapper() {
         if [[ "${use_snapshot[$i]}" = 0 ]] ; then
             continue
         else
-            verbose_command "$my_snapper" -c "$i" "$@"
+            verbose_command_run "$my_snapper" -c "$i" "$@"
         fi
     done
 }
@@ -1243,8 +1243,9 @@ run_command() {
 # Because errexit will not trigger within this function, we postfix anything
 # inside it which cannot fail with || err_trap to trigger ERR trap manually
 run_snapraid() {
-    check_snapraid_arguments "$@"
+    local -a snapraid_command
     local -i ret
+    check_snapraid_arguments "$@"
     if [[ -z "${temp_config_file}" ]] ; then
         temp_config_file="$(mktemp -- "$temp_dir/$my_name.XXXXXX")" ||
             err_trap $LINENO mktemp $?
@@ -1259,6 +1260,8 @@ run_snapraid() {
             "(Re)using temporary snapraid config file ${temp_config_file}:" ||
             err_trap $LINENO show_temp_snapraid_conf $?
     fi
+    snapraid_command=( "$my_snapraid" -c "$temp_config_file" "$@" )
+    verbose_command "${snapraid_command[@]}"
     case $1 in
         fix|touch)
             create_pre_post_snapshots "$1" ||
@@ -1273,7 +1276,7 @@ run_snapraid() {
             trap '((++interrupted)) ; trap - INT TERM QUIT' INT TERM QUIT ;;
     esac
     # Run snapraid
-    verbose_command "$my_snapraid" -c "$temp_config_file" "$@"
+    "${snapraid_command[@]}"
     ret=$?
     case $1 in
         fix|touch)
@@ -1529,7 +1532,7 @@ snapper_undochange() {
         if [[ "${use_snapshot[$i]}" = 0 ]] ; then
             continue
         else
-            verbose_command "$my_snapper" -c "$i" undochange \
+            verbose_command_run "$my_snapper" -c "$i" undochange \
                 "${undochange_opts[@]}" "${use_snapshot[$i]}..0" -- \
                 "${undochange_files[@]}"
             snapper_ret=$?
@@ -1894,6 +1897,10 @@ verbose_command() {
     elif ((verbose >= 0)) ; then
         print_command "$@"
     fi
+}
+
+verbose_command_run() {
+    verbose_command "$@"
     "$@" && true
 }
 
