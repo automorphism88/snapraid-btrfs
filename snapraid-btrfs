@@ -1411,7 +1411,7 @@ setup_config() {
     fi
     apply_pre_post_options
     case $1 in
-        check|pool|resume|scrub|undochange)
+        check|pool|scrub|undochange)
             use_snapshot_default scrub ;;&
         cleanup)
             use_snapshot_all sync ;;&
@@ -1423,6 +1423,8 @@ setup_config() {
             use_snapshot_default new ;;&
         fix)
             use_snapshot_fix "$@" ;;&
+        resume)
+            use_snapshot_default resume ;;&
         shell|snapper)
             use_snapshot_default '' ;;&
         !(cleanup-all|ls|list|snapper|touch))
