@@ -745,7 +745,11 @@ find_snapshots() {
         esac
         if [[ "${use_snapshot[$i]}" ]] ; then
             use_snapshot_missing[$i]=
-            verbose "Using snapshot ${use_snapshot[$i]} for config $i"
+            if [[ "${use_snapshot[$i]}" = '0' ]] ; then
+                verbose "Using live filesystem for config $i"
+            else
+                verbose "Using snapshot ${use_snapshot[$i]} for config $i"
+            fi
         fi
     done
     verbose
@@ -1806,19 +1810,10 @@ use_snapshot_check() {
 }
 
 # For any configs where use_snapshot is undefined or empty, set it to $1
-# If $2 = "fix", don't display warning
 use_snapshot_default() {
     local i
     for i in "${snapper_configs[@]}" ; do
         if [[ -z "${use_snapshot[$i]-}" ]] ; then
-            if [[ "$1" = '0' ]] ; then
-                if [[ "${2-}" = 'fix' ]] ; then
-                    verbose "Using live filesystem to fix snapper config $i"
-                else
-                    warn 'Could not find snapshot for snapper config' "$i" \
-                        '- using live filesystem instead for readonly command'
-                fi
-            fi
             use_snapshot[$i]="$1"
         fi
     done
@@ -1879,11 +1874,11 @@ use_snapshot_fix() {
     done
     if ((disks_found > 0)) ; then
         # for disks we are not fixing, use the 'scrub' snapshot
-        use_snapshot_default scrub fix
+        use_snapshot_default scrub
     else
         # snapraid fix --filter-disk option was not specified
         # snapraid will try to fix all disks, so use the live filesystem
-        use_snapshot_default 0 fix
+        use_snapshot_default 0
     fi
 }
 
