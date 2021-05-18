@@ -255,39 +255,6 @@ check_snapraid_arguments() {
     done
 }
 
-# In each config, delete snapshots with userdata key $snapper_userdata_key
-# older than use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
-cleanup() {
-    local i j
-    local -i ret=0
-    local -i snapper_ret
-    local -a snapshots_to_consider snapshots_to_delete
-    for i in "${snapper_configs[@]}" ; do
-        # skip this config if we couldn't find a synced snapshot
-        if [[ -z "${use_snapshot[$i]}" ]] ; then
-            warn "No synced snapshot found for config $i - skipping"
-            continue
-        fi
-        IFS=' ' read -r -a snapshots_to_consider \
-            <<< "$(snapper_ls_wrapper "$i" 'C' |
-            parse_snapper_ls "$snapper_userdata_key" '' ' ')"
-        snapshots_to_delete=()
-        for j in "${snapshots_to_consider[@]}" ; do
-            if [[ "${use_snapshot[$i]}" -gt "$j" ]] ||
-                   [[ "${use_snapshot[$i]}" = 0 ]]
-            then
-                snapshots_to_delete+=( "$j" )
-            fi
-        done
-        cleanup_snapshots "$i" "${snapshots_to_delete[@]}" && true
-        snapper_ret=$?
-        if ((snapper_ret != 0)) ; then
-            ret=$snapper_ret
-        fi
-    done
-    return $ret
-}
-
 cleanup_coproc_debug() {
     [[ "${debug_fd}" ]] || return 0
     trap - DEBUG
@@ -444,6 +411,39 @@ declare-p_vars_debug() {
 
 declare-p_vars_shell() {
     declare-p_vars "[_$LOWER]" 'LOWER=' '(COPYRIGHT|DEFAULT|E|MY|SNAPRAID)_'
+}
+
+# In each config, delete snapshots with userdata key $snapper_userdata_key
+# older than use_snapshot[$i], or all such snapshots if use_snapshot[$i]=0
+do_cleanup() {
+    local i j
+    local -i ret=0
+    local -i snapper_ret
+    local -a snapshots_to_consider snapshots_to_delete
+    for i in "${snapper_configs[@]}" ; do
+        # skip this config if we couldn't find a synced snapshot
+        if [[ -z "${use_snapshot[$i]}" ]] ; then
+            warn "No synced snapshot found for config $i - skipping"
+            continue
+        fi
+        IFS=' ' read -r -a snapshots_to_consider \
+            <<< "$(snapper_ls_wrapper "$i" 'C' |
+            parse_snapper_ls "$snapper_userdata_key" '' ' ')"
+        snapshots_to_delete=()
+        for j in "${snapshots_to_consider[@]}" ; do
+            if [[ "${use_snapshot[$i]}" -gt "$j" ]] ||
+                   [[ "${use_snapshot[$i]}" = 0 ]]
+            then
+                snapshots_to_delete+=( "$j" )
+            fi
+        done
+        cleanup_snapshots "$i" "${snapshots_to_delete[@]}" && true
+        snapper_ret=$?
+        if ((snapper_ret != 0)) ; then
+            ret=$snapper_ret
+        fi
+    done
+    return $ret
 }
 
 # start interactive shell in context of script
@@ -1197,7 +1197,7 @@ run_command() {
     case $1 in
         # Implementation of commands that don't invoke snapraid
         cleanup?(-all))
-            cleanup ;;
+            do_cleanup ;;
         config)
             generate_temp_snapraid_conf ;;
         ls|list)
