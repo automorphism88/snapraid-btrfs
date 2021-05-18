@@ -27,6 +27,9 @@ readonly E_INVALID_CONFIG=66
 readonly E_NO_PERMISSION=67
 readonly E_SNAPSHOT_NOT_FOUND=68
 readonly E_INTERACTIVE_NO=69
+# for use with awk
+# mawk versions < 1.3.4 don't support [:lower:],
+# so we use [$LOWER] instead for portability
 readonly LOWER=abcdefghijklmnopqrstuvwxyz
 readonly MY_VERSION='0.13.0+git'
 # snapraid short options, sorted by whether or not they accept arguments
