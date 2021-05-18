@@ -516,22 +516,43 @@ do_snapper() {
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
     cleanup_coproc_debug
+    local debug_out_fd
+    if [[ "$debug_file" ]] ; then
+        exec {debug_out_fd}>"$debug_file"
+    else
+        debug_out_fd="${DEBUG_FD:-2}"
+    fi
     coproc sed_escape_debug {
         sed_escape_output
-    } >&"${DEBUG_FD:-2}"
+    } >&"${debug_out_fd}"
     exec {debug_fd}<&"${sed_escape_debug[1]}"
     # shellcheck disable=1004
     trap 'debug_trap "$LINENO" "$BASH_COMMAND" \
         "${FUNCNAME[0]:+${FUNCNAME[0]}(): }" "$@"' DEBUG
 }
 
+enable_debug_modes() {
+    if ((debug_mode > 0)) ; then
+        enable_debug_mode
+    fi
+    if ((xtrace_mode > 0)) ; then
+        enable_xtrace_mode
+    fi
+}
+
 # Use sed coproc to escape BASH_XTRACEFD
 enable_xtrace_mode() {
     cleanup_coproc_xtrace
+    local xtrace_out_fd
+    if [[ "$xtrace_file" ]] ; then
+        exec {xtrace_out_fd}>"$xtrace_file"
+    else
+        xtrace_out_fd="${BASH_XTRACEFD:-2}"
+    fi
     xtrace_fd_old="${BASH_XTRACEFD:-2}"
     coproc sed_escape_xtrace {
         sed_escape_output
-    } >&"${BASH_XTRACEFD:-2}"
+    } >&"${xtrace_out_fd}"
     exec {xtrace_fd}<&"${sed_escape_xtrace[1]}"
     BASH_XTRACEFD="$xtrace_fd"
     set -o xtrace
@@ -863,8 +884,12 @@ main() {
 
     # snapraid config file location
     local config_file="${SNAPRAID_CONFIG_FILE:-$DEFAULT_CONFIG_FILE}"
-    # fd to send debug output to if -x/--debug is enabled
+    # fd to send debug output to if -X/--debug is enabled
     local debug_fd=
+    # --debug-file option argument
+    local debug_file=
+    # indicates whether the -X/--debug option has been enabled
+    local -i debug_mode=0
     # indicates whether the -i/--interactive option has been enabled
     local -i interactive=0
     # filename of script determined at runtime
@@ -937,6 +962,10 @@ main() {
     local xtrace_fd=
     # backup of original BASH_XTRACEFD
     local xtrace_fd_old=
+    # --xtrace-file option argument
+    local xtrace_file=
+    # indicates whether the -x/--xtrace option has been enabled
+    local -i xtrace_mode=0
 
     trap 'err_trap $LINENO "$BASH_COMMAND" $?' ERR
     trap 'exit_trap' EXIT
@@ -995,6 +1024,7 @@ main() {
             # long form options that require arguments
             --conf?(=*)) ;&
             --cleanup?(=*)) ;&
+            --@(debug|xtrace)-file?(=*)) ;&
             --description?(=*)) ;&
             --pool-dir?(=*)) ;&
             --?(no-)pre-post?(=*)) ;&
@@ -1044,6 +1074,9 @@ main() {
                 invalid_argument "$1" ;;
         esac
     done
+    # wait until after option parsing is complete to enable --debug/--xtrace
+    # to allow for --debug-file/--xtrace-file to be parsed first
+    enable_debug_modes
     if [[ "${command-}" ]] ; then
         set -- "$command"
     fi
@@ -1085,6 +1118,18 @@ must_be_writable_dir() {
         error $E_INVALID_ARGUMENT "$1 is not a directory${2:+ - $2}"
     [[ -w "$1" ]] ||
         error $E_NO_PERMISSION "No write permission for $1${2:+ - $2}"
+}
+
+must_be_writable_file() {
+    if [[ -d "$1" ]] ; then
+        error $E_INVALID_ARGUMENT "$1 is a directory, not a file"
+    elif [[ -f "$1" ]] && ! [[ -w "$1" ]] ; then
+        error $E_NO_PERMISSION "No write permission for $1"
+    else
+        local dir
+        dir="$(dirname "$1")"
+        must_be_writable_dir "$dir"
+    fi
 }
 
 # call this to make sure $2 is defined when user specifies option requring it
@@ -1330,6 +1375,7 @@ set_option() {
     case $1 in
         --conf) ;&
         --cleanup) ;&
+        --@(debug|xtrace)-file) ;&
         --description) ;&
         --pool-dir) ;&
         --?(no-)pre-post) ;&
@@ -1361,9 +1407,12 @@ set_option() {
             print_version
             exit ;;
         -x|--xtrace)
-            enable_xtrace_mode ;;
+            ((++xtrace_mode)) ;;
         -X|--debug)
-            enable_debug_mode ;;
+            ((++debug_mode)) ;;
+        --debug-file)
+            must_be_writable_file "$2"
+            debug_file="$2" ;;
         --no-pre-post)
             IFS=',' read -r -a no_pre_post_option <<< "$2" ;;
         --noninteractive)
@@ -1387,6 +1436,9 @@ set_option() {
             my_snapraid="$2" ;;
         --used-space)
             ((++used_space_option)) ;;
+        --xtrace-file)
+            must_be_writable_file "$2"
+            xtrace_file="$2" ;;
         *)
             invalid_argument "$1" ;;
     esac
@@ -1670,6 +1722,7 @@ $my_name:
   -v, --verbose                 Increase verbosity of output
   -x, --xtrace                  Enable bash xtrace
   -X, --debug                   Enable debugging output
+  --debug-file FILE             File to save -X/--debug output to
   --no-pre-post ARG             Don't create pre/post snapshots for the
                                 specified snapper configuration(s). Multiple
                                 configurations should be separated by commas.
@@ -1700,6 +1753,7 @@ $my_name:
                                 first found in PATH)
   --used-space                  Don't pass the --disable-used-space option to
                                 snapper ls.
+  --xtrace-file FILE            File to save -x/--xtrace output to
 
   NOTE: The snapraid -c/--conf option will not work unless placed before the
   command, allowing it to be interpreted as a $my_name option. Snapraid
