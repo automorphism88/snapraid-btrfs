@@ -619,7 +619,7 @@ find_configs() {
     if ((${#snapper_configs_specified[@]} > 0)) ; then
         find_configs_specified
     else
-        find_configs_snapper_get-config
+        find_configs_snapper_get-config "$@"
     fi
 }
 
@@ -656,7 +656,7 @@ find_configs_snapper_get-config() {
     files=( "$dir"/* )
     set -o noglob
     if (("${#files[@]}" == 0)) ; then
-        error_nonshell $E_INVALID_CONFIG "No files in $dir"
+        error_nonshell "$1" $E_INVALID_CONFIG "No files in $dir"
     fi
     for i in "${files[@]}" ; do
         config="$(basename -- "$i")"
@@ -1458,7 +1458,7 @@ setup_config() {
         fi
     fi
     check_config_file "$@"
-    find_configs
+    find_configs "$@"
     show_configs
     check_config "$@"
     if [[ "$use_snapshot_option" ]] ; then
