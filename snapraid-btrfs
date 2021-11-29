@@ -31,7 +31,7 @@ readonly E_INTERACTIVE_NO=69
 # mawk versions < 1.3.4 don't support [:lower:],
 # so we use [$LOWER] instead for portability
 readonly LOWER=abcdefghijklmnopqrstuvwxyz
-readonly MY_VERSION='0.14.1'
+readonly MY_VERSION='0.14.1+git'
 # snapraid short options, sorted by whether or not they accept arguments
 readonly SNAPRAID_OPTS_ARG=BCLScdfilop
 readonly SNAPRAID_OPTS_NOARG=DEFGHLNRTUVZaehmqv
