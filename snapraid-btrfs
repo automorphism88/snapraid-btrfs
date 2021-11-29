@@ -615,6 +615,21 @@ exit_trap() {
     cleanup_coprocs
 }
 
+# remove -h / --pre-hash from snapraid arguments
+# used with diff-sync command since -h is only supported with sync command
+filter_pre_hash_option() {
+    local args=()
+    local i
+    for i in "$@" ; do
+        if [[ "$i" =~ !(-h|--pre-hash) ]] ; then
+            args+=( "$i" )
+        fi
+    done
+    [[ "${#args[@]}" != 0 ]] || return 0
+    printf '%q ' "${args[@]}"
+    echo
+}
+
 find_configs() {
     if ((${#snapper_configs_specified[@]} > 0)) ; then
         find_configs_specified
@@ -1273,7 +1288,8 @@ run_command() {
             fi
             shift
             local -i diff_ret
-            run_snapraid diff "$@" && true
+            # shellcheck disable=2046
+            run_snapraid diff $(filter_pre_hash_option "$@") && true
             diff_ret=$?
             # snapraid diff returns 2 if a sync is required
             if ((diff_ret == 2)) ; then
