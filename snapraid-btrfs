@@ -683,7 +683,7 @@ find_configs_try() {
     config="$1"
     found=
     if subvol="$("$my_snapper" -c "$config" get-config 2>/dev/null |
-        sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //')"
+        sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //' -e 's/\s*//g')"
     then
         while IFS=$' \t' read -r field1 field2 field3 ; do
             if [[ "$field1" =~ ^(data|disk)$ ]] &&
