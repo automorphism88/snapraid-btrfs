@@ -1319,7 +1319,7 @@ run_snapraid() {
         show_temp_snapraid_conf \
             "Using temporary snapraid config file ${temp_config_file}:" ||
             err_trap $LINENO show_temp_snapraid_conf $?
-    else
+    elif ((verbose > 0)) ; then
         show_temp_snapraid_conf \
             "(Re)using temporary snapraid config file ${temp_config_file}:" ||
             err_trap $LINENO show_temp_snapraid_conf $?
