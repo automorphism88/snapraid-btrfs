@@ -301,7 +301,8 @@ cleanup_snapshots() {
         snapper_ls_wrapper "$config" >&2
         echo >&2
     fi
-    verbose_command_run "$my_snapper" -c "$config" rm "$@" && true
+    verbose_command_run "$my_snapper" -c "$config" \
+        rm${sync:+ --sync} "$@" && true
     ret=$?
     if ((interactive > 0)) ; then
         echo >&2
@@ -960,6 +961,8 @@ main() {
         snapper_userdata_key="${SNAPRAID_USERDATA_KEY:-$DEFAULT_USERDATA_KEY}"
     # additional userdata to set, specified with the --snapper-userdata option
     local snapper_userdata=
+    # variable to be set if -s/--sync option is specified
+    local sync=
     # location of temporary snapraid.conf
     local temp_config_file=
     # directory to create temporary snapraid.conf file in
@@ -1030,6 +1033,7 @@ main() {
             --help) ;&
             --?(non)interactive) ;&
             --quiet) ;&
+            --sync) ;&
             --used-space) ;&
             --verbose) ;&
             --version) ;&
@@ -1065,7 +1069,7 @@ main() {
                 for ((i=0;i<length;i++)) ; do
                     case ${opt_str:$i:1} in
                         # short options that don't take arguments
-                        [VXhiqvx])
+                        [VXhiqsvx])
                             set_option "-${opt_str:$i:1}"
                             if ((i == length-1)) ; then
                                 shift
@@ -1413,6 +1417,8 @@ set_option() {
             ((++interactive)) || true ;;
         -q|--quiet)
             ((--verbose)) || true ;;
+        -s|--sync)
+            sync=1 ;;
         -u|--use-snapshot-all)
             use_snapshot_all_option="$2" ;;
         -U|--use-snapshot)
@@ -1709,6 +1715,8 @@ $my_name:
                                 destructive snapper commands (when using the
                                 cleanup(-all), snapper, or undochange commands)
   -q, --quiet                   Only show snapraid/snapper output and errors
+  -s, --sync                    Pass the --sync option to snapper rm (when
+                                using the cleanup(-all) command)
   -u, --use-snapshot-all ARG    Use one of the following arguments:
                                     diff  - Use last snapshot a diff was
                                             completed with
