@@ -1192,7 +1192,7 @@ NR==1 {
         exit 1
     }
 }
-# snapshot data begins on line 3
+# snapshot data begin on line 3
 NR>=3 {
     # remove nonnumeric characters (padding spaces, mount status) from #
     gsub(/[^0123456789]+/,"",$column["#"])
