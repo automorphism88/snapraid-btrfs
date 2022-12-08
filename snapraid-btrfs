@@ -467,6 +467,7 @@ do_shell() {
         export -f "${_funcs_arr[@]}"
         set +o errexit
         set +o nounset
+        shopt -s checkwinsize &> /dev/null || true
         exec "$BASH" --rcfile \
             <(cat <<'_EOF_'
 eval "$_vars"
