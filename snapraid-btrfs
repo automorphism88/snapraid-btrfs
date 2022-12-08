@@ -209,11 +209,11 @@ check_content_files() {
     done < "$config_file"
 }
 
-# Make sure all external binaries in $@ can be found in $PATH
+# Make sure all external binaries in $@ can be found
 check_dependencies() {
     while (($# > 0)) ; do
         if ! type "$1" &> /dev/null ; then
-            error $E_MISSING_DEPENDENCY "Could not find $1 in PATH"
+            error $E_MISSING_DEPENDENCY "Could not find dependency $1"
         fi
         shift
     done
