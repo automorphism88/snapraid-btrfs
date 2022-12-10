@@ -496,6 +496,7 @@ Started interactive bash session in $my_name context.
 Commands:
     quit - exit the interactive shell
     vars - display variable values
+
 __EOF__
 fi
 _EOF_
