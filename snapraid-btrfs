@@ -1522,7 +1522,7 @@ setup_config() {
 }
 
 show_configs() {
-    ((verbose >= 0)) || return 0
+    ((verbose > 0)) || return 0
     local i
     echo 'Snapper configs found:'
     for i in "${snapper_configs[@]}" ; do
