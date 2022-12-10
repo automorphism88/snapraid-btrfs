@@ -1665,6 +1665,7 @@ snapshot_menu() {
             'not displaying snapshot menu since --noninteractive'
     fi
     local choice
+    printf -- '%s %s\n' "$1" "${snapper_subvols[$1]}"
     snapper_ls_wrapper "$1"
     while true ; do
         read -r -p 'Enter a snapshot (0 for none, n for new, q to quit): ' \
