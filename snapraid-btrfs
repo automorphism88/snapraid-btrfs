@@ -162,7 +162,7 @@ check_config_file() {
             "Could not read snapraid config file at $config_file"
         return 0
     fi
-    verbose "Using snapraid config file $config_file"$'\n'
+    verbose "Using snapraid config file $config_file"
     # check for trailing newline in snapraid.conf
     # Lack of a trailing newline will cause problems.
     # Therefore, if there is no trailing newline, create a
@@ -739,6 +739,7 @@ find_snapshots() {
     else
         snapper_create_opts+=( -d "$my_name $1" )
     fi
+    local -i n=0
     local i
     for i in "${snapper_configs[@]}" ; do
         use_snapshot_missing[$i]="${use_snapshot[$i]}"
@@ -786,6 +787,7 @@ find_snapshots() {
                     "${use_snapshot[$i]} for config $i" ;;
         esac
         if [[ "${use_snapshot[$i]}" ]] ; then
+            ((++n))
             use_snapshot_missing[$i]=
             if [[ "${use_snapshot[$i]}" = '0' ]] ; then
                 verbose "Using live filesystem for config $i"
@@ -794,7 +796,9 @@ find_snapshots() {
             fi
         fi
     done
-    verbose
+    if ((n > 0)) ; then
+        verbose
+    fi
 }
 
 # generate sed script to replace subvolume paths with corresponding snapshots
