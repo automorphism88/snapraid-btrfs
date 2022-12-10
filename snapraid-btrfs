@@ -381,8 +381,6 @@ debug_trap() {
         printf -- '%q ' "$@"
     fi
     echo
-    local -a debug_vars
-    IFS=' ' read -r -a debug_vars <<< "$(declare-p_vars_debug)"
     declare -p "${debug_vars[@]}"
     printf -- '%s\n' "$div"
 } >&"$debug_fd"
@@ -518,6 +516,7 @@ do_snapper() {
 
 # Set DEBUG trap to display variables with each command
 enable_debug_mode() {
+    IFS=' ' read -r -a debug_vars <<< "$(declare-p_vars_debug)"
     cleanup_coproc_debug
     local debug_out_fd
     if [[ "$debug_file" ]] ; then
@@ -912,6 +911,8 @@ main() {
     local debug_file=
     # indicates whether the -X/--debug option has been enabled
     local -i debug_mode=0
+    # array storing variables to print in DEBUG trap
+    local debug_vars=()
     # indicates whether the -i/--interactive option has been enabled
     local -i interactive=0
     # filename of script determined at runtime
