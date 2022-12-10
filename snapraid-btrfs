@@ -1910,8 +1910,10 @@ use_snapshot_fix() {
     if [[ "${1-}" = fix ]] ; then
         shift
     else
+        local args
+        printf -v args -- '%q ' "$@"
         error $E_INTERNAL_ERROR \
-            'use_snapshot_fix() called with unexpected arguments'
+            'use_snapshot_fix() called with unexpected arguments: ' "$args"
     fi
     local disk snapper_config_name
     local -i disks_found=0
