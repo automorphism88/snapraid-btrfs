@@ -373,10 +373,7 @@ debug_trap() {
     shift 3
     call_stack
     printf -- '%s\n%s' "$div" 'set -- '
-    if (($# > 0)) ; then
-        printf -- '%q ' "$@"
-    fi
-    echo
+    print_array "${@@Q}"
     declare -p "${debug_vars[@]}"
     printf -- '%s\n' "$div"
 } >&"$debug_fd"
@@ -578,8 +575,7 @@ error() {
     fi
     shift || true
     printf -- '%s: ' "$my_name"
-    printf -- '%s ' "${@:-fatal error}"
-    echo
+    print_array "${@:-fatal error}"
     case $errno in
         "$E_INVALID_ARGUMENT")
             printf -- 'Use %s -h for help\n' "$my_name" ;;
@@ -623,9 +619,7 @@ filter_pre_hash_option() {
             args+=( "$i" )
         fi
     done
-    [[ "${#args[@]}" != 0 ]] || return 0
-    printf '%q ' "${args[@]}"
-    echo
+    print_array "${args[@]@Q}"
 }
 
 find_configs() {
@@ -852,7 +846,7 @@ get_snapper_version() {
 
 interactive_ask() {
     echo 'About to run the following command:'
-    print_command "$@"
+    print_array "${@@Q}"
     local choice
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
@@ -1245,12 +1239,14 @@ _EOF_
             )
 }
 
-print_command() {
-    local cmd
-    printf -v cmd -- '%q ' "$@"
-    cmd="${cmd% }"
-    printf -- '%s\n' "$cmd"
-} >&2
+print_array() {
+    local ret=
+    if [[ "$#" -gt 0 ]] ; then
+        printf -v ret -- '%s ' "$@"
+        ret="${ret% }"
+    fi
+    printf -- '%s\n' "$ret"
+}
 
 print_version() {
     cat <<_EOF_
@@ -1533,8 +1529,7 @@ show_configs() {
 
 show_temp_snapraid_conf() {
     ((verbose >= 0)) || return 0
-    printf -- '%s ' "$@"
-    echo
+    print_array "$@"
     cat < "$temp_config_file" && echo
 } >&2
 
@@ -1913,10 +1908,8 @@ use_snapshot_fix() {
     if [[ "${1-}" = fix ]] ; then
         shift
     else
-        local args
-        printf -v args -- '%q ' "$@"
         error $E_INTERNAL_ERROR \
-            'use_snapshot_fix() called with unexpected arguments: ' "$args"
+            'use_snapshot_fix() called with unexpected arguments:' "${@@Q}"
     fi
     local disk snapper_config_name
     local -i disks_found=0
@@ -1974,17 +1967,16 @@ use_snapshot_fix() {
 
 verbose() {
     ((verbose > 0)) || return 0
-    printf -- '%s ' "$@"
-    echo
+    print_array "$@"
 }
 
 verbose_command() {
     if ((interactive > 0)) ; then
         interactive_ask "$@"
     elif ((verbose >= 0)) ; then
-        print_command "$@"
+        print_array "${@@Q}"
     fi
-}
+} >&2
 
 verbose_command_run() {
     verbose_command "$@"
@@ -2023,8 +2015,7 @@ version_is_at_least() {
 warn() {
     ((verbose >= 0)) || return 0
     printf -- '%s: WARNING: ' "$my_name"
-    printf -- '%s ' "$@"
-    echo
+    print_array "$@"
 } >&2
 
 warn_if_root() {
