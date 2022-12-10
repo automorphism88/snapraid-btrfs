@@ -1547,7 +1547,7 @@ show_temp_snapraid_conf() {
 snapper_ls() {
     local i j
     for i in "${snapper_configs[@]}" ; do
-        printf -- '\n%s %s\n' "$i" "${snapper_subvols[$i]}"
+        printf -- '%s %s\n' "$i" "${snapper_subvols[$i]}"
         snapper_ls_wrapper "$i"
         for j in "$@" ; do
             printf -- 'Snapshots with userdata key %s=%s:\n' \
@@ -1556,8 +1556,8 @@ snapper_ls() {
                 parse_snapper_ls "$snapper_userdata_key" "$j" ' '
             echo
         done
+        echo
     done
-    echo
 }
 
 # Run snapper ls > /dev/null on config $1 to sync ACLs, using
