@@ -65,10 +65,6 @@ shopt -u checkwinsize &> /dev/null || true
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
-# We want the pre-bash-5 behavior
-if ((BASH_VERSINFO[0] >= 5)) ; then
-    shopt -u localvar_inherit
-fi
 
 # Add $1 to snapper_configs_specified array if not duplicate
 add_snapper_config() {
