@@ -60,8 +60,6 @@ shopt -s dotglob
 shopt -s extglob
 shopt -s extquote
 shopt -s nullglob
-# Option added in bash 4.3, default in 5.0, not needed and reduces performance
-shopt -u checkwinsize &> /dev/null || true
 # Use lastpipe if available (bash 4.2+) since it's faster,
 # but we don't need the behavior
 shopt -s lastpipe &> /dev/null || true
@@ -458,7 +456,6 @@ do_shell() {
         export -f "${_funcs_arr[@]}"
         set +o errexit
         set +o nounset
-        shopt -s checkwinsize &> /dev/null || true
         exec "$BASH" --rcfile \
             <(cat <<'_EOF_'
 eval "$_vars"
