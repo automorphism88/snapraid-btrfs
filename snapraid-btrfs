@@ -714,17 +714,6 @@ find_configs_try() {
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
-    local snapper_create_opts=(
-        -u "$snapper_userdata$snapper_userdata_key=created"
-    )
-    if [[ "$snapper_cleanup" ]] ; then
-        snapper_create_opts+=( -c "$snapper_cleanup" )
-    fi
-    if [[ "$snapper_description" ]] ; then
-        snapper_create_opts+=( -d "$snapper_description" )
-    else
-        snapper_create_opts+=( -d "$my_name $1" )
-    fi
     local -i n=0
     local i
     for i in "${snapper_configs[@]}" ; do
@@ -741,12 +730,9 @@ find_snapshots() {
                     parse_snapper_ls "$snapper_userdata_key" |
                     tail -n 1)" ;;
             menu)
-                snapshot_menu "$i" ;;
+                snapshot_menu "$i" "$1" ;;
             new)
-                use_snapshot[$i]="$("$my_snapper" -c "$i" create -p \
-                    "${snapper_create_opts[@]}")"
-                verbose "Created new snapshot ${use_snapshot[$i]}" \
-                    "for config $i" ;;
+                new_snapshot "$i" "$1" ;;
             res?(ume))
                 use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
                     parse_snapper_ls "$snapper_userdata_key" syncing,synced |
@@ -1145,6 +1131,23 @@ must_be_writable_file() {
     fi
 }
 
+new_snapshot() {
+    local snapper_create_opts=(
+        -u "$snapper_userdata$snapper_userdata_key=created"
+    )
+    if [[ "$snapper_cleanup" ]] ; then
+        snapper_create_opts+=( -c "$snapper_cleanup" )
+    fi
+    if [[ "$snapper_description" ]] ; then
+        snapper_create_opts+=( -d "$snapper_description" )
+    else
+        snapper_create_opts+=( -d "$my_name${2:+ $2}" )
+    fi
+    use_snapshot[$1]="$("$my_snapper" -c "$1" create -p \
+        "${snapper_create_opts[@]}")"
+    verbose "Created new snapshot ${use_snapshot[$1]} for config $1"
+}
+
 # call this to make sure $2 is defined when user specifies option requring it
 option_requires_argument() {
     [[ "${2-}" ]] ||
@@ -1510,7 +1513,7 @@ setup_config() {
         !(cleanup-all|ls|list|snapper|touch))
             find_snapshots "$1" ;;&
         !(cleanup?(-all)|ls|list|shell|snapper|touch))
-            use_snapshot_check ;;
+            use_snapshot_check "$1" ;;
     esac
 }
 
@@ -1663,8 +1666,7 @@ snapshot_menu() {
             [Qq]?([Uu][Ii][Tt]))
                 exit $E_INTERACTIVE_NO ;;
             [Nn]?([Ee][Ww]))
-                use_snapshot[$1]=new
-                find_snapshots 'interactive prompt'
+                new_snapshot "$1" "$2"
                 break ;;
             +([0123456789]))
                 if [[ "$choice" = 0 ]] ||
@@ -1688,7 +1690,7 @@ snapshot_menu() {
 snapshot_not_found() {
     printf -- '%s: Snapshot %s not found for config %s at %s\n' "$my_name" \
         "${use_snapshot_missing[$1]}" "$1" "${snapper_subvols[$1]}"
-    snapshot_menu "$i"
+    snapshot_menu "$1" "$2"
 } >&2
 
 usage() {
@@ -1885,7 +1887,7 @@ use_snapshot_all() {
 use_snapshot_check() {
     local i
     for i in "${snapper_configs[@]}" ; do
-        [[ "${use_snapshot[$i]}" ]] || snapshot_not_found "$i"
+        [[ "${use_snapshot[$i]}" ]] || snapshot_not_found "$i" "$1"
     done
 }
 
