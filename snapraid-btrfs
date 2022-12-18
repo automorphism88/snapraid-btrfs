@@ -1469,7 +1469,7 @@ setup_config() {
     must_be_writable_dir "$temp_dir" 'is TMPDIR set correctly?'
     check_dependencies "$my_snapper" "$my_snapraid"
     readonly my_snapper my_snapraid
-    if version_is_at_least "$(get_snapper_version)" 0.6.0 ; then
+    if version_is_at_least "$(get_snapper_version)" '0.6.0' ; then
         snapper_ls_quota_support=1
         if ((used_space_option == 0)) ; then
             snapper_ls_quota_disable=1
