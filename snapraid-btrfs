@@ -371,7 +371,7 @@ debug_trap() {
     shift 3
     call_stack
     printf -- '%s\n%s' "$div" 'set -- '
-    print_array "${@@Q}"
+    print_array "$@"
     declare -p "${debug_vars[@]}"
     printf -- '%s\n' "$div"
 } >&"$debug_fd"
@@ -616,7 +616,7 @@ filter_pre_hash_option() {
             args+=( "$i" )
         fi
     done
-    print_array "${args[@]@Q}"
+    print_array "${args[@]}"
 }
 
 find_configs() {
@@ -829,7 +829,7 @@ get_snapper_version() {
 
 interactive_ask() {
     echo 'About to run the following command:'
-    print_array "${@@Q}"
+    print_array "$@"
     local choice
     while true ; do
         read -r -p 'Do it [Y/N]? ' choice
@@ -1908,7 +1908,7 @@ use_snapshot_fix() {
         shift
     else
         error $E_INTERNAL_ERROR \
-            'use_snapshot_fix() called with unexpected arguments:' "${@@Q}"
+            'use_snapshot_fix() called with unexpected arguments:' "$@"
     fi
     local disk snapper_config_name
     local -i disks_found=0
@@ -1973,7 +1973,7 @@ verbose_command() {
     if ((interactive > 0)) ; then
         interactive_ask "$@"
     elif ((verbose >= 0)) ; then
-        print_array "${@@Q}"
+        print_array "$@"
     fi
 } >&2
 
