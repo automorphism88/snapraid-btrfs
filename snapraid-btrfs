@@ -1035,7 +1035,7 @@ main() {
                     set_option "$opt_str" "${2-}"
                     shift 2
                 else
-                    set_option "$opt_str" "${1#$opt_str=}"
+                    set_option "$opt_str" "${1#"${opt_str}="}"
                     shift
                 fi ;;
             --*)
@@ -1923,7 +1923,7 @@ use_snapshot_fix() {
                 disk="$2"
                 shift 2 ;;
             -*(["$SNAPRAID_OPTS_NOARG"])d*)
-                disk="${1#*([$SNAPRAID_OPTS_NOARG])d}"
+                disk="${1#*(["$SNAPRAID_OPTS_NOARG"])d}"
                 shift ;;
             -*)
                 if snapraid_opt_has_arg "$@" ; then
