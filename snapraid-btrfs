@@ -711,6 +711,14 @@ find_configs_try() {
     fi
 }
 
+# output the last snapshot number from config $1 matching userdata key $2
+# (or any if $2 is undefined or empty)
+find_snapshot() {
+    snapper_ls_wrapper "$1" 'C' |
+        parse_snapper_ls "$snapper_userdata_key" "${2:+$2}" |
+        tail -n 1
+}
+
 # replace keywords in use_snapshot with actual snapshot numbers, or with the
 # empty string if a snapshot matching the keyword cannot be found
 find_snapshots() {
@@ -722,30 +730,20 @@ find_snapshots() {
             0|'')
                 continue ;;
             diff)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" diff |
-                    tail -n 1)" ;;
+                use_snapshot[$i]="$(find_snapshot "$i" 'diff')" ;;
             last)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" |
-                    tail -n 1)" ;;
+                use_snapshot[$i]="$(find_snapshot "$i")" ;;
             menu)
                 snapshot_menu "$i" "$1" ;;
             new)
                 new_snapshot "$i" "$1" ;;
             res?(ume))
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" syncing,synced |
-                    tail -n 1)" ;;
+                use_snapshot[$i]="$(find_snapshot "$i" 'syncing,synced')" ;;
             scrub)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" \
-                        syncing,synced,post-fix,post-touch |
-                    tail -n 1)" ;;
+                use_snapshot[$i]="$(find_snapshot "$i" \
+                    'syncing,synced,post-fix,post-touch')" ;;
             sync)
-                use_snapshot[$i]="$(snapper_ls_wrapper "$i" 'C' |
-                    parse_snapper_ls "$snapper_userdata_key" synced |
-                    tail -n 1)" ;;
+                use_snapshot[$i]="$(find_snapshot "$i" 'synced')" ;;
             +([0123456789]))
                 if ! { snapper_ls_wrapper "$i" 'C' |
                            parse_snapper_ls |
