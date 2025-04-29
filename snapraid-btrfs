@@ -690,6 +690,8 @@ find_configs_try() {
         sed -e '/^SUBVOLUME /!d' -e 's/^SUBVOLUME[ ]*| //')"
     then
         while IFS=$' \t' read -r field1 field2 field3 ; do
+            # Remove the snapshot subdir to match correctly
+            field3="${field3%/.snapshots/*/snapshot}"
             if [[ "$field1" =~ ^(data|disk)$ ]] &&
                    [[ "$field3" -ef "$subvol" ]]
             then
